@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.30)
 
 project(GameBoy LANGUAGES CXX)
 
+find_package(spdlog REQUIRED)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -14,6 +16,7 @@ target_include_directories(gameboy PRIVATE
 )
 
 target_link_libraries(gameboy PRIVATE
+PRIVATE spdlog::spdlog_header_only
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
