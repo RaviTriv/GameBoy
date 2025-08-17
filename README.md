@@ -11,5 +11,5 @@ make
 
 ## Running
 ```console
-./gameboy
+./gameboy ${PATH_TO_ROM}
 ```

@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(gameboy
     src/main.cpp
     src/lib/Gameboy.cpp
+    src/lib/Cartridge.cpp
 )
 
 target_include_directories(gameboy PRIVATE
