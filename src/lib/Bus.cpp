@@ -1,0 +1,92 @@
+#include "../../include/Bus.h"
+#include "../../include/Cartridge.h"
+
+Bus::Bus(std::shared_ptr<Cartridge> cartridge) : cartridge(cartridge)
+{
+}
+
+uint8_t Bus::read(uint16_t address)
+{
+  if (address < 0x8000)
+  {
+    // Cartridge
+    return cartridge->read(address);
+  }
+  else if (address < 0xA000)
+  {
+    // PPU VRAM
+  }
+  else if (address < 0xC000)
+  {
+    // External RAM
+  }
+  else if (address < 0xE000)
+  {
+    // Work RAM
+  }
+  else if (address < 0xFE00)
+  {
+    // echo RAM
+    return 0;
+  }
+  else if (address < 0xFEA0)
+  {
+    // Object Attribute Memory (OAM)
+  }
+  else if (address < 0xFF00)
+  {
+    // Reserved
+    return 0;
+  }
+  else if (address < 0xFF80)
+  {
+    // I/O Registers
+  }
+  else if (address == 0xFFFF)
+  {
+    // Interrupt Enable Register
+  }
+  // HRAM
+}
+
+void Bus::write(uint16_t address, uint8_t value)
+{
+  if (address < 0x8000)
+  {
+    // Cartridge
+  }
+  else if (address < 0xA000)
+  {
+    // PPU VRAM
+  }
+  else if (address < 0xC000)
+  {
+    // External RAM
+  }
+  else if (address < 0xE000)
+  {
+    // Work RAM
+  }
+  else if (address < 0xFE00)
+  {
+  }
+  else if (address < 0xFEA0)
+  {
+    // Object Attribute Memory (OAM)
+  }
+  else if (address < 0xFF00)
+  {
+  }
+  else if (address < 0xFF80)
+  {
+    // I/O Registers
+  }
+  else if (address == 0xFFFF)
+  {
+    // Interrupt Enable Register
+  }
+  else
+  {
+    // HRAM
+  }
+}

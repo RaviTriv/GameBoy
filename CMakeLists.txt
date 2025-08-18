@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(gameboy
+    src/lib/Bus.cpp
     src/lib/cartridge/Cartridge.cpp
     src/lib/cartridge/Mbc.cpp
     src/lib/cpu/Cpu.cpp
