@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./Instructions.h"
+
 #include <cstdint>
 #include <memory>
 
@@ -17,17 +19,18 @@ struct Registers
   uint16_t sp;
 };
 
-struct State
-{
-  struct Registers registers;
-};
-
 class CPU
 {
 public:
+  struct State
+  {
+    struct Registers registers;
+  };
   void step();
 
 private:
+  Instructions instruction;
+
   State state;
   void fetch();
   void decode();

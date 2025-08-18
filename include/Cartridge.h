@@ -43,19 +43,18 @@ struct RomHeader
   uint16_t globalChecksum;
 };
 
-struct State
-{
-  std::array<char, 1024> filename;
-  std::size_t romSize;
-  std::vector<uint8_t> romData;
-  std::vector<uint8_t> ramData;
-  std::unique_ptr<RomHeader> header;
-};
-
 class MBC;
 class Cartridge
 {
 public:
+  struct State
+  {
+    std::array<char, 1024> filename;
+    std::size_t romSize;
+    std::vector<uint8_t> romData;
+    std::vector<uint8_t> ramData;
+    std::unique_ptr<RomHeader> header;
+  };
   Cartridge(std::string_view romPath);
   uint8_t read(uint16_t address) const;
 
