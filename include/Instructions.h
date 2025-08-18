@@ -377,14 +377,3 @@ constexpr std::array<Instruction, 256> INSTRUCTIONS = {{
     {InstructionType::CP, AddressingMode::R_D8, RegisterType::A, RegisterType::NONE, ConditionType::NONE, 0},
     {InstructionType::RST, AddressingMode::IMP, RegisterType::NONE, RegisterType::NONE, ConditionType::NONE, 0x38}
 }};
-
-class Instructions
-{
-private:
-
-public:
-  constexpr const Instruction &getInstruction(uint8_t opcode)
-  {
-    return INSTRUCTIONS[opcode];
-  }
-};

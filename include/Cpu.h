@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Instructions.h"
+#include "./InstructionsDecoder.h"
 
 #include <cstdint>
 #include <memory>
@@ -29,7 +29,7 @@ public:
   void step();
 
 private:
-  Instructions instruction;
+  InstructionsDecoder decoder;
 
   State state;
   void fetch();
