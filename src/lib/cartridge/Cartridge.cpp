@@ -1,5 +1,5 @@
-#include "../../include/Cartridge.h"
-#include "../../include/Logger.h"
+#include "../../../include/Cartridge.h"
+#include "../../../include/Logger.h"
 
 Cartridge::Cartridge(std::string_view romPath)
 {
@@ -47,13 +47,60 @@ void Cartridge::loadCartridge(std::string_view romPath)
   cartridgeState.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
   cartridgeState.header->globalChecksum = (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
 
+  int romBanks = (cartridgeState.romSize / 0x4000);
+  int ramBanks = getRomBanksCount(cartridgeState.romData.at(0x149));
+
+  cartridgeState.ramData.resize(ramBanks * 0x2000);
+
+  switch (cartridgeState.header->type)
+  {
+  case CartridgeType::ROM_ONLY:
+    mbc = std::make_unique<MBC0>(cartridgeState.romData);
+    break;
+  // case CartridgeType::MBC1:
+  // case CartridgeType::MBC1_RAM:
+  // case CartridgeType::MBC1_RAM_BATTERY:
+  //   mbc = std::make_unique<MBC1>(cartridgeState.romData, cartridgeState.ramData, romBanks, ramBanks);
+  //   break;
+  default:
+    Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(cartridgeState.header->type));
+    break;
+  }
+
   Logger::GetLogger()
       ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", cartridgeState.header->title.data(), cartridgeState.header->version, cartridgeType(cartridgeState.header->type), cartridgeState.romSize);
 }
 
 uint8_t Cartridge::read(uint16_t address) const
 {
-  return cartridgeState.romData[address];
+  mbc->read(address);
+}
+
+int Cartridge::getRomBanksCount(uint8_t type) const
+{
+  switch (type)
+  {
+  case 0x00:
+    return 0;
+    break;
+  case 0x01:
+    return 0;
+    break;
+  case 0x02:
+    return 1;
+    break;
+  case 0x03:
+    return 4;
+    break;
+  case 0x04:
+    return 16;
+    break;
+  case 0x05:
+    return 8;
+    break;
+  default:
+    Logger::GetLogger()->error("Unknown RAM size for cartridge type: {}", static_cast<int>(type));
+  }
 }
 
 std::string Cartridge::cartridgeType(CartridgeType type)

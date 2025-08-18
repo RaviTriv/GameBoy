@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./Mbc.h"
+
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -50,6 +52,7 @@ struct CartridgeState
   std::unique_ptr<RomHeader> header;
 };
 
+class MBC;
 class Cartridge
 {
 public:
@@ -58,9 +61,11 @@ public:
 
 private:
   CartridgeState cartridgeState;
+  std::unique_ptr<MBC> mbc;
   static constexpr size_t ROM_HEADER_OFFSET = 0x100;
 
   void loadCartridge(std::string_view romPath);
 
+  int getRomBanksCount(uint8_t type) const;
   static std::string cartridgeType(CartridgeType type);
 };
