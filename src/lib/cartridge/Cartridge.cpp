@@ -15,60 +15,60 @@ void Cartridge::loadCartridge(std::string_view romPath)
     throw std::runtime_error("Failed to open cartridge.");
   }
 
-  cartridgeState.romSize = cartridge.tellg();
+  state.romSize = cartridge.tellg();
 
   cartridge.seekg(0, std::ios::beg);
 
-  cartridgeState.romData.resize(cartridgeState.romSize);
+  state.romData.resize(state.romSize);
 
-  if (!cartridge.read(reinterpret_cast<char *>(cartridgeState.romData.data()), cartridgeState.romSize))
+  if (!cartridge.read(reinterpret_cast<char *>(state.romData.data()), state.romSize))
   {
     throw std::runtime_error("Failed to load cartridge data.");
   };
 
-  cartridgeState.header = std::make_unique<RomHeader>();
+  state.header = std::make_unique<RomHeader>();
 
-  const uint8_t *rom = cartridgeState.romData.data();
+  const uint8_t *rom = state.romData.data();
 
-  std::copy_n(rom + ROM_HEADER_OFFSET, 4, cartridgeState.header->entry.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET, 4, state.header->entry.begin());
 
-  std::copy_n(rom + ROM_HEADER_OFFSET + 0x04, 0x30, cartridgeState.header->logo.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET + 0x04, 0x30, state.header->logo.begin());
 
-  std::copy_n(rom + ROM_HEADER_OFFSET + 0x34, 16, cartridgeState.header->title.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET + 0x34, 16, state.header->title.begin());
 
-  cartridgeState.header->newLicenseeCode = (rom[ROM_HEADER_OFFSET + 0x44] << 8) | rom[ROM_HEADER_OFFSET + 0x45];
-  cartridgeState.header->sgbFlag = rom[ROM_HEADER_OFFSET + 0x46];
-  cartridgeState.header->type = static_cast<CartridgeType>(rom[ROM_HEADER_OFFSET + 0x47]);
-  cartridgeState.header->romSize = rom[ROM_HEADER_OFFSET + 0x48];
-  cartridgeState.header->ramSize = rom[ROM_HEADER_OFFSET + 0x49];
-  cartridgeState.header->destCode = rom[ROM_HEADER_OFFSET + 0x4A];
-  cartridgeState.header->licenseeCode = rom[ROM_HEADER_OFFSET + 0x4B];
-  cartridgeState.header->version = rom[ROM_HEADER_OFFSET + 0x4C];
-  cartridgeState.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
-  cartridgeState.header->globalChecksum = (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
+  state.header->newLicenseeCode = (rom[ROM_HEADER_OFFSET + 0x44] << 8) | rom[ROM_HEADER_OFFSET + 0x45];
+  state.header->sgbFlag = rom[ROM_HEADER_OFFSET + 0x46];
+  state.header->type = static_cast<CartridgeType>(rom[ROM_HEADER_OFFSET + 0x47]);
+  state.header->romSize = rom[ROM_HEADER_OFFSET + 0x48];
+  state.header->ramSize = rom[ROM_HEADER_OFFSET + 0x49];
+  state.header->destCode = rom[ROM_HEADER_OFFSET + 0x4A];
+  state.header->licenseeCode = rom[ROM_HEADER_OFFSET + 0x4B];
+  state.header->version = rom[ROM_HEADER_OFFSET + 0x4C];
+  state.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
+  state.header->globalChecksum = (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
 
-  int romBanks = (cartridgeState.romSize / 0x4000);
-  int ramBanks = getRomBanksCount(cartridgeState.romData.at(0x149));
+  int romBanks = (state.romSize / 0x4000);
+  int ramBanks = getRomBanksCount(state.romData.at(0x149));
 
-  cartridgeState.ramData.resize(ramBanks * 0x2000);
+  state.ramData.resize(ramBanks * 0x2000);
 
-  switch (cartridgeState.header->type)
+  switch (state.header->type)
   {
   case CartridgeType::ROM_ONLY:
-    mbc = std::make_unique<MBC0>(cartridgeState.romData);
+    mbc = std::make_unique<MBC0>(state.romData);
     break;
   // case CartridgeType::MBC1:
   // case CartridgeType::MBC1_RAM:
   // case CartridgeType::MBC1_RAM_BATTERY:
-  //   mbc = std::make_unique<MBC1>(cartridgeState.romData, cartridgeState.ramData, romBanks, ramBanks);
+  //   mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks, ramBanks);
   //   break;
   default:
-    Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(cartridgeState.header->type));
+    Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(state.header->type));
     break;
   }
 
   Logger::GetLogger()
-      ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", cartridgeState.header->title.data(), cartridgeState.header->version, cartridgeType(cartridgeState.header->type), cartridgeState.romSize);
+      ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", state.header->title.data(), state.header->version, cartridgeType(state.header->type), state.romSize);
 }
 
 uint8_t Cartridge::read(uint16_t address) const

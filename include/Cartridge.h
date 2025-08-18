@@ -43,7 +43,7 @@ struct RomHeader
   uint16_t globalChecksum;
 };
 
-struct CartridgeState
+struct State
 {
   std::array<char, 1024> filename;
   std::size_t romSize;
@@ -60,7 +60,7 @@ public:
   uint8_t read(uint16_t address) const;
 
 private:
-  CartridgeState cartridgeState;
+  State state;
   std::unique_ptr<MBC> mbc;
   static constexpr size_t ROM_HEADER_OFFSET = 0x100;
 
