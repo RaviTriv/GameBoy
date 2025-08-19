@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./InstructionsDecoder.h"
+#include "./InstructionsExecuter.h"
 
 #include <cstdint>
 #include <memory>
@@ -20,7 +21,6 @@ struct Registers
   uint16_t sp;
 };
 
-class InstructionsDecoder;
 class Bus;
 class CPU
 {
@@ -28,6 +28,7 @@ public:
   struct State
   {
     struct Registers registers;
+    Instruction instruction;
     uint8_t opcode;
     uint16_t opValue;
     bool isMemoryOp;
@@ -44,6 +45,8 @@ private:
   CycleCallback cycleCallback;
   friend class InstructionsDecoder;
   InstructionsDecoder decoder;
+  friend class InstructionsExecuter;
+  InstructionsExecuter executer;
   std::shared_ptr<Bus> bus;
 
   State state;

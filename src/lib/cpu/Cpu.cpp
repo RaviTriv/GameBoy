@@ -2,7 +2,7 @@
 #include "../../../include/Bus.h"
 #include "../../../include/Logger.h"
 
-CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), bus(bus), decoder(this)
+CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), decoder(this), executer(this), bus(bus)
 {
   state.registers.a = 0xB001;
   state.registers.f = 0xB0;
@@ -24,6 +24,11 @@ void CPU::fetch()
 void CPU::decode()
 {
   decoder.decode(state.opcode);
+}
+
+void CPU::execute()
+{
+  executer.execute();
 }
 
 void CPU::step()
@@ -104,33 +109,33 @@ void CPU::setRegister8(RegisterType reg, uint8_t value)
   switch (reg)
   {
   case RegisterType::A:
-    cpuCtx.registers.a = value & BYTE_MASK;
+    state.registers.a = value & BYTE_MASK;
     break;
   case RegisterType::B:
-    cpuCtx.registers.b = value & BYTE_MASK;
+    state.registers.b = value & BYTE_MASK;
     break;
   case RegisterType::C:
-    cpuCtx.registers.c = value & BYTE_MASK;
+    state.registers.c = value & BYTE_MASK;
     break;
   case RegisterType::D:
-    cpuCtx.registers.d = value & BYTE_MASK;
+    state.registers.d = value & BYTE_MASK;
     break;
   case RegisterType::E:
-    cpuCtx.registers.e = value & BYTE_MASK;
+    state.registers.e = value & BYTE_MASK;
     break;
   case RegisterType::F:
-    cpuCtx.registers.f = value & BYTE_MASK;
+    state.registers.f = value & BYTE_MASK;
     break;
   case RegisterType::H:
-    cpuCtx.registers.h = value & BYTE_MASK;
+    state.registers.h = value & BYTE_MASK;
     break;
   case RegisterType::L:
-    cpuCtx.registers.l = value & BYTE_MASK;
+    state.registers.l = value & BYTE_MASK;
     break;
   case RegisterType::HL:
     bus->write8(readRegister16(RegisterType::HL), value);
     break;
-  case default:
+  default:
     throw std::runtime_error("Trying to write to invalid CPU register");
   }
 }
@@ -140,28 +145,28 @@ void CPU::setRegister16(RegisterType reg, uint16_t value)
   switch (reg)
   {
   case RegisterType::A:
-    cpuCtx.registers.a = value & BYTE_MASK;
+    state.registers.a = value & BYTE_MASK;
     break;
   case RegisterType::B:
-    cpuCtx.registers.b = value & BYTE_MASK;
+    state.registers.b = value & BYTE_MASK;
     break;
   case RegisterType::C:
-    cpuCtx.registers.c = value & BYTE_MASK;
+    state.registers.c = value & BYTE_MASK;
     break;
   case RegisterType::D:
-    cpuCtx.registers.d = value & BYTE_MASK;
+    state.registers.d = value & BYTE_MASK;
     break;
   case RegisterType::E:
-    cpuCtx.registers.e = value & BYTE_MASK;
+    state.registers.e = value & BYTE_MASK;
     break;
   case RegisterType::F:
-    cpuCtx.registers.f = value & BYTE_MASK;
+    state.registers.f = value & BYTE_MASK;
     break;
   case RegisterType::H:
-    cpuCtx.registers.h = value & BYTE_MASK;
+    state.registers.h = value & BYTE_MASK;
     break;
   case RegisterType::L:
-    cpuCtx.registers.l = value & BYTE_MASK;
+    state.registers.l = value & BYTE_MASK;
     break;
   case RegisterType::AF:
     state.registers.a = (value >> 8) & BYTE_MASK;
@@ -180,14 +185,14 @@ void CPU::setRegister16(RegisterType reg, uint16_t value)
     state.registers.l = value & BYTE_MASK;
     break;
   case RegisterType::SP:
-    cpuCtx.registers.sp = value;
+    state.registers.sp = value;
     break;
   case RegisterType::PC:
-    cpuCtx.registers.pc = value;
+    state.registers.pc = value;
     break;
   case RegisterType::NONE:
     throw std::runtime_error("Trying to write to invalid CPU register");
-  case default:
+  default:
     throw std::runtime_error("Trying to write to invalid CPU register");
   }
 }
