@@ -102,7 +102,7 @@ void InstructionsExecuter::add()
   }
 
   int z = (value & BYTE_MASK) == 0;
-  int h = (cpu->readRegister16(cpu->state.instruction->reg1) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
+  int h = (cpu->readRegister16(cpu->state.instruction->reg1) & NIBBLE_MASK) + (cpu->state.opValue & NIBBLE_MASK) >= 0x10;
   int c = (int)(cpu->readRegister16(cpu->state.instruction->reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
 
   if (is16BIT)
@@ -116,7 +116,7 @@ void InstructionsExecuter::add()
   if (cpu->state.instruction->reg1 == RegisterType::SP)
   {
     z = 0;
-    h = (cpu->readRegister16(cpu->state.instruction->reg1) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
+    h = (cpu->readRegister16(cpu->state.instruction->reg1) & NIBBLE_MASK) + (cpu->state.opValue & NIBBLE_MASK) >= 0x10;
     c = (int)(cpu->readRegister16(cpu->state.instruction->reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
   }
 
@@ -133,7 +133,7 @@ void InstructionsExecuter::adc()
   cpu->state.registers.a = (a + val + c) & BYTE_MASK;
 
   cpu->setFlags(cpu->state.registers.a == 0, 0,
-                (a & 0xF) + (val & 0xF) + c > 0xF,
+                (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                 a + val + c > BYTE_MASK);
 }
 
@@ -192,6 +192,36 @@ void InstructionsExecuter::inc()
   }
 
   cpu->setFlags(value == 0, 0, (value & 0x0F) == 0, -1);
+}
+
+void InstructionsExecuter::sub()
+{
+  uint16_t value = cpu->readRegister16(cpu->state.instruction->reg1) - cpu->state.opValue;
+
+  int z = value == 0;
+  int h = ((int)cpu->readRegister16(cpu->state.instruction->reg1) & NIBBLE_MASK) - ((int)cpu->state.opValue & NIBBLE_MASK) < 0;
+  int c = ((int)cpu->readRegister16(cpu->state.instruction->reg1)) - ((int)cpu->state.opValue) < 0;
+
+  cpu->setRegister16(cpu->state.instruction->reg1, value);
+  cpu->setFlags(z, 1, h, c);
+}
+
+void InstructionsExecuter::sbc()
+{
+  uint8_t value = cpu->state.opValue + cpu->FLAG_C();
+
+  int z = cpu->readRegister16(cpu->state.instruction->reg1) - value == 0;
+  int h = ((int)cpu->readRegister16(cpu->state.instruction->reg1) & NIBBLE_MASK) - ((int)cpu->state.opValue & NIBBLE_MASK) - ((int)cpu->FLAG_C()) < 0;
+  int c = ((int)cpu->readRegister16(cpu->state.instruction->reg1)) - ((int)cpu->state.opValue) - ((int)cpu->FLAG_C()) < 0;
+
+  cpu->setRegister16(cpu->state.instruction->reg1, cpu->readRegister16(cpu->state.instruction->reg1) - value);
+  cpu->setFlags(z, 1, h, c);
+}
+
+void InstructionsExecuter::cp()
+{
+  int tmp = (int)cpu->state.registers.a - (int)cpu->state.opValue;
+  cpu->setFlags(tmp == 0, 1, ((int)cpu->state.registers.a & 0x0F) - ((int)cpu->state.opValue & 0x0F) < 0, tmp < 0);
 }
 /*
 <---ARITHMETIC-END--->

@@ -11,6 +11,7 @@ constexpr uint8_t FLAG_Z_BIT = 7;
 constexpr uint8_t FLAG_N_BIT = 6;
 constexpr uint8_t FLAG_H_BIT = 5;
 constexpr uint8_t FLAG_C_BIT = 4;
+constexpr uint8_t NIBBLE_MASK = 0xF;
 
 struct Registers
 {
