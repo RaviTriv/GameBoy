@@ -16,10 +16,10 @@ public:
     bool isPaused;
     uint64_t ticks;
   };
-  GameBoy();
   void init(std::string romPath);
   void run();
 
+  void cycle(int cycles);
 private:
   State state;
   std::shared_ptr<Bus> bus;

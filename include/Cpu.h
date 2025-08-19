@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <functional>
 
 struct Registers
 {
@@ -19,17 +20,26 @@ struct Registers
   uint16_t sp;
 };
 
+class Bus;
 class CPU
 {
 public:
   struct State
   {
     struct Registers registers;
+    uint8_t currentOpcode;
   };
+
+  using CycleCallback = std::function<void(int)>;
+
+  CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus);
+
   void step();
 
 private:
+  CycleCallback cycleCallback;
   InstructionsDecoder decoder;
+  std::shared_ptr<Bus> bus;
 
   State state;
   void fetch();
