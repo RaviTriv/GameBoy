@@ -20,6 +20,7 @@ struct Registers
   uint16_t sp;
 };
 
+class InstructionsDecoder;
 class Bus;
 class CPU
 {
@@ -38,6 +39,7 @@ public:
 
 private:
   CycleCallback cycleCallback;
+  friend class InstructionsDecoder;
   InstructionsDecoder decoder;
   std::shared_ptr<Bus> bus;
 
@@ -45,4 +47,7 @@ private:
   void fetch();
   void decode();
   void execute();
+
+  uint8_t readRegister8(RegisterType reg) const;
+  uint16_t readRegister16(RegisterType reg) const;
 };

@@ -1,6 +1,7 @@
 #include "../../../include/InstructionsDecoder.h"
+#include "../../../include/Cpu.h"
 
-InstructionsDecoder::InstructionsDecoder(CycleCallback cycleCallback) : cycleCallback(cycleCallback) {};
+InstructionsDecoder::InstructionsDecoder(CPU *cpu) : cpu(cpu) {}
 
 const Instruction &InstructionsDecoder::getInstruction(uint8_t opcode)
 {
@@ -11,7 +12,7 @@ void InstructionsDecoder::decode(uint8_t opcode)
 {
   const Instruction &instruction = getInstruction(opcode);
 
-  cycleCallback(1);
+  cpu->cycleCallback(1);
 
   // TODO: reset
 
@@ -82,6 +83,6 @@ void InstructionsDecoder::decode(uint8_t opcode)
     return;
   }
   default:
-    throw std::runtime_error("UNKNOWN ADDRESSING MODE");
+    throw std::runtime_error("Unknown CPU addressing mode");
   }
 }

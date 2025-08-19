@@ -1,3 +1,5 @@
+#pragma once
+
 #include "./Instructions.h"
 
 #include <functional>
@@ -7,16 +9,16 @@ struct DecodedInstructionState
 {
 };
 
+class CPU;
 class InstructionsDecoder
 {
 public:
   void decode(uint8_t opcode);
-  using CycleCallback = std::function<void(int)>;
 
-  InstructionsDecoder(CycleCallback cycleCallback);
+  InstructionsDecoder(CPU *cpu);
 
 private:
-  CycleCallback cycleCallback;
+  CPU *cpu;
 
   static const Instruction &getInstruction(uint8_t opcode);
 };
