@@ -13,4 +13,13 @@ public:
 
 private:
   CPU *cpu;
+
+  // Arithmetic
+  void add();
+  void adc();
+  void cp();
+  void dec();
+  void inc();
+  void sub();
+  void sbc();
 };

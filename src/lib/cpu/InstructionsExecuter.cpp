@@ -82,3 +82,117 @@ void InstructionsExecuter::execute()
     throw std::runtime_error("Unknown Instruction Type");
   }
 }
+
+/*
+<---ARITHMETIC-START--->
+*/
+void InstructionsExecuter::add()
+{
+  uint32_t value = cpu->readRegister16(cpu->state.instruction->reg1) + cpu->state.opValue;
+  bool is16BIT = cpu->is16Bit(cpu->state.instruction->reg1);
+
+  if (is16BIT)
+  {
+    cpu->cycleCallback(1);
+  }
+
+  if (cpu->state.instruction->reg1 == RegisterType::SP)
+  {
+    value = cpu->readRegister16(cpu->state.instruction->reg1) + (int8_t)cpu->state.opValue;
+  }
+
+  int z = (value & BYTE_MASK) == 0;
+  int h = (cpu->readRegister16(cpu->state.instruction->reg1) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
+  int c = (int)(cpu->readRegister16(cpu->state.instruction->reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
+
+  if (is16BIT)
+  {
+    z = -1;
+    h = (cpu->readRegister16(cpu->state.instruction->reg1) & 0xFFF) + (cpu->state.opValue & 0xFFF) >= 0x1000;
+    uint32_t n = ((uint32_t)cpu->readRegister16(cpu->state.instruction->reg1)) + ((uint32_t)cpu->state.opValue);
+    c = n >= 0x10000;
+  }
+
+  if (cpu->state.instruction->reg1 == RegisterType::SP)
+  {
+    z = 0;
+    h = (cpu->readRegister16(cpu->state.instruction->reg1) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
+    c = (int)(cpu->readRegister16(cpu->state.instruction->reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
+  }
+
+  cpu->setRegister16(cpu->state.instruction->reg1, value & 0xFFFF);
+  cpu->setFlags(z, 0, h, c);
+}
+
+void InstructionsExecuter::adc()
+{
+  uint16_t val = cpu->state.opValue;
+  uint16_t a = cpu->state.registers.a;
+  uint16_t c = cpu->FLAG_C();
+
+  cpu->state.registers.a = (a + val + c) & BYTE_MASK;
+
+  cpu->setFlags(cpu->state.registers.a == 0, 0,
+                (a & 0xF) + (val & 0xF) + c > 0xF,
+                a + val + c > BYTE_MASK);
+}
+
+void InstructionsExecuter::dec()
+{
+  uint16_t value = cpu->readRegister16(cpu->state.instruction->reg1) - 1;
+
+  if (cpu->is16Bit(cpu->state.instruction->reg1))
+  {
+    cpu->cycleCallback(1);
+  }
+
+  if (cpu->state.instruction->reg1 == RegisterType::HL && cpu->state.instruction->addressMode == AddressingMode::MR)
+  {
+    value = cpu->bus->read8(cpu->readRegister16(RegisterType::HL)) - 1;
+    cpu->bus->write8(cpu->readRegister16(RegisterType::HL), value);
+  }
+  else
+  {
+    cpu->setRegister16(cpu->state.instruction->reg1, value);
+    value = cpu->readRegister16(cpu->state.instruction->reg1);
+  }
+
+  if ((cpu->state.opcode & 0x0B) == 0x0B)
+  {
+    return;
+  }
+
+  cpu->setFlags(value == 0, 1, (value & 0x0F) == 0x0F, -1);
+}
+
+void InstructionsExecuter::inc()
+{
+  uint16_t value = cpu->readRegister16(cpu->state.instruction->reg1) + 1;
+
+  if (cpu->is16Bit(cpu->state.instruction->reg1))
+  {
+    cpu->cycleCallback(1);
+  }
+
+  if (cpu->state.instruction->reg1 == RegisterType::HL && cpu->state.instruction->addressMode == AddressingMode::MR)
+  {
+    value = cpu->bus->read8(cpu->readRegister16(RegisterType::HL)) + 1;
+    value &= BYTE_MASK;
+    cpu->bus->write8(cpu->readRegister16(RegisterType::HL), value);
+  }
+  else
+  {
+    cpu->setRegister16(cpu->state.instruction->reg1, value);
+    value = cpu->readRegister16(cpu->state.instruction->reg1);
+  }
+
+  if ((cpu->state.opcode & 0x03) == 0x03)
+  {
+    return;
+  }
+
+  cpu->setFlags(value == 0, 0, (value & 0x0F) == 0, -1);
+}
+/*
+<---ARITHMETIC-END--->
+*/
