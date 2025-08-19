@@ -7,6 +7,11 @@
 #include <memory>
 #include <functional>
 
+constexpr uint8_t FLAG_Z_BIT = 7;
+constexpr uint8_t FLAG_N_BIT = 6;
+constexpr uint8_t FLAG_H_BIT = 5;
+constexpr uint8_t FLAG_C_BIT = 4;
+
 struct Registers
 {
   uint8_t a;
@@ -58,4 +63,6 @@ private:
   uint16_t readRegister16(RegisterType reg) const;
   void setRegister8(RegisterType reg, uint8_t value);
   void setRegister16(RegisterType reg, uint16_t value);
+  void setBit(uint8_t value, uint8_t bit);
+  void setFlags(int z, int n, int h, int c);
 };

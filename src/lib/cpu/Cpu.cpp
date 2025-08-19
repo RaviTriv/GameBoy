@@ -196,3 +196,38 @@ void CPU::setRegister16(RegisterType reg, uint16_t value)
     throw std::runtime_error("Trying to write to invalid CPU register");
   }
 }
+
+void CPU::setBit(uint8_t value, uint8_t bit)
+{
+  if (value)
+  {
+    state.registers.f |= (1 << bit);
+  }
+  else
+  {
+    state.registers.f &= ~(1 << bit);
+  }
+}
+
+void CPU::setFlags(int z, int n, int h, int c)
+{
+  if (z != -1)
+  {
+    setBit(z, FLAG_Z_BIT);
+  }
+
+  if (n != -1)
+  {
+    setBit(n, FLAG_N_BIT);
+  }
+
+  if (h != -1)
+  {
+    setBit(h, FLAG_H_BIT);
+  }
+
+  if (c != -1)
+  {
+    setBit(c, FLAG_C_BIT);
+  }
+}
