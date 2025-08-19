@@ -28,7 +28,10 @@ public:
   struct State
   {
     struct Registers registers;
-    uint8_t currentOpcode;
+    uint8_t opcode;
+    uint16_t opValue;
+    bool isMemoryOp;
+    uint16_t memoryAddress;
   };
 
   using CycleCallback = std::function<void(int)>;
@@ -50,4 +53,6 @@ private:
 
   uint8_t readRegister8(RegisterType reg) const;
   uint16_t readRegister16(RegisterType reg) const;
+  void setRegister8(RegisterType reg, uint8_t value);
+  void setRegister16(RegisterType reg, uint16_t value);
 };

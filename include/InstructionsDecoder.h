@@ -2,21 +2,15 @@
 
 #include "./Instructions.h"
 
-#include <functional>
 #include <memory>
-
-struct DecodedInstructionState
-{
-};
 
 class CPU;
 class InstructionsDecoder
 {
 public:
-  void decode(uint8_t opcode);
-
   InstructionsDecoder(CPU *cpu);
 
+  void decode(uint8_t opcode);
 private:
   CPU *cpu;
 
