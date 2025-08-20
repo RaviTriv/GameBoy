@@ -1,7 +1,8 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
+#include "../../include/Ram.h"
 
-Bus::Bus(std::shared_ptr<Cartridge> cartridge) : cartridge(cartridge)
+Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<RAM> ram) : cartridge(cartridge), ram(ram)
 {
 }
 
@@ -22,7 +23,7 @@ uint8_t Bus::read8(uint16_t address)
   }
   else if (address < 0xE000)
   {
-    // Work RAM
+    return ram->readWRAM(address);
   }
   else if (address < 0xFE00)
   {
@@ -46,7 +47,7 @@ uint8_t Bus::read8(uint16_t address)
   {
     // Interrupt Enable Register
   }
-  // HRAM
+  return ram->readHRAM(address);
 }
 
 void Bus::write8(uint16_t address, uint8_t value)
@@ -65,7 +66,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   }
   else if (address < 0xE000)
   {
-    // Work RAM
+    ram->writeWRAM(address, value);
   }
   else if (address < 0xFE00)
   {
@@ -87,6 +88,6 @@ void Bus::write8(uint16_t address, uint8_t value)
   }
   else
   {
-    // HRAM
+    ram->writeHRAM(address, value);
   }
 }

@@ -8,7 +8,8 @@ void GameBoy::init(std::string romPath)
 {
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
-  bus = std::make_unique<Bus>(cartridge);
+  ram = std::make_unique<RAM>();
+  bus = std::make_unique<Bus>(cartridge, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);

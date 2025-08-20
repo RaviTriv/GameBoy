@@ -7,6 +7,7 @@
 class Bus;
 class Cartridge;
 class CPU;
+class RAM;
 class GameBoy : public std::enable_shared_from_this<GameBoy>
 {
 public:
@@ -25,4 +26,5 @@ private:
   std::shared_ptr<Bus> bus;
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
+  std::shared_ptr<RAM> ram;
 };
