@@ -22,4 +22,12 @@ private:
   void inc();
   void sub();
   void sbc();
+
+  // Bitwise
+  void bitAnd();
+  void bitOr();
+  void bitXor();
+  void bitCpl();
+  void bitCb();
+  
 };

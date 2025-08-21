@@ -72,4 +72,5 @@ private:
   int FLAG_N() const;
   int FLAG_H() const;
   int FLAG_C() const;
+  RegisterType decodeRegister(uint8_t value);
 };

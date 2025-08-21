@@ -227,3 +227,154 @@ void InstructionsExecuter::cp()
 /*
 <---ARITHMETIC-END--->
 */
+
+/*
+<---BITWISE-START--->
+*/
+
+void InstructionsExecuter::bitAnd()
+{
+  cpu->state.registers.a &= cpu->state.opValue;
+
+  cpu->setFlags(cpu->state.registers.a == 0, 0, 1, 0);
+}
+
+void InstructionsExecuter::bitOr()
+{
+  cpu->state.registers.a |= cpu->state.opValue & BYTE_MASK;
+
+  cpu->setFlags(cpu->state.registers.a == 0, 0, 0, 0);
+}
+
+void InstructionsExecuter::bitXor()
+{
+  cpu->state.registers.a ^= cpu->state.opValue & BYTE_MASK;
+  cpu->setFlags(cpu->state.registers.a == 0, 0, 0, 0);
+}
+
+void InstructionsExecuter::bitCpl()
+{
+  cpu->state.registers.a = ~cpu->state.registers.a;
+  cpu->setFlags(-1, 1, 1, -1);
+}
+
+void InstructionsExecuter::bitCb()
+{
+  uint8_t opcode = cpu->state.opValue;
+  RegisterType reg = cpu->decodeRegister(opcode & 0b111);
+  uint8_t bit = (opcode >> 3) & 0b111;
+  uint8_t bitOpcode = (opcode >> 6) & 0b11;
+  uint8_t registerValue = cpu->readRegister8(reg);
+
+  cpu->cycleCallback(1);
+
+  if (reg == RegisterType::HL)
+  {
+    cpu->cycleCallback(2);
+  }
+
+  switch (bitOpcode)
+  {
+  case 1:
+    cpu->setFlags(!(registerValue & (1 << bit)), 0, 1, -1);
+    return;
+  case 2:
+    registerValue &= ~(1 << bit);
+    cpu->setRegister8(reg, registerValue);
+    return;
+  case 3:
+    registerValue |= (1 << bit);
+    cpu->setRegister8(reg, registerValue);
+    return;
+  }
+
+  bool flagc = cpu->FLAG_C();
+
+  switch (bit)
+  {
+  case 0:
+  {
+    bool setC = false;
+    uint8_t result = (registerValue << 1) & BYTE_MASK;
+
+    if ((registerValue & (1 << 7)) != 0)
+    {
+      result |= 1;
+      setC = true;
+    }
+
+    cpu->setRegister8(reg, result);
+    cpu->setFlags(result == 0, false, false, setC);
+  }
+    return;
+
+  case 1:
+  {
+    uint8_t old = registerValue;
+    registerValue >>= 1;
+    registerValue |= (old << 7);
+    cpu->setRegister8(reg, registerValue);
+    cpu->setFlags(!registerValue, false, false, old & 1);
+  }
+    return;
+
+  case 2:
+  {
+    uint8_t old = registerValue;
+    registerValue <<= 1;
+    registerValue |= flagc;
+
+    cpu->setRegister8(reg, registerValue);
+    cpu->setFlags(!registerValue, false, false, !!(old & 0x80));
+  }
+    return;
+
+  case 3:
+  {
+    uint8_t old = registerValue;
+    registerValue >>= 1;
+    registerValue |= (flagc << 7);
+    cpu->setRegister8(reg, registerValue);
+    cpu->setFlags(!registerValue, false, false, old & 1);
+  }
+    return;
+
+  case 4:
+  {
+    uint8_t old = registerValue;
+    registerValue <<= 1;
+
+    cpu->setRegister8(reg, registerValue);
+    cpu->setFlags(!registerValue, false, false, !!(old & 0x80));
+  }
+    return;
+
+  case 5:
+  {
+    uint8_t u = (int8_t)registerValue >> 1;
+    cpu->setRegister8(reg, u);
+    cpu->setFlags(!u, 0, 0, registerValue & 1);
+  }
+    return;
+
+  case 6:
+  {
+    registerValue = ((registerValue & 0xF0) >> 4) | ((registerValue & 0xF) << 4);
+    cpu->setRegister8(reg, registerValue);
+    cpu->setFlags(registerValue == 0, false, false, false);
+  }
+    return;
+
+  case 7:
+  {
+    uint8_t u = registerValue >> 1;
+    cpu->setRegister8(reg, u);
+    cpu->setFlags(!u, 0, 0, registerValue & 1);
+  }
+    return;
+  }
+}
+
+/*
+<---BITWISE-END--->
+*/

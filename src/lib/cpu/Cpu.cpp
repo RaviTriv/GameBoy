@@ -2,6 +2,16 @@
 #include "../../../include/Bus.h"
 #include "../../../include/Logger.h"
 
+RegisterType registerLookup[] = {
+    RegisterType::B,
+    RegisterType::C,
+    RegisterType::D,
+    RegisterType::E,
+    RegisterType::H,
+    RegisterType::L,
+    RegisterType::HL,
+    RegisterType::A};
+
 CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), decoder(this), executer(this), bus(bus)
 {
   state.registers.a = 0xB001;
@@ -242,3 +252,12 @@ int CPU::FLAG_Z() const { return isFlagSet(state.registers.f, FLAG_Z_BIT); }
 int CPU::FLAG_N() const { return isFlagSet(state.registers.f, FLAG_N_BIT); }
 int CPU::FLAG_H() const { return isFlagSet(state.registers.f, FLAG_H_BIT); }
 int CPU::FLAG_C() const { return isFlagSet(state.registers.f, FLAG_C_BIT); }
+
+RegisterType CPU::decodeRegister(uint8_t value)
+{
+  if (value > 0b111)
+  {
+    return RegisterType::NONE;
+  }
+  return registerLookup[value];
+}
