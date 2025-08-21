@@ -60,10 +60,16 @@ private:
   void decode();
   void execute();
 
+  void stackPush8(uint8_t value);
+  void stackPush16(uint16_t value);
+  uint8_t stackPop8();
+  uint16_t stackPop16();
+
   uint8_t readRegister8(RegisterType reg) const;
   uint16_t readRegister16(RegisterType reg) const;
   void setRegister8(RegisterType reg, uint8_t value);
   void setRegister16(RegisterType reg, uint16_t value);
+
   void setBit(uint8_t value, uint8_t bit);
   void setFlags(int z, int n, int h, int c);
   bool is16Bit(RegisterType reg);
@@ -73,4 +79,6 @@ private:
   int FLAG_H() const;
   int FLAG_C() const;
   RegisterType decodeRegister(uint8_t value);
+  bool conditionCheck() const;
+  void jumpToAddress(uint16_t addr, bool pushPC);
 };

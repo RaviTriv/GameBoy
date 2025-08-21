@@ -207,6 +207,35 @@ void CPU::setRegister16(RegisterType reg, uint16_t value)
   }
 }
 
+void CPU::stackPush8(uint8_t value)
+{
+  uint16_t sp = state.registers.sp - 1;
+  setRegister16(RegisterType::SP, sp);
+  bus->write8(sp, value);
+}
+
+void CPU::stackPush16(uint16_t value)
+{
+  stackPush8((value >> 8) & 0xFF);
+  stackPush8(value & 0xFF);
+}
+
+uint8_t CPU::stackPop8()
+{
+  uint16_t sp = state.registers.sp;
+  uint8_t value = bus->read8(sp);
+  setRegister16(RegisterType::SP, sp + 1);
+  return value;
+}
+
+uint16_t CPU::stackPop16()
+{
+  uint16_t low = stackPop8();
+  uint16_t high = stackPop8();
+
+  return (high << 8) | low;
+}
+
 void CPU::setBit(uint8_t value, uint8_t bit)
 {
   if (value)
@@ -260,4 +289,42 @@ RegisterType CPU::decodeRegister(uint8_t value)
     return RegisterType::NONE;
   }
   return registerLookup[value];
+}
+
+bool CPU::conditionCheck() const
+{
+  switch (state.instruction.condition)
+  {
+  case ConditionType::NONE:
+    return true;
+  case ConditionType::C:
+    return FLAG_C();
+  case ConditionType::NC:
+    return !FLAG_C();
+  case ConditionType::Z:
+    return FLAG_Z();
+  case ConditionType::NZ:
+    return !FLAG_Z();
+  default:
+    throw std::runtime_error("Unknown condition type");
+  }
+
+  return false;
+}
+
+void CPU::jumpToAddress(uint16_t addr, bool pushPC)
+{
+  if (!conditionCheck())
+  {
+    return;
+  }
+
+  if (pushPC)
+  {
+    cycleCallback(2);
+    stackPush16(state.registers.pc);
+  }
+
+  state.registers.pc = addr;
+  cycleCallback(1);
 }
