@@ -2,6 +2,7 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
+#include "../../include/Ram.h"
 #include "../../include/Logger.h"
 
 void GameBoy::init(std::string romPath)

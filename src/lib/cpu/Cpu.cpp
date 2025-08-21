@@ -231,3 +231,14 @@ void CPU::setFlags(int z, int n, int h, int c)
     setBit(c, FLAG_C_BIT);
   }
 }
+
+bool CPU::is16Bit(RegisterType reg)
+{
+  return reg >= RegisterType::AF;
+}
+
+bool CPU::isFlagSet(uint8_t flags, uint8_t bit) const { return (flags & (1 << bit)) != 0; }
+int CPU::FLAG_Z() const { return isFlagSet(state.registers.f, FLAG_Z_BIT); }
+int CPU::FLAG_N() const { return isFlagSet(state.registers.f, FLAG_N_BIT); }
+int CPU::FLAG_H() const { return isFlagSet(state.registers.f, FLAG_H_BIT); }
+int CPU::FLAG_C() const { return isFlagSet(state.registers.f, FLAG_C_BIT); }
