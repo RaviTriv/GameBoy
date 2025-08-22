@@ -24,11 +24,15 @@ CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(
   state.registers.l = 0x4D;
   state.registers.sp = 0xFFFE;
   state.registers.pc = 0x0100;
+  state.ie = 0x00;
+  state.intf = 0;
+  state.imeScheduled = false;
+  state.ime = false;
 };
 
 void CPU::fetch()
 {
-  state.opcode = bus->read8(state.registers.pc);
+  state.opcode = bus->read8(state.registers.pc++);
 }
 
 void CPU::decode()
@@ -46,6 +50,7 @@ void CPU::step()
   if (!state.halted)
   {
     fetch();
+    Logger::GetLogger()->info("Fetched opcode: 0x{:02X} at PC: 0x{:04X}", state.opcode, state.registers.pc);
     decode();
     execute();
   }

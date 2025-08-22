@@ -188,7 +188,7 @@ void InstructionsDecoder::decode(uint8_t opcode)
   }
   case AddressingMode::NONE:
   {
-    throw std::runtime_error("Unknown CPU addressing mode");
+    return;
   }
   default:
     throw std::runtime_error("Unknown CPU addressing mode");
