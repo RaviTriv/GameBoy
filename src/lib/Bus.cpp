@@ -50,6 +50,13 @@ uint8_t Bus::read8(uint16_t address)
   return ram->readHRAM(address);
 }
 
+uint16_t Bus::read16(uint16_t address)
+{
+  uint8_t low = read8(address);
+  uint8_t high = read8(address + 1);
+  return low | (high << 8);
+}
+
 void Bus::write8(uint16_t address, uint8_t value)
 {
   if (address < 0x8000)
@@ -90,4 +97,10 @@ void Bus::write8(uint16_t address, uint8_t value)
   {
     ram->writeHRAM(address, value);
   }
+}
+
+void Bus::write16(uint16_t address, uint16_t value)
+{
+  write8(address + 1, (value >> 8) & 0xFF);
+  write8(address, value & 0xFF);
 }

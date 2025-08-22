@@ -73,7 +73,7 @@ void Cartridge::loadCartridge(std::string_view romPath)
 
 uint8_t Cartridge::read(uint16_t address) const
 {
-  mbc->read(address);
+  return mbc->read(address);
 }
 
 int Cartridge::getRomBanksCount(uint8_t type) const

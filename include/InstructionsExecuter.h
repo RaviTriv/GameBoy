@@ -23,6 +23,10 @@ private:
   void sub();
   void sbc();
 
+  // Load
+  void ld();
+  void ldh();
+
   // Bitwise
   void bitAnd();
   void bitOr();

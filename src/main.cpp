@@ -9,5 +9,6 @@ int main(int argc, char **argv)
 
   GameBoy gameboy;
   gameboy.init(std::string(argv[1]));
+  gameboy.run();
   return 0;
 }

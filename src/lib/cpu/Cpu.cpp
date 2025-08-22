@@ -43,7 +43,31 @@ void CPU::execute()
 
 void CPU::step()
 {
-  fetch();
+  if (!state.halted)
+  {
+    fetch();
+    decode();
+    execute();
+  }
+  else
+  {
+    cycleCallback(1);
+    if (state.intf)
+    {
+      state.halted = false;
+    }
+  }
+
+  if (state.ime)
+  {
+    // TODO: Handle interrupts
+    state.imeScheduled = false;
+  }
+
+  if (state.imeScheduled)
+  {
+    state.ime = true;
+  }
 }
 
 uint8_t CPU::readRegister8(RegisterType reg) const

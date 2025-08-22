@@ -13,68 +13,100 @@ void InstructionsExecuter::execute()
     cpu->cycleCallback(1);
     break;
   case InstructionType::XOR:
+    bitXor();
     break;
   case InstructionType::JP:
+    jp();
     break;
   case InstructionType::DI:
+    di();
     break;
   case InstructionType::JR:
+    jr();
     break;
   case InstructionType::CALL:
+    call();
     break;
   case InstructionType::LD:
+    ld();
     break;
   case InstructionType::LDH:
+    ldh();
     break;
   case InstructionType::POP:
+    pop();
     break;
   case InstructionType::PUSH:
+    push();
     break;
   case InstructionType::RET:
+    ret();
     break;
   case InstructionType::RETI:
+    reti();
     break;
   case InstructionType::RST:
+    rst();
     break;
   case InstructionType::INC:
+    inc();
     break;
   case InstructionType::DEC:
+    dec();
     break;
   case InstructionType::ADD:
+    add();
     break;
   case InstructionType::ADC:
+    adc();
     break;
   case InstructionType::SUB:
+    sub();
     break;
   case InstructionType::SBC:
+    sbc();
     break;
   case InstructionType::AND:
+    bitAnd();
     break;
   case InstructionType::OR:
+    bitOr();
     break;
   case InstructionType::CP:
+    cp();
     break;
   case InstructionType::CB:
+    bitCb();
     break;
   case InstructionType::RLCA:
+    rlca();
     break;
   case InstructionType::RRCA:
+    rrca();
     break;
   case InstructionType::RLA:
+    rla();
     break;
   case InstructionType::RRA:
+    rra();
     break;
   case InstructionType::DAA:
+    daa();
     break;
   case InstructionType::CPL:
+    bitCpl();
     break;
   case InstructionType::SCF:
+    scf();
     break;
   case InstructionType::CCF:
+    ccf();
     break;
   case InstructionType::EI:
+    ei();
     break;
   case InstructionType::HALT:
+    halt();
     break;
   case InstructionType::NONE:
     throw std::runtime_error("Unknown Instruction Type");
@@ -226,6 +258,58 @@ void InstructionsExecuter::cp()
 }
 /*
 <---ARITHMETIC-END--->
+*/
+
+/*
+<---LOAD-START--->
+*/
+
+void InstructionsExecuter::ld()
+{
+  if (cpu->state.isMemoryOp)
+  {
+    if (cpu->is16Bit(cpu->state.instruction.reg2))
+    {
+      cpu->cycleCallback(1);
+      cpu->bus->write16(cpu->state.memoryAddress, cpu->state.opValue);
+    }
+    else
+    {
+      cpu->bus->write8(cpu->state.memoryAddress, cpu->state.opValue);
+    }
+    cpu->cycleCallback(1);
+    return;
+  }
+
+  if (cpu->state.instruction.addressMode == AddressingMode::HL_SPR)
+  {
+    uint8_t H =
+        (cpu->readRegister16(cpu->state.instruction.reg2) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
+    uint8_t C = (cpu->readRegister16(cpu->state.instruction.reg2) & BYTE_MASK) +
+                    (cpu->state.opValue & BYTE_MASK) >=
+                0x100;
+    cpu->setFlags(0, 0, H, C);
+    cpu->setRegister16(cpu->state.instruction.reg1, cpu->readRegister16(cpu->state.instruction.reg2) + (char)cpu->state.opValue);
+    return;
+  }
+  cpu->setRegister16(cpu->state.instruction.reg1, cpu->state.opValue);
+}
+
+void InstructionsExecuter::ldh()
+{
+  if (cpu->state.instruction.reg1 == RegisterType::A)
+  {
+    cpu->setRegister16(RegisterType::A, cpu->bus->read8(0xFF00 | cpu->state.opValue));
+  }
+  else
+  {
+    cpu->bus->write8(cpu->state.memoryAddress, cpu->state.registers.a);
+  }
+  cpu->cycleCallback(1);
+}
+
+/*
+<---LOAD-END--->
 */
 
 /*

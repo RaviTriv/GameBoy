@@ -14,6 +14,16 @@ void GameBoy::init(std::string romPath)
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);
+
+  state.isRunning = true;
+}
+
+void GameBoy::run()
+{
+  while (state.isRunning)
+  {
+    cpu->step();
+  }
 }
 
 void GameBoy::cycle(int cycles)
