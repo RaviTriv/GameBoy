@@ -7,6 +7,7 @@
 class Bus;
 class Cartridge;
 class CPU;
+class IO;
 class RAM;
 class GameBoy : public std::enable_shared_from_this<GameBoy>
 {
@@ -21,10 +22,12 @@ public:
   void run();
 
   void cycle(int cycles);
+
 private:
   State state;
   std::shared_ptr<Bus> bus;
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
+  std::shared_ptr<IO> io;
   std::shared_ptr<RAM> ram;
 };

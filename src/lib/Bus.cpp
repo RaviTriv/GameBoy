@@ -1,8 +1,9 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
+#include "../../include/Io.h"
 #include "../../include/Ram.h"
 
-Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<RAM> ram) : cartridge(cartridge), ram(ram)
+Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<IO> io, std::shared_ptr<RAM> ram) : cartridge(cartridge), io(io), ram(ram)
 {
 }
 
@@ -42,6 +43,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xFF80)
   {
     // I/O Registers
+    return io->read(address);
   }
   else if (address == 0xFFFF)
   {
@@ -88,6 +90,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address < 0xFF80)
   {
     // I/O Registers
+    io->write(address, value);
   }
   else if (address == 0xFFFF)
   {

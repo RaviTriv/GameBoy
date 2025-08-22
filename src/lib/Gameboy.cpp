@@ -2,6 +2,7 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
+#include "../../include/Io.h"
 #include "../../include/Ram.h"
 #include "../../include/Logger.h"
 
@@ -10,7 +11,8 @@ void GameBoy::init(std::string romPath)
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
   ram = std::make_unique<RAM>();
-  bus = std::make_unique<Bus>(cartridge, ram);
+  io = std::make_unique<IO>();
+  bus = std::make_unique<Bus>(cartridge, io, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);

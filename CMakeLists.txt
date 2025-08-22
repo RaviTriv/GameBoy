@@ -15,6 +15,7 @@ add_executable(gameboy
     src/lib/cpu/InstructionsDecoder.cpp
     src/lib/cpu/InstructionsExecuter.cpp
     src/lib/Gameboy.cpp
+    src/lib/Io.cpp
     src/lib/Ram.cpp
     src/main.cpp
 )
