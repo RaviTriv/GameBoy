@@ -378,3 +378,64 @@ void InstructionsExecuter::bitCb()
 /*
 <---BITWISE-END--->
 */
+
+/*
+<---JUMP-START--->
+*/
+
+void InstructionsExecuter::jp()
+{
+  cpu->jumpToAddress(cpu->state.opValue, false);
+}
+
+void InstructionsExecuter::jr()
+{
+  int8_t rel = (int8_t)(cpu->state.opValue & BYTE_MASK);
+  uint16_t updatedPC = cpu->state.registers.pc + rel;
+  cpu->jumpToAddress(updatedPC, false);
+}
+
+void InstructionsExecuter::call()
+{
+  cpu->jumpToAddress(cpu->state.opValue, true);
+}
+
+/*
+<---JUMP-END--->
+*/
+
+/*
+<---STACK-START--->
+*/
+
+void InstructionsExecuter::pop()
+{
+  uint16_t low = cpu->stackPop8();
+  cpu->cycleCallback(1);
+  uint16_t high = cpu->stackPop8();
+  cpu->cycleCallback(1);
+
+  uint16_t n = (high << 8) | low;
+
+  cpu->setRegister16(cpu->state.instruction.reg1, n);
+
+  if (cpu->state.instruction.reg1 == RegisterType::AF)
+  {
+    cpu->setRegister16(cpu->state.instruction.reg1, n & 0xFFF0);
+  }
+}
+
+void InstructionsExecuter::push()
+{
+  uint16_t high = (cpu->readRegister16(cpu->state.instruction.reg1) >> 8) & BYTE_MASK;
+  cpu->cycleCallback(1);
+  cpu->stackPush8(high);
+  uint16_t low = cpu->readRegister16(cpu->state.instruction.reg1) & BYTE_MASK;
+  cpu->cycleCallback(1);
+  cpu->stackPush8(low);
+  cpu->cycleCallback(1);
+}
+
+/*
+<---STACK-END--->
+*/

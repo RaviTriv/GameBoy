@@ -29,5 +29,14 @@ private:
   void bitXor();
   void bitCpl();
   void bitCb();
+
+  // Jump / Call
+  void jp();
+  void jr();
+  void call();
+
+  // Stack
+  void pop();
+  void push();
   
 };
