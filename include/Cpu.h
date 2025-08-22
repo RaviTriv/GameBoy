@@ -43,6 +43,7 @@ public:
     bool imeScheduled;
     uint8_t ie;
     uint8_t intf;
+    bool halted;
   };
 
   using CycleCallback = std::function<void(int)>;

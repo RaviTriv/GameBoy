@@ -53,4 +53,10 @@ private:
   // Interrupt
   void di();
   void ei();
+
+  // Control
+  void ret();
+  void reti();
+  void rst();
+  void halt();
 };

@@ -543,3 +543,48 @@ void InstructionsExecuter::ei()
 /*
 <---INTERRUPT-END--->
 */
+
+/*
+<---CONTROL-START--->
+*/
+
+void InstructionsExecuter::ret()
+{
+  if (cpu->state.instruction.condition != ConditionType::NONE)
+  {
+    cpu->cycleCallback(1);
+  }
+
+  if (cpu->conditionCheck())
+  {
+    uint16_t low = cpu->stackPop8();
+    cpu->cycleCallback(1);
+    uint16_t high = cpu->stackPop8();
+    cpu->cycleCallback(1);
+
+    uint16_t res = (high << 8) | low;
+    cpu->state.registers.pc = res;
+
+    cpu->cycleCallback(1);
+  }
+}
+
+void InstructionsExecuter::reti()
+{
+  cpu->state.ime = true;
+  ret();
+}
+
+void InstructionsExecuter::rst()
+{
+  cpu->jumpToAddress(cpu->state.instruction.parameter, true);
+}
+
+void InstructionsExecuter::halt()
+{
+  cpu->state.halted = true;
+}
+
+/*
+<---CONTROL-END--->
+*/
