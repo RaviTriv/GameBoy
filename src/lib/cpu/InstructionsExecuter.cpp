@@ -439,3 +439,107 @@ void InstructionsExecuter::push()
 /*
 <---STACK-END--->
 */
+/*
+<---BIT-SHIFT-START--->
+*/
+
+void InstructionsExecuter::rlca()
+{
+  uint8_t u = cpu->state.registers.a;
+  bool c = (u >> 7) & 1;
+  u = (u << 1) | c;
+  cpu->state.registers.a = u;
+
+  cpu->setFlags(0, 0, 0, c);
+}
+
+void InstructionsExecuter::rrca()
+{
+  uint8_t b = cpu->state.registers.a & 1;
+  cpu->state.registers.a >>= 1;
+  cpu->state.registers.a |= (b << 7);
+
+  cpu->setFlags(0, 0, 0, b);
+}
+
+void InstructionsExecuter::rla()
+{
+  uint8_t u = cpu->state.registers.a;
+  uint8_t cf = cpu->FLAG_C();
+  uint8_t c = (u >> 7) & 1;
+
+  cpu->state.registers.a = (u << 1) | cf;
+  cpu->setFlags(0, 0, 0, c);
+}
+
+void InstructionsExecuter::rra()
+{
+  uint8_t carry = cpu->FLAG_C();
+  uint8_t new_c = cpu->state.registers.a & 1;
+
+  cpu->state.registers.a >>= 1;
+  cpu->state.registers.a |= (carry << 7);
+
+  cpu->setFlags(0, 0, 0, new_c);
+}
+
+void InstructionsExecuter::daa()
+{
+  uint8_t u = 0;
+  int c = 0;
+
+  if (cpu->FLAG_H() || (!cpu->FLAG_N() && (cpu->state.registers.a & 0xF) > 9))
+  {
+    u = 6;
+  }
+
+  if (cpu->FLAG_C() || (!cpu->FLAG_N() && cpu->state.registers.a > 0x99))
+  {
+    u |= 0x60;
+    c = 1;
+  }
+
+  cpu->state.registers.a += cpu->FLAG_N() ? -u : u;
+
+  cpu->setFlags(cpu->state.registers.a == 0, -1, 0, c);
+}
+
+/*
+<---BIT-SHIFT-END--->
+*/
+
+/*
+<---BIT-FLAG-START--->
+*/
+
+void InstructionsExecuter::scf()
+{
+  cpu->setFlags(-1, 0, 0, 1);
+}
+
+void InstructionsExecuter::ccf()
+{
+  cpu->setFlags(-1, 0, 0, cpu->FLAG_C() ^ 1);
+}
+
+/*
+<---BIT-FLAG-END--->
+*/
+
+/*
+<---INTERRUPT-START--->
+*/
+
+void InstructionsExecuter::di()
+{
+  cpu->state.ime = false;
+}
+
+void InstructionsExecuter::ei()
+{
+  cpu->state.imeScheduled = true;
+}
+
+/*
+<---INTERRUPT-END--->
+*/

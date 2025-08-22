@@ -39,6 +39,10 @@ public:
     uint16_t opValue;
     bool isMemoryOp;
     uint16_t memoryAddress;
+    bool ime;
+    bool imeScheduled;
+    uint8_t ie;
+    uint8_t intf;
   };
 
   using CycleCallback = std::function<void(int)>;

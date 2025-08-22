@@ -38,5 +38,19 @@ private:
   // Stack
   void pop();
   void push();
-  
+
+  // Bit shift
+  void rlca();
+  void rrca();
+  void rla();
+  void rra();
+  void daa();
+
+  // Bit flag
+  void scf();
+  void ccf();
+
+  // Interrupt
+  void di();
+  void ei();
 };
