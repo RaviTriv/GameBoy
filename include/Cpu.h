@@ -2,6 +2,7 @@
 
 #include "./InstructionsDecoder.h"
 #include "./InstructionsExecuter.h"
+#include "./Interrupts.h"
 
 #include <cstdint>
 #include <memory>
@@ -58,6 +59,8 @@ private:
   InstructionsDecoder decoder;
   friend class InstructionsExecuter;
   InstructionsExecuter executer;
+  friend class Interrupts;
+  Interrupts interrupt;
   std::shared_ptr<Bus> bus;
 
   State state;

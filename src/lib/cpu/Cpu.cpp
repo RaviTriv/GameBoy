@@ -12,7 +12,7 @@ RegisterType registerLookup[] = {
     RegisterType::HL,
     RegisterType::A};
 
-CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), decoder(this), executer(this), bus(bus)
+CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), decoder(this), executer(this), interrupt(this), bus(bus)
 {
   state.registers.a = 0xB001;
   state.registers.f = 0xB0;
