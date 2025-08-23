@@ -50,7 +50,6 @@ void CPU::step()
   if (!state.halted)
   {
     fetch();
-    Logger::GetLogger()->info("Fetched opcode: 0x{:02X} at PC: 0x{:04X}", state.opcode, state.registers.pc);
     decode();
     execute();
   }

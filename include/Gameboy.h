@@ -10,6 +10,7 @@ class Bus;
 class Cartridge;
 class CPU;
 class IO;
+class PPU;
 class RAM;
 class Timer;
 class UI;
@@ -33,6 +34,7 @@ private:
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
   std::shared_ptr<IO> io;
+  std::shared_ptr<PPU> ppu;
   std::shared_ptr<RAM> ram;
   std::shared_ptr<Timer> timer;
   std::shared_ptr<UI> ui;
