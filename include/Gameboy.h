@@ -1,8 +1,10 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 
 class Bus;
 class Cartridge;
@@ -32,4 +34,7 @@ private:
   std::shared_ptr<IO> io;
   std::shared_ptr<RAM> ram;
   std::shared_ptr<UI> ui;
+
+  std::thread cpuThread;
+  void cpuLoop();
 };

@@ -8,11 +8,16 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_rect.h>
+#include <functional>
 
 class UI
 {
 public:
+  using CloseCallback = std::function<void()>;
+  UI(CloseCallback closeCallback = nullptr);
+
   void init();
+  void handleEvents();
   ~UI();
 
 private:
@@ -23,4 +28,5 @@ private:
   SDL_Renderer *renderer;
   SDL_Surface *screen;
   SDL_Texture *sdlTexture;
+  CloseCallback onClose;
 };

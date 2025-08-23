@@ -18,15 +18,31 @@ void GameBoy::init(std::string romPath)
       [this](int cycles)
       { this->cycle(cycles); }, bus);
   state.isRunning = true;
-  ui = std::make_shared<UI>();
+  ui = std::make_shared<UI>([this]()
+                            { state.isRunning = false; });
 }
 
 void GameBoy::run()
 {
   ui->init();
+  cpuThread = std::thread(&GameBoy::cpuLoop, this);
+  cpuThread.detach();
+
   while (state.isRunning)
   {
-    cpu->step();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    ui->handleEvents();
+  }
+}
+
+void GameBoy::cpuLoop()
+{
+  while (state.isRunning)
+  {
+    if (!state.isPaused)
+    {
+      cpu->step();
+    }
   }
 }
 
