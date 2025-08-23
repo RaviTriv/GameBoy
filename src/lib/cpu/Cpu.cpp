@@ -357,3 +357,8 @@ void CPU::jumpToAddress(uint16_t addr, bool pushPC)
   state.registers.pc = addr;
   cycleCallback(1);
 }
+
+void CPU::requestInterrupt(InterruptType type)
+{
+  interrupt.requestInterrupt(type);
+}

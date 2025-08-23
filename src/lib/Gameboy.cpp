@@ -4,6 +4,7 @@
 #include "../../include/Cpu.h"
 #include "../../include/Io.h"
 #include "../../include/Ram.h"
+#include "../../include/Timer.h"
 #include "../../include/Ui.h"
 #include "../../include/Logger.h"
 
@@ -18,6 +19,7 @@ void GameBoy::init(std::string romPath)
       [this](int cycles)
       { this->cycle(cycles); }, bus);
   state.isRunning = true;
+  timer = std::make_shared<Timer>(cpu);
   ui = std::make_shared<UI>([this]()
                             { state.isRunning = false; });
 }
@@ -27,6 +29,9 @@ void GameBoy::run()
   ui->init();
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
   cpuThread.detach();
+
+  // After Cpu is initialized
+  timer->setDiv(0xABCC);
 
   while (state.isRunning)
   {
@@ -53,6 +58,7 @@ void GameBoy::cycle(int cycles)
     for (int j = 0; j < 4; j++)
     {
       state.ticks++;
+      timer->tick();
     }
   }
 }

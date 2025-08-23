@@ -20,6 +20,7 @@ add_executable(gameboy
     src/lib/Gameboy.cpp
     src/lib/Io.cpp
     src/lib/Ram.cpp
+    src/lib/Timer.cpp
     src/lib/Ui.cpp
     src/main.cpp
 )

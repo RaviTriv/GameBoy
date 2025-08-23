@@ -11,6 +11,7 @@ class Cartridge;
 class CPU;
 class IO;
 class RAM;
+class Timer;
 class UI;
 class GameBoy : public std::enable_shared_from_this<GameBoy>
 {
@@ -33,6 +34,7 @@ private:
   std::shared_ptr<CPU> cpu;
   std::shared_ptr<IO> io;
   std::shared_ptr<RAM> ram;
+  std::shared_ptr<Timer> timer;
   std::shared_ptr<UI> ui;
 
   std::thread cpuThread;
