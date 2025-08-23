@@ -4,6 +4,7 @@
 #include "../../include/Cpu.h"
 #include "../../include/Io.h"
 #include "../../include/Ram.h"
+#include "../../include/Ui.h"
 #include "../../include/Logger.h"
 
 void GameBoy::init(std::string romPath)
@@ -16,12 +17,13 @@ void GameBoy::init(std::string romPath)
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);
-
   state.isRunning = true;
+  ui = std::make_shared<UI>();
 }
 
 void GameBoy::run()
 {
+  ui->init();
   while (state.isRunning)
   {
     cpu->step();

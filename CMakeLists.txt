@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.30)
 
 project(GameBoy LANGUAGES CXX)
 
+find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_ttf CONFIG REQUIRED)
 find_package(spdlog REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -18,14 +20,19 @@ add_executable(gameboy
     src/lib/Gameboy.cpp
     src/lib/Io.cpp
     src/lib/Ram.cpp
+    src/lib/Ui.cpp
     src/main.cpp
 )
 
 target_include_directories(gameboy PRIVATE
     src
+    ${SDL3_INCLUDE_DIRS}
+    ${SDL3_TTF_INCLUDE_DIRS} 
 )
 
 target_link_libraries(gameboy PRIVATE
+SDL3::SDL3 
+SDL3_ttf::SDL3_ttf
 PRIVATE spdlog::spdlog_header_only
 )
 
