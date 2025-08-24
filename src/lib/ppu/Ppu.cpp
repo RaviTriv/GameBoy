@@ -1,10 +1,13 @@
 #include "../../../include/Ppu.h"
 
+PPU::PPU(std::shared_ptr<LCD> lcd) : lcd(lcd)
+{
+}
+
 void PPU::tick()
 {
   state.lineTicks++;
 }
-
 
 void PPU::oamWrite(uint16_t address, uint8_t value)
 {

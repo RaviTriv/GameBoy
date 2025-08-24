@@ -54,3 +54,76 @@ uint8_t LCD::read(uint16_t address)
     return 0xFF;
   }
 }
+
+void LCD::write(uint16_t address, uint8_t value)
+{
+  switch (address)
+  {
+  case 0xFF40:
+    state.lcdc = value;
+    break;
+  case 0xFF41:
+    state.lcds = value & 0xFC;
+    break;
+  case 0xFF42:
+    state.scrollY = value;
+    break;
+  case 0xFF43:
+    state.scrollX = value;
+    break;
+  case 0xFF44:
+    break;
+  case 0xFF45:
+    state.lyCompare = value;
+    break;
+  case 0xFF46:
+    state.dma = value;
+    break;
+  case 0xFF47:
+    updatePalettes(PaletteType::BGP, value);
+    break;
+  case 0xFF48:
+    updatePalettes(PaletteType::OBP0, value & 0b11111100);
+    break;
+  case 0xFF49:
+    updatePalettes(PaletteType::OBP1, value & 0b11111100);
+    break;
+  case 0xFF4A:
+    state.windowY = value;
+    break;
+  case 0xFF4B:
+    state.windowX = value;
+    break;
+  default:
+    Logger::GetLogger()->error("LCD write to invalid address: 0x{:04X}", address);
+    break;
+  }
+}
+
+void LCD::updatePalettes(PaletteType type, uint8_t value)
+{
+  switch (type)
+  {
+  case BGP:
+    state.bgColors[0] = defaultColors.at(value & 0b11);
+    state.bgColors[1] = defaultColors.at((value >> 2) & 0b11);
+    state.bgColors[2] = defaultColors.at((value >> 4) & 0b11);
+    state.bgColors[3] = defaultColors.at((value >> 6) & 0b11);
+    break;
+  case OBP0:
+    state.ob1Colors[0] = defaultColors.at(value & 0b11);
+    state.ob1Colors[1] = defaultColors.at((value >> 2) & 0b11);
+    state.ob1Colors[2] = defaultColors.at((value >> 4) & 0b11);
+    state.ob1Colors[3] = defaultColors.at((value >> 6) & 0b11);
+    break;
+  case OBP1:
+    state.ob2Colors[0] = defaultColors.at(value & 0b11);
+    state.ob2Colors[1] = defaultColors.at((value >> 2) & 0b11);
+    state.ob2Colors[2] = defaultColors.at((value >> 4) & 0b11);
+    state.ob2Colors[3] = defaultColors.at((value >> 6) & 0b11);
+    break;
+  default:
+    Logger::GetLogger()->error("Invalid palette type: {}", static_cast<int>(type));
+    return;
+  }
+}

@@ -79,10 +79,19 @@ class LCD
   };
 
 public:
+  enum class LCD_MODE
+  {
+    HBLANK = 0,
+    VBLANK = 1,
+    OAM = 2,
+    VRAM = 3
+  };
   LCD();
   uint8_t read(uint16_t address);
+  void write(uint16_t address, uint8_t value);
 
 private:
   State state;
-  static constexpr std::array<unsigned long, 4> defaultColors= {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
+  static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
+  void updatePalettes(PaletteType type, uint8_t value);
 };
