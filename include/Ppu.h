@@ -38,6 +38,11 @@ class PPU
 public:
   void tick();
   PPU(std::shared_ptr<LCD> lcd);
+
+  void oamWrite(uint16_t addr, uint8_t value);
+  uint8_t oamRead(uint16_t addr);
+  uint8_t vramRead(uint16_t address) const;
+  void vramWrite(uint16_t address, uint8_t value);
 private:
   State state;
   std::shared_ptr<LCD> lcd;
@@ -45,8 +50,5 @@ private:
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
 
-  void oamWrite(uint16_t addr, uint8_t value);
-  uint8_t oamRead(uint16_t addr);
-  uint8_t vramRead(uint16_t address) const;
-  void vramWrite(uint16_t address, uint8_t value);
+  void incrementLY();
 };

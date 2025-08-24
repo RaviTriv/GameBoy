@@ -58,3 +58,4 @@ uint8_t PPU::vramRead(uint16_t address) const
 {
   return state.vram[address - VRAM_START_ADDR];
 }
+

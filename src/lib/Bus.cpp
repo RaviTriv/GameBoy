@@ -1,9 +1,10 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Io.h"
+#include "../../include/Ppu.h"
 #include "../../include/Ram.h"
 
-Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<IO> io, std::shared_ptr<RAM> ram) : cartridge(cartridge), io(io), ram(ram)
+Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<IO> io, std::shared_ptr<PPU> ppu, std::shared_ptr<RAM> ram) : cartridge(cartridge), io(io), ppu(ppu), ram(ram)
 {
 }
 
@@ -17,6 +18,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xA000)
   {
     // PPU VRAM
+    return ppu->vramRead(address);
   }
   else if (address < 0xC000)
   {
@@ -34,6 +36,8 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xFEA0)
   {
     // Object Attribute Memory (OAM)
+    // TODO: Check if transferring
+    return ppu->oamRead(address);
   }
   else if (address < 0xFF00)
   {
@@ -68,6 +72,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address < 0xA000)
   {
     // PPU VRAM
+    ppu->vramWrite(address, value);
   }
   else if (address < 0xC000)
   {
@@ -83,6 +88,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address < 0xFEA0)
   {
     // Object Attribute Memory (OAM)
+    ppu->oamWrite(address, value);
   }
   else if (address < 0xFF00)
   {
