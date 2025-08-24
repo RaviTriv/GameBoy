@@ -53,6 +53,8 @@ public:
 
   void step();
   void requestInterrupt(InterruptType type);
+  uint8_t getInterruptEnable() const;
+  void setInterruptEnable(uint8_t value);
 
 private:
   CycleCallback cycleCallback;

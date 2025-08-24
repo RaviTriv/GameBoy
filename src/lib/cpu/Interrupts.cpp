@@ -1,5 +1,6 @@
 #include "../../../include/Interrupts.h"
 #include "../../../include/Cpu.h"
+#include "../../../include/Logger.h"
 
 Interrupts::Interrupts(CPU *cpu) : cpu(cpu) {}
 
@@ -46,4 +47,14 @@ void Interrupts::handleInterrupts()
 void Interrupts::requestInterrupt(InterruptType type)
 {
   cpu->state.intf |= (uint8_t)type;
+}
+
+void Interrupts::setInterruptEnable(uint8_t value)
+{
+  cpu->state.ie = value;
+}
+
+uint8_t Interrupts::getInterruptEnable() const
+{
+  return cpu->state.ie;
 }

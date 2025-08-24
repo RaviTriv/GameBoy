@@ -20,10 +20,11 @@ void GameBoy::init(std::string romPath)
   ppu = std::make_shared<PPU>(lcd);
   ui = std::make_shared<UI>([this]()
                             { state.isRunning = false; });
-  bus = std::make_unique<Bus>(cartridge, io, ppu, ram);
+  bus = std::make_unique<Bus>(cartridge, nullptr, io, ppu, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);
+  bus->setCpu(cpu);
   timer = std::make_shared<Timer>(cpu);
   state.isRunning = true;
 }

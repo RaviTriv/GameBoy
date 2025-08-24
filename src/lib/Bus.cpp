@@ -1,12 +1,14 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
+#include "../../include/Cpu.h"
 #include "../../include/Io.h"
 #include "../../include/Ppu.h"
 #include "../../include/Ram.h"
 
-Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<IO> io, std::shared_ptr<PPU> ppu, std::shared_ptr<RAM> ram) : cartridge(cartridge), io(io), ppu(ppu), ram(ram)
+Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<CPU> cpu, std::shared_ptr<IO> io, std::shared_ptr<PPU> ppu, std::shared_ptr<RAM> ram) : cartridge(cartridge), cpu(cpu), io(io), ppu(ppu), ram(ram)
 {
 }
+void Bus::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 uint8_t Bus::read8(uint16_t address)
 {
@@ -52,6 +54,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address == 0xFFFF)
   {
     // Interrupt Enable Register
+    cpu->getInterruptEnable();
   }
   return ram->readHRAM(address);
 }
@@ -101,6 +104,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address == 0xFFFF)
   {
     // Interrupt Enable Register
+    cpu->setInterruptEnable(value);
   }
   else
   {

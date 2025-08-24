@@ -361,3 +361,13 @@ void CPU::requestInterrupt(InterruptType type)
 {
   interrupt.requestInterrupt(type);
 }
+
+void CPU::setInterruptEnable(uint8_t value)
+{
+  interrupt.setInterruptEnable(value);
+}
+
+uint8_t CPU::getInterruptEnable() const
+{
+  return interrupt.getInterruptEnable();
+}

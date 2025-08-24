@@ -13,15 +13,19 @@ void PPU::tick()
   {
   case LCD::MODE::OAM:
     Logger::GetLogger()->info("OAM");
+    oamMode();
     break;
   case LCD::MODE::DRAWING:
-    Logger::GetLogger()->info("VRAM");
-    break;
-  case LCD::MODE::VBLANK:
-    Logger::GetLogger()->info("VBLANK");
+    Logger::GetLogger()->info("DRAWING");
+    drawingMode();
     break;
   case LCD::MODE::HBLANK:
     Logger::GetLogger()->info("HBLANK");
+    hBlankMode();
+    break;
+  case LCD::MODE::VBLANK:
+    Logger::GetLogger()->info("VBLANK");
+    vBlankMode();
     break;
   default:
     Logger::GetLogger()->error("Unknown PPU mode: {}", static_cast<int>(lcd->state.ppuMode));
@@ -59,3 +63,43 @@ uint8_t PPU::vramRead(uint16_t address) const
   return state.vram[address - VRAM_START_ADDR];
 }
 
+/*
+<-----PPU-SM-START----->
+*/
+
+void PPU::incrementLY()
+{
+  lcd->state.ly++;
+  if (lcd->state.ly == lcd->state.lyCompare)
+  {
+    Logger::GetLogger()->info("TRIGGER INTERRUPT HERE");
+  }
+  else
+  {
+    Logger::GetLogger()->info("SET FLAG");
+  }
+}
+
+void PPU::oamMode()
+{
+  lcd->state.ppuMode = LCD::MODE::DRAWING;
+}
+
+void PPU::drawingMode()
+{
+  lcd->state.ppuMode = LCD::MODE::HBLANK;
+}
+
+void PPU::hBlankMode()
+{
+  lcd->state.ppuMode = LCD::MODE::VBLANK;
+}
+
+void PPU::vBlankMode()
+{
+  lcd->state.ppuMode = LCD::MODE::OAM;
+}
+
+/*
+<-----PPU-SM-END----->
+*/

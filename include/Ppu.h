@@ -43,6 +43,7 @@ public:
   uint8_t oamRead(uint16_t addr);
   uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
+
 private:
   State state;
   std::shared_ptr<LCD> lcd;
@@ -51,4 +52,8 @@ private:
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
 
   void incrementLY();
+  void oamMode();
+  void drawingMode();
+  void hBlankMode();
+  void vBlankMode();
 };
