@@ -1,8 +1,32 @@
 #include "../../../include/Ppu.h"
+#include "../../../include/Lcd.h"
+#include "../../../include/Logger.h"
+
+PPU::PPU(std::shared_ptr<LCD> lcd) : lcd(lcd)
+{
+}
 
 void PPU::tick()
 {
   state.lineTicks++;
+  switch (lcd->state.ppuMode)
+  {
+  case LCD::MODE::OAM:
+    Logger::GetLogger()->info("OAM");
+    break;
+  case LCD::MODE::DRAWING:
+    Logger::GetLogger()->info("VRAM");
+    break;
+  case LCD::MODE::VBLANK:
+    Logger::GetLogger()->info("VBLANK");
+    break;
+  case LCD::MODE::HBLANK:
+    Logger::GetLogger()->info("HBLANK");
+    break;
+  default:
+    Logger::GetLogger()->error("Unknown PPU mode: {}", static_cast<int>(lcd->state.ppuMode));
+    break;
+  }
 }
 
 void PPU::oamWrite(uint16_t address, uint8_t value)

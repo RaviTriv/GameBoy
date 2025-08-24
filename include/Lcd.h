@@ -5,6 +5,7 @@
 
 class LCD
 {
+  friend class PPU;
   enum PaletteType
   {
     BGP = 0,
@@ -78,14 +79,15 @@ class LCD
     std::array<uint32_t, 4> ob2Colors;
   };
 
-public:
-  enum class LCD_MODE
+  enum MODE
   {
-    HBLANK = 0,
-    VBLANK = 1,
-    OAM = 2,
-    VRAM = 3
+    HBLANK,
+    VBLANK,
+    OAM,
+    DRAWING
   };
+
+public:
   LCD();
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t value);

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "./Lcd.h"
-
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -39,11 +37,10 @@ class PPU
 
 public:
   void tick();
-
+  PPU(std::shared_ptr<LCD> lcd);
 private:
   State state;
-  friend class LCD;
-  LCD lcd;
+  std::shared_ptr<LCD> lcd;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
