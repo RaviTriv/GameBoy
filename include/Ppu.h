@@ -29,6 +29,8 @@ class PPU
   {
     std::array<OAM_ENTRY, 40> oamRam;
     std::array<uint8_t, 0x2000> vram;
+
+    uint32_t lineTicks;
   };
 
 public:

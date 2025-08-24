@@ -2,6 +2,7 @@
 
 void PPU::tick()
 {
+  state.lineTicks++;
 }
 
 
