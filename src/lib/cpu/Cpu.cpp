@@ -371,3 +371,13 @@ uint8_t CPU::getInterruptEnable() const
 {
   return interrupt.getInterruptEnable();
 }
+
+void CPU::setInterruptFlags(uint8_t value)
+{
+  state.intf = value;
+}
+
+uint8_t CPU::getInterruptFlags() const
+{
+  return state.intf;
+}

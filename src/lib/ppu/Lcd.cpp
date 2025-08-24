@@ -1,7 +1,8 @@
 #include "../../../include/Lcd.h"
+#include "../../../include/Dma.h"
 #include "../../../include/Logger.h"
 
-LCD::LCD()
+LCD::LCD(std::shared_ptr<DMA> dma) : dma(dma)
 {
   state.lcdc = 0x91;
   state.scrollX = 0;
@@ -77,7 +78,7 @@ void LCD::write(uint16_t address, uint8_t value)
     state.lyCompare = value;
     break;
   case 0xFF46:
-    state.dma = value;
+    dma->start(value);
     break;
   case 0xFF47:
     updatePalettes(PaletteType::BGP, value);

@@ -55,6 +55,8 @@ public:
   void requestInterrupt(InterruptType type);
   uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
+  uint8_t getInterruptFlags() const;
+  void setInterruptFlags(uint8_t value);
 
 private:
   CycleCallback cycleCallback;

@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 
+class DMA;
 class LCD
 {
   friend class PPU;
@@ -88,12 +90,13 @@ class LCD
   };
 
 public:
-  LCD();
+  LCD(std::shared_ptr<DMA> dma);
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t value);
 
 private:
   State state;
+  std::shared_ptr<DMA> dma;
   static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
 };
