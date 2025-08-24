@@ -19,6 +19,7 @@ add_executable(gameboy
     src/lib/cpu/Interrupts.cpp
     src/lib/Gameboy.cpp
     src/lib/Io.cpp
+    src/lib/ppu/Dma.cpp
     src/lib/ppu/Ppu.cpp
     src/lib/ppu/Lcd.cpp
     src/lib/Ram.cpp

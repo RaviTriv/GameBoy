@@ -9,6 +9,7 @@
 class Bus;
 class Cartridge;
 class CPU;
+class DMA;
 class IO;
 class LCD;
 class PPU;
@@ -34,6 +35,7 @@ private:
   std::shared_ptr<Bus> bus;
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
+  std::shared_ptr<DMA> dma;
   std::shared_ptr<IO> io;
   std::shared_ptr<LCD> lcd;
   std::shared_ptr<PPU> ppu;

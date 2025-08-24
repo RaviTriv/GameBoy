@@ -2,6 +2,7 @@
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
+#include "../../include/Dma.h"
 #include "../../include/Io.h"
 #include "../../include/Lcd.h"
 #include "../../include/Ppu.h"
@@ -14,17 +15,20 @@ void GameBoy::init(std::string romPath)
 {
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
+  dma = std::make_unique<DMA>(nullptr, nullptr);
   ram = std::make_unique<RAM>();
   io = std::make_unique<IO>();
   lcd = std::make_shared<LCD>();
   ppu = std::make_shared<PPU>(lcd);
   ui = std::make_shared<UI>([this]()
                             { state.isRunning = false; });
-  bus = std::make_unique<Bus>(cartridge, nullptr, io, ppu, ram);
+  bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);
   bus->setCpu(cpu);
+  dma->setBus(bus);
+  dma->setPpu(ppu);
   timer = std::make_shared<Timer>(cpu);
   state.isRunning = true;
 }
@@ -66,5 +70,6 @@ void GameBoy::cycle(int cycles)
       timer->tick();
       ppu->tick();
     }
+    dma->tick();
   }
 }
