@@ -10,12 +10,11 @@ class Bus;
 class Cartridge;
 class CPU;
 class IO;
-class LCD;
 class PPU;
 class RAM;
 class Timer;
 class UI;
-class GameBoy : public std::enable_shared_from_this<GameBoy>
+class GameBoy
 {
 public:
   struct State
@@ -35,7 +34,6 @@ private:
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
   std::shared_ptr<IO> io;
-  std::shared_ptr<LCD> lcd;
   std::shared_ptr<PPU> ppu;
   std::shared_ptr<RAM> ram;
   std::shared_ptr<Timer> timer;

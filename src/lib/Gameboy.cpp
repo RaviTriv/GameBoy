@@ -3,7 +3,6 @@
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
 #include "../../include/Io.h" 
-#include "../../include/Lcd.h"
 #include "../../include/Ppu.h"
 #include "../../include/Ram.h"
 #include "../../include/Timer.h"
@@ -22,8 +21,7 @@ void GameBoy::init(std::string romPath)
       { this->cycle(cycles); }, bus);
   state.isRunning = true;
   timer = std::make_shared<Timer>(cpu);
-  lcd = std::make_shared<LCD>();
-  ppu = std::make_shared<PPU>(lcd);
+  ppu = std::make_shared<PPU>();
   ui = std::make_shared<UI>([this]()
                             { state.isRunning = false; });
 }
