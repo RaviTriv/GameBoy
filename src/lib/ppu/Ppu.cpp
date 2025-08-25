@@ -112,7 +112,7 @@ void PPU::oamMode()
 
 void PPU::drawingMode()
 {
-  // TODO: Process pipeline
+  pipeline.process();
 
   // Call HBLANK after x > XRES
   lcd->state.lcdsBits.ppuMode = LCD::MODE::HBLANK;

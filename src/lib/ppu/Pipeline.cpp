@@ -5,6 +5,34 @@ Pipeline::Pipeline(PPU *ppu) : ppu(ppu)
 {
 }
 
+void Pipeline::process()
+{
+  switch (state.fetchState)
+  {
+  case FETCH_STATE::TILE:
+    break;
+  case FETCH_STATE::DATA0:
+    break;
+  case FETCH_STATE::DATA1:
+    break;
+  case FETCH_STATE::IDLE:
+    break;
+  case FETCH_STATE::PUSH:
+    break;
+  default:
+    throw std::runtime_error("Trying to process unknown fetch state");
+    break;
+  }
+}
+
+void Pipeline::reset()
+{
+  while (!fifoIsEmpty())
+  {
+    fifoPop();
+  }
+}
+
 bool Pipeline::fifoIsEmpty() const
 {
   return state.fifoSize == 0;

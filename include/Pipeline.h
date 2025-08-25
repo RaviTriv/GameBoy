@@ -21,6 +21,11 @@ class Pipeline
     size_t fifoHead = 0;
     size_t fifoTail = 0;
     size_t fifoSize = 0;
+    uint8_t lineX;
+    uint8_t pushedCount;
+    uint8_t fetchX;
+    std::array<uint8_t, 3> bgwBuffer;
+    std::array<uint8_t, 6> objectBuffer;
   };
 
 public:
