@@ -67,6 +67,8 @@ private:
   static constexpr int YRES = 144;
 
   void incrementLY();
+  void loadLineSprites();
+
   void oamMode();
   void drawingMode();
   void hBlankMode();

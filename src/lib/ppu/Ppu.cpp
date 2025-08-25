@@ -88,13 +88,18 @@ void PPU::incrementLY()
   }
 }
 
+void PPU::loadLineSprites()
+{
+  Logger::GetLogger()->info("Loading line sprites");
+}
+
 void PPU::oamMode()
 {
   if (state.lineTicks == 1)
   {
     state.currentLineSprites.clear();
 
-    // TODO: Load sprites for the line
+    loadLineSprites();
   }
 
   if (state.lineTicks >= 80)
