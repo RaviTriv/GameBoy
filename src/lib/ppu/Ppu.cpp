@@ -1,15 +1,18 @@
 #include "../../../include/Ppu.h"
+#include "../../../include/Cpu.h"
 #include "../../../include/Lcd.h"
 #include "../../../include/Logger.h"
 
-PPU::PPU(std::shared_ptr<LCD> lcd) : lcd(lcd)
+PPU::PPU(std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : cpu(cpu), lcd(lcd)
 {
 }
+
+void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 void PPU::tick()
 {
   state.lineTicks++;
-  switch (lcd->state.ppuMode)
+  switch (lcd->state.lcdsBits.ppuMode)
   {
   case LCD::MODE::OAM:
     Logger::GetLogger()->info("OAM");
@@ -28,7 +31,7 @@ void PPU::tick()
     vBlankMode();
     break;
   default:
-    Logger::GetLogger()->error("Unknown PPU mode: {}", static_cast<int>(lcd->state.ppuMode));
+    Logger::GetLogger()->error("Unknown PPU mode: {}", static_cast<int>(lcd->state.lcdsBits.ppuMode));
     break;
   }
 }
@@ -70,34 +73,87 @@ uint8_t PPU::vramRead(uint16_t address) const
 void PPU::incrementLY()
 {
   lcd->state.ly++;
+
   if (lcd->state.ly == lcd->state.lyCompare)
   {
-    Logger::GetLogger()->info("TRIGGER INTERRUPT HERE");
+    lcd->state.lcdsBits.lycFlag = 1;
+    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC)))
+    {
+      cpu->requestInterrupt(InterruptType::LCD_STAT);
+    }
   }
   else
   {
-    Logger::GetLogger()->info("SET FLAG");
+    lcd->state.lcdsBits.lycFlag = 0;
   }
 }
 
 void PPU::oamMode()
 {
-  lcd->state.ppuMode = LCD::MODE::DRAWING;
+  if (state.lineTicks == 1)
+  {
+    state.currentLineSprites.clear();
+
+    // TODO: Load sprites for the line
+  }
+
+  if (state.lineTicks >= 80)
+  {
+    lcd->state.lcdsBits.ppuMode = LCD::MODE::DRAWING;
+
+    // TODO: Update State
+  }
 }
 
 void PPU::drawingMode()
 {
-  lcd->state.ppuMode = LCD::MODE::HBLANK;
+  // TODO: Process pipeline
+
+  // Call HBLANK after x > XRES
+  lcd->state.lcdsBits.ppuMode = LCD::MODE::HBLANK;
 }
 
 void PPU::hBlankMode()
 {
-  lcd->state.ppuMode = LCD::MODE::VBLANK;
+
+  if (state.lineTicks >= TICKS_PER_LINE)
+  {
+    incrementLY();
+
+    if (lcd->state.ly >= YRES)
+    {
+      lcd->state.lcdsBits.ppuMode = LCD::MODE::VBLANK;
+
+      cpu->requestInterrupt(InterruptType::VBLANK);
+
+      if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK)))
+      {
+        cpu->requestInterrupt(InterruptType::LCD_STAT);
+      }
+
+      // TODO: Add in Delay and Leverage this for Fast Foward Feature
+    }
+    else
+    {
+      lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+    }
+  }
 }
 
 void PPU::vBlankMode()
 {
-  lcd->state.ppuMode = LCD::MODE::OAM;
+  if (state.lineTicks >= TICKS_PER_LINE)
+  {
+    incrementLY();
+
+    if (lcd->state.ly >= LINES_PER_FRAME)
+    {
+      lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+      lcd->state.ly = 0;
+      state.windowLine = 0;
+    }
+    state.lineTicks = 0;
+  }
 }
 
 /*
