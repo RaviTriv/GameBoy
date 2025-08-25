@@ -128,3 +128,8 @@ void LCD::updatePalettes(PaletteType type, uint8_t value)
     return;
   }
 }
+
+bool LCD::isLcdStatIntEnabled(uint8_t source)
+{
+  return (state.lcds & source) != 0;
+}

@@ -27,34 +27,39 @@ class LCD
     uint8_t palette;
   };
 
+  struct LCDCBits
+  {
+    uint8_t bgWindowEnablePriority : 1;
+    uint8_t objEnable : 1;
+    uint8_t objSize : 1;
+    uint8_t bgTileMap : 1;
+    uint8_t bgWindowTiles : 1;
+    uint8_t windowEnable : 1;
+    uint8_t windowTileMap : 1;
+    uint8_t lcdEnable : 1;
+  };
+
+  struct LCDSBits
+  {
+    uint8_t ppuMode : 2;
+    uint8_t lycFlag : 1;
+    uint8_t mode0Select : 1;
+    uint8_t mode1Select : 1;
+    uint8_t mode2Select : 1;
+    uint8_t lycSelect : 1;
+  };
+
   struct State
   {
+
     union
     {
-      struct
-      {
-        uint8_t bgWindowEnablePriority : 1;
-        uint8_t objEnable : 1;
-        uint8_t objSize : 1;
-        uint8_t bgTileMap : 1;
-        uint8_t bgWindowTiles : 1;
-        uint8_t windowEnable : 1;
-        uint8_t windowTileMap : 1;
-        uint8_t lcdEnable : 1;
-      };
+      LCDCBits lcdcBits;
       uint8_t lcdc;
     };
     union
     {
-      struct
-      {
-        uint8_t ppuMode : 2;
-        uint8_t lycFlag : 1;
-        uint8_t mode0Select : 1;
-        uint8_t mode1Select : 1;
-        uint8_t mode2Select : 1;
-        uint8_t lycSelect : 1;
-      };
+      LCDSBits lcdsBits;
       uint8_t lcds;
     };
     uint8_t scrollX;
@@ -89,10 +94,19 @@ class LCD
     DRAWING
   };
 
+  enum LCDS_SRC
+  {
+    S_HBLANK = (1 << 3),
+    S_VBLANK = (1 << 4),
+    S_OAM = (1 << 5),
+    S_LYC = (1 << 6),
+  };
+
 public:
   LCD(std::shared_ptr<DMA> dma);
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t value);
+  bool isLcdStatIntEnabled(uint8_t source);
 
 private:
   State state;
