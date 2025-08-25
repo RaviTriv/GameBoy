@@ -3,7 +3,7 @@
 #include "../../../include/Lcd.h"
 #include "../../../include/Logger.h"
 
-PPU::PPU(std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : cpu(cpu), lcd(lcd)
+PPU::PPU(std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : cpu(cpu), lcd(lcd), pipeline(this)
 {
 }
 

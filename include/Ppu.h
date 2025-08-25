@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./Pipeline.h"
+
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -54,6 +56,8 @@ private:
   State state;
   std::shared_ptr<CPU> cpu;
   std::shared_ptr<LCD> lcd;
+  friend class Pipeline;
+  Pipeline pipeline;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
