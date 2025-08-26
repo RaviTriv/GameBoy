@@ -5,11 +5,17 @@
 
 PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this)
 {
+  std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
 }
 
 void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 void PPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
+
+const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
+{
+  return state.videoBuffer;
+}
 
 void PPU::tick()
 {

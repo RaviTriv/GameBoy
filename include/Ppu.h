@@ -39,6 +39,7 @@ public:
 
   void setCpu(std::shared_ptr<CPU> cpu);
   void setBus(std::shared_ptr<Bus> bus);
+  const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
 
 private:
   State state;

@@ -21,7 +21,7 @@ void GameBoy::init(std::string romPath)
   lcd = std::make_shared<LCD>(dma);
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd);
   ui = std::make_shared<UI>([this]()
-                            { state.isRunning = false; });
+                            { state.isRunning = false; }, nullptr);
   bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
@@ -35,6 +35,7 @@ void GameBoy::init(std::string romPath)
   io->setLCD(lcd);
   ppu->setCpu(cpu);
   ppu->setBus(bus);
+  ui->setPpu(ppu);
   state.isRunning = true;
 }
 
@@ -51,6 +52,8 @@ void GameBoy::run()
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     ui->handleEvents();
+    // TODO: check current frame against prev frame to avoid unnecessary redraws
+    ui->update();
   }
 }
 

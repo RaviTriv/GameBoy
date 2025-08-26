@@ -9,18 +9,25 @@
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_rect.h>
 #include <functional>
+#include <memory>
 
+class PPU;
 class UI
 {
 public:
   using CloseCallback = std::function<void()>;
-  UI(CloseCallback closeCallback = nullptr);
-
+  UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu);
+  void setPpu(std::shared_ptr<PPU> ppu);
   void init();
   void handleEvents();
+  void update();
   ~UI();
 
 private:
+  std::shared_ptr<PPU> ppu;
+
+  static constexpr int YRES = 144;
+  static constexpr int XRES = 160;
   static constexpr int SCREEN_WIDTH = 640;
   static constexpr int SCREEN_HEIGHT = 576;
   static constexpr int SCALE = 4;
