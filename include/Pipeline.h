@@ -70,5 +70,5 @@ private:
   void loadSpriteData(uint8_t offset);
   void fetchData1();
   bool fifoAdd();
-  uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) const;
+  uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor);
 };

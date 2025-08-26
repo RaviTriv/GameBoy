@@ -183,7 +183,7 @@ bool Pipeline::windowVisible() const
 
 void Pipeline::loadWindowTile()
 {
-  if (windowVisible())
+  if (!windowVisible())
   {
     return;
   }
@@ -192,9 +192,9 @@ void Pipeline::loadWindowTile()
   {
     if (ppu->lcd->state.ly >= ppu->lcd->state.windowY && ppu->lcd->state.ly < ppu->lcd->state.windowY + 160)
     {
-      uint8_t wTileY = (ppu->state.windowLine % PIXEL_TILE_DIMENSION);
+      uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
-      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + wTileY * BACKGROUND_MAP_DIMENSION);
+      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
 
       if (ppu->lcd->getBgWindowDataArea() == 0x8800)
       {
@@ -280,7 +280,7 @@ bool Pipeline::fifoAdd()
   return true;
 }
 
-uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) const
+uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor)
 {
   for (int i = 0; i < state.entryCount; i++)
   {
