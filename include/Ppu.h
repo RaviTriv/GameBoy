@@ -24,11 +24,13 @@ class PPU
 
     uint32_t lineTicks;
     uint8_t windowLine;
+    uint8_t lineSpritesCount;
     std::list<OAM_ENTRY> currentLineSprites;
     std::array<uint32_t, BUFFER_SIZE> videoBuffer;
   };
 
 public:
+  void init();
   void tick();
   PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd);
 

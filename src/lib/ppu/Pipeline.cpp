@@ -328,3 +328,19 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) c
 
   return color;
 };
+
+void Pipeline::oamReset()
+{
+  state.fetchState = FETCH_STATE::TILE;
+  state.lineX = 0;
+  state.fetchX = 0;
+  state.fifoX = 0;
+  state.fifoHead = 0;
+  state.fifoTail = 0;
+  state.fifoSize = 0;
+}
+
+uint8_t Pipeline::getPushedCount()
+{
+  return state.pushedCount;
+}

@@ -41,7 +41,9 @@ void GameBoy::init(std::string romPath)
 
 void GameBoy::run()
 {
+  ppu->init();
   ui->init();
+
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
   cpuThread.detach();
 

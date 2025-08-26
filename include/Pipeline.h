@@ -44,6 +44,8 @@ public:
   Pipeline(PPU *ppu);
   void process();
   void reset();
+  void oamReset();
+  uint8_t getPushedCount();
 
 private:
   PPU *ppu;

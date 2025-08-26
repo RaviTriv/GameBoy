@@ -8,6 +8,11 @@ PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD
   std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
 }
 
+void PPU::init()
+{
+  lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+}
+
 void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 void PPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
@@ -23,19 +28,15 @@ void PPU::tick()
   switch (lcd->state.lcdsBits.ppuMode)
   {
   case LCD::MODE::OAM:
-    Logger::GetLogger()->info("OAM");
     oamMode();
     break;
   case LCD::MODE::DRAWING:
-    Logger::GetLogger()->info("DRAWING");
     drawingMode();
     break;
   case LCD::MODE::HBLANK:
-    Logger::GetLogger()->info("HBLANK");
     hBlankMode();
     break;
   case LCD::MODE::VBLANK:
-    Logger::GetLogger()->info("VBLANK");
     vBlankMode();
     break;
   default:
@@ -98,7 +99,35 @@ void PPU::incrementLY()
 
 void PPU::loadLineSprites()
 {
-  Logger::GetLogger()->info("Loading line sprites");
+  int curY = lcd->state.ly;
+
+  uint8_t spriteHeight = lcd->state.lcdcBits.objSize ? 16 : 8;
+
+  for (int i = 0; i < 40; i++)
+  {
+    OAM_ENTRY &entry = state.oamRam[i];
+
+    if (!entry.x)
+    {
+      continue;
+    }
+
+    if (state.lineSpritesCount >= 10)
+    {
+      break;
+    }
+
+    if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16)
+    {
+      auto iter = state.currentLineSprites.begin();
+      while (iter != state.currentLineSprites.end() && iter->x <= entry.x)
+      {
+        ++iter;
+      }
+
+      state.currentLineSprites.insert(iter, {entry});
+    }
+  }
 }
 
 void PPU::oamMode()
@@ -114,7 +143,7 @@ void PPU::oamMode()
   {
     lcd->state.lcdsBits.ppuMode = LCD::MODE::DRAWING;
 
-    // TODO: Update State
+    pipeline.oamReset();
   }
 }
 
@@ -122,13 +151,20 @@ void PPU::drawingMode()
 {
   pipeline.process();
 
-  // Call HBLANK after x > XRES
-  lcd->state.lcdsBits.ppuMode = LCD::MODE::HBLANK;
+  if (pipeline.getPushedCount() >= XRES)
+  {
+    pipeline.reset();
+    lcd->state.lcdsBits.ppuMode = LCD::MODE::HBLANK;
+
+    if (lcd->state.lcds & (static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
+    {
+      cpu->requestInterrupt(InterruptType::LCD_STAT);
+    }
+  }
 }
 
 void PPU::hBlankMode()
 {
-
   if (state.lineTicks >= TICKS_PER_LINE)
   {
     incrementLY();
