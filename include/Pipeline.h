@@ -6,6 +6,9 @@
 class PPU;
 class Pipeline
 {
+  constexpr static int BACKGROUND_MAP_DIMENSION = 32;
+  constexpr static int PIXEL_TILE_DIMENSION = 8;
+
   enum class FETCH_STATE
   {
     TILE,
@@ -30,6 +33,7 @@ class Pipeline
     uint8_t mapY;
     uint8_t tileX;
     uint8_t tileY;
+    uint8_t entryCount;
   };
 
 public:
@@ -41,6 +45,8 @@ private:
   PPU *ppu;
   State state;
   void fetch();
+  void fetchTile();
+  void fetchData0();
   bool fifoIsEmpty() const;
   bool fifoIsFull() const;
   void fifoPush(uint32_t pixel);
@@ -50,4 +56,11 @@ private:
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
   uint32_t bufferIndex() const;
+  uint8_t bgw0ReadAddress() const;
+  uint8_t bgw1ReadAddress() const;
+  void loadWindowTile();
+  void loadSpriteTile();
+  void loadSpriteData(uint8_t offset);
+  void fetchData1();
+  bool fifoAdd();
 };

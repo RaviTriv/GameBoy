@@ -3,11 +3,13 @@
 #include "../../../include/Lcd.h"
 #include "../../../include/Logger.h"
 
-PPU::PPU(std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : cpu(cpu), lcd(lcd), pipeline(this)
+PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this)
 {
 }
 
 void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
+
+void PPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
 
 void PPU::tick()
 {

@@ -1,4 +1,5 @@
 #include "../../../include/Pipeline.h"
+#include "../../../include/Bus.h"
 #include "../../../include/Lcd.h"
 #include "../../../include/Ppu.h"
 
@@ -25,19 +26,66 @@ void Pipeline::fetch()
   switch (state.fetchState)
   {
   case FETCH_STATE::TILE:
+    fetchTile();
     break;
   case FETCH_STATE::DATA0:
+    fetchData0();
     break;
   case FETCH_STATE::DATA1:
+    fetchData1();
     break;
   case FETCH_STATE::IDLE:
+    state.fetchState = FETCH_STATE::PUSH;
     break;
   case FETCH_STATE::PUSH:
+    if (fifoAdd())
+    {
+      state.fetchState = FETCH_STATE::TILE;
+    }
     break;
   default:
     throw std::runtime_error("Trying to process unknown fetch state");
     break;
   }
+}
+
+void Pipeline::fetchTile()
+{
+  state.entryCount = 0;
+
+  // Check Background Window is enabled
+  if (ppu->lcd->state.lcdcBits.bgWindowEnablePriority)
+  {
+    state.bgwBuffer[0] = ppu->bus->read8(bgw0ReadAddress());
+
+    if (ppu->lcd->getBgWindowDataArea() == 0x8800)
+    {
+      state.bgwBuffer[0] += 128;
+    }
+    loadWindowTile();
+  }
+
+  if (ppu->lcd->state.lcdcBits.objEnable && ppu->state.currentLineSprites.size() > 0)
+  {
+    loadSpriteTile();
+  }
+
+  state.fetchState = FETCH_STATE::DATA0;
+  state.fetchX += 8;
+}
+
+void Pipeline::fetchData0()
+{
+  state.bgwBuffer[1] = ppu->bus->read8(bgw1ReadAddress());
+  loadSpriteData(0);
+  state.fetchState = FETCH_STATE::DATA1;
+}
+
+void Pipeline::fetchData1()
+{
+  state.bgwBuffer[2] = ppu->bus->read8(bgw1ReadAddress() + 1);
+  loadSpriteData(1);
+  state.fetchState = FETCH_STATE::IDLE;
 }
 
 void Pipeline::pushPixel()
@@ -117,4 +165,34 @@ uint8_t Pipeline::calculateTileY() const
 uint32_t Pipeline::bufferIndex() const
 {
   return state.pushedCount + ppu->lcd->state.ly * PPU::XRES;
+}
+
+uint8_t Pipeline::bgw0ReadAddress() const
+{
+  return ppu->lcd->getBgMapArea() + (state.mapX / PIXEL_TILE_DIMENSION) + ((state.mapY / PIXEL_TILE_DIMENSION) * BACKGROUND_MAP_DIMENSION);
+}
+
+uint8_t Pipeline::bgw1ReadAddress() const
+{
+  return ppu->lcd->getBgWindowDataArea() + (state.bgwBuffer[0] * 16) + state.tileY;
+}
+
+void Pipeline::loadWindowTile()
+{
+  // TODO: Load Window Tile
+}
+
+void Pipeline::loadSpriteTile()
+{
+  // TODO: Load Sprite Tile
+}
+
+void Pipeline::loadSpriteData(uint8_t offset)
+{
+  // TODO: Load Sprite Data
+}
+
+bool Pipeline::fifoAdd()
+{
+  // TODO: implement fifoAdd
 }

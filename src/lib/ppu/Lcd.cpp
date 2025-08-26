@@ -133,3 +133,13 @@ bool LCD::isLcdStatIntEnabled(uint8_t source)
 {
   return (state.lcds & source) != 0;
 }
+
+uint16_t LCD::getBgMapArea() const
+{
+  return state.lcdcBits.bgTileMap ? 0x9C00 : 0x9800;
+}
+
+uint16_t LCD::getBgWindowDataArea() const
+{
+  return state.lcdcBits.bgWindowTiles ? 0x8000 : 0x8800;
+}
