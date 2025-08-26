@@ -46,7 +46,8 @@ public:
   void reset();
   void oamReset();
   uint8_t getPushedCount();
-
+  bool windowVisible() const;
+  void clearFetchedEntries();
 private:
   PPU *ppu;
   State state;
@@ -62,13 +63,12 @@ private:
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
   uint32_t bufferIndex() const;
-  uint8_t bgw0ReadAddress() const;
-  uint8_t bgw1ReadAddress() const;
+  uint16_t bgw0ReadAddress() const;
+  uint16_t bgw1ReadAddress() const;
   void loadWindowTile();
   void loadSpriteTile();
   void loadSpriteData(uint8_t offset);
   void fetchData1();
   bool fifoAdd();
-  bool windowVisible() const;
   uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) const;
 };

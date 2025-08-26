@@ -81,11 +81,17 @@ uint8_t PPU::vramRead(uint16_t address) const
 
 void PPU::incrementLY()
 {
+  if (pipeline.windowVisible() && lcd->state.ly >= lcd->state.windowY && lcd->state.ly < lcd->state.windowY + YRES)
+  {
+    state.windowLine++;
+  }
+
   lcd->state.ly++;
 
   if (lcd->state.ly == lcd->state.lyCompare)
   {
     lcd->state.lcdsBits.lycFlag = 1;
+
     if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC)))
     {
       cpu->requestInterrupt(InterruptType::LCD_STAT);
@@ -102,6 +108,8 @@ void PPU::loadLineSprites()
   int curY = lcd->state.ly;
 
   uint8_t spriteHeight = lcd->state.lcdcBits.objSize ? 16 : 8;
+
+  pipeline.clearFetchedEntries();
 
   for (int i = 0; i < 40; i++)
   {
@@ -135,7 +143,7 @@ void PPU::oamMode()
   if (state.lineTicks == 1)
   {
     state.currentLineSprites.clear();
-
+    state.lineSpritesCount = 0;
     loadLineSprites();
   }
 
@@ -179,13 +187,13 @@ void PPU::hBlankMode()
       {
         cpu->requestInterrupt(InterruptType::LCD_STAT);
       }
-
       // TODO: Add in Delay and Leverage this for Fast Foward Feature
     }
     else
     {
       lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
     }
+    state.lineTicks = 0;
   }
 }
 

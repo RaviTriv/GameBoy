@@ -5,10 +5,12 @@
 #include "../../include/Io.h"
 #include "../../include/Ppu.h"
 #include "../../include/Ram.h"
+#include "../../include/Logger.h"
 
 Bus::Bus(std::shared_ptr<Cartridge> cartridge, std::shared_ptr<CPU> cpu, std::shared_ptr<DMA> dma, std::shared_ptr<IO> io, std::shared_ptr<PPU> ppu, std::shared_ptr<RAM> ram) : cartridge(cartridge), cpu(cpu), dma(dma), io(io), ppu(ppu), ram(ram)
 {
 }
+
 void Bus::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 uint8_t Bus::read8(uint16_t address)

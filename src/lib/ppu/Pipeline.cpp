@@ -2,6 +2,7 @@
 #include "../../../include/Bus.h"
 #include "../../../include/Lcd.h"
 #include "../../../include/Ppu.h"
+#include "../../../include/Logger.h"
 
 Pipeline::Pipeline(PPU *ppu) : ppu(ppu)
 {
@@ -53,7 +54,6 @@ void Pipeline::fetchTile()
 {
   state.entryCount = 0;
 
-  // Check Background Window is enabled
   if (ppu->lcd->state.lcdcBits.bgWindowEnablePriority)
   {
     state.bgwBuffer[0] = ppu->bus->read8(bgw0ReadAddress());
@@ -166,12 +166,12 @@ uint32_t Pipeline::bufferIndex() const
   return state.pushedCount + ppu->lcd->state.ly * PPU::XRES;
 }
 
-uint8_t Pipeline::bgw0ReadAddress() const
+uint16_t Pipeline::bgw0ReadAddress() const
 {
-  return ppu->lcd->getBgMapArea() + (state.mapX / PIXEL_TILE_DIMENSION) + ((state.mapY / PIXEL_TILE_DIMENSION) * BACKGROUND_MAP_DIMENSION);
+  return ppu->lcd->getBgMapArea() + (state.mapX / PIXEL_TILE_DIMENSION) + (((state.mapY / PIXEL_TILE_DIMENSION)) * BACKGROUND_MAP_DIMENSION);
 }
 
-uint8_t Pipeline::bgw1ReadAddress() const
+uint16_t Pipeline::bgw1ReadAddress() const
 {
   return ppu->lcd->getBgWindowDataArea() + (state.bgwBuffer[0] * 16) + state.tileY;
 }
@@ -338,9 +338,15 @@ void Pipeline::oamReset()
   state.fifoHead = 0;
   state.fifoTail = 0;
   state.fifoSize = 0;
+  state.pushedCount = 0;
 }
 
 uint8_t Pipeline::getPushedCount()
 {
   return state.pushedCount;
+}
+
+void Pipeline::clearFetchedEntries()
+{
+  state.fetchedEntries.fill({0});
 }
