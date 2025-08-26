@@ -96,7 +96,6 @@ void Pipeline::pushPixel()
 
     if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
     {
-      Logger::GetLogger()->info("PUSHING PIXEL: {}", pixel);
       ppu->state.videoBuffer[bufferIndex()] = pixel;
       state.pushedCount++;
     }
