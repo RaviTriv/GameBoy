@@ -140,7 +140,6 @@ uint32_t Pipeline::fifoPop()
   {
     return 0;
   }
-
   uint32_t pixel = state.pixelFifo[state.fifoHead];
   state.fifoHead = (state.fifoHead + 1) % state.pixelFifo.size();
   state.fifoSize--;
@@ -224,10 +223,108 @@ void Pipeline::loadSpriteTile()
 
 void Pipeline::loadSpriteData(uint8_t offset)
 {
-  // TODO: Load Sprite Data
+  uint8_t spriteHeight = ppu->lcd->state.lcdcBits.objSize ? 16 : 8;
+
+  for (int i = 0; i < state.entryCount; i++)
+  {
+    uint8_t tileY = ((ppu->lcd->state.ly + 16) - state.fetchedEntries[i].y) * 2;
+
+    if (state.fetchedEntries[i].yFlip)
+    {
+      tileY = ((spriteHeight * 2) - 2) - tileY;
+    }
+
+    uint8_t tileIdx = state.fetchedEntries[i].tile;
+
+    if (spriteHeight == 16)
+    {
+      tileIdx &= ~(1);
+    }
+
+    state.objectBuffer[(i * 2) + offset] = ppu->bus->read8(0x8000 + (tileIdx * 16) + tileY + offset);
+  }
 }
 
 bool Pipeline::fifoAdd()
 {
-  // TODO: implement fifoAdd
+  if (state.fifoSize > 8)
+  {
+    return false;
+  }
+
+  int x = state.fetchX - (8 - (ppu->lcd->state.scrollX % 8));
+
+  for (int i = 0; i < PIXEL_TILE_DIMENSION; i++)
+  {
+    int bit = 7 - i;
+    uint8_t hi = !!(state.bgwBuffer[1] && (1 << bit));
+    uint8_t lo = !!(state.bgwBuffer[2] && (1 << bit)) << 1;
+    uint8_t color = ppu->lcd->state.bgColors[(hi | lo)];
+
+    if (!(ppu->lcd->state.lcdcBits.bgWindowEnablePriority))
+    {
+      color = ppu->lcd->state.bgColors[0];
+    }
+
+    if (ppu->lcd->state.lcdcBits.objEnable)
+    {
+      fetchSpritePixels(bit, color, hi | lo);
+    }
+
+    if (x >= 0)
+    {
+      fifoPush(color);
+      state.fifoX++;
+    }
+  }
+  return true;
 }
+
+uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) const
+{
+  for (int i = 0; i < state.entryCount; i++)
+  {
+    int spriteX = (state.fetchedEntries[i].x - 8) + (ppu->lcd->state.scrollX % 8);
+
+    if ((spriteX + 8) < state.fifoX)
+    {
+      continue;
+    }
+
+    int offset = state.fifoX - spriteX;
+
+    if (offset < 0 || offset >= PIXEL_TILE_DIMENSION)
+    {
+      continue;
+    }
+
+    bit = 7 - offset;
+
+    if (state.fetchedEntries[i].xFlip)
+    {
+      bit = offset;
+    }
+
+    uint8_t hi = !!(state.objectBuffer[i * 2] & (1 << bit));
+    uint8_t lo = !!(state.objectBuffer[(i * 2) + 1] & (1 << bit)) << 1;
+
+    bool bgPriority = state.fetchedEntries[i].bgp;
+
+    if (!(hi | lo))
+    {
+      continue;
+    }
+
+    if (!bgPriority && bgColor == 0)
+    {
+      color = state.fetchedEntries[i].pn ? ppu->lcd->state.ob2Colors[(hi | lo)] : ppu->lcd->state.ob1Colors[(hi | lo)];
+
+      if (hi | lo)
+      {
+        break;
+      }
+    }
+  }
+
+  return color;
+};

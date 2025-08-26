@@ -26,6 +26,7 @@ class Pipeline
     size_t fifoHead = 0;
     size_t fifoTail = 0;
     size_t fifoSize = 0;
+    size_t fifoX = 0;
     uint8_t lineX;
     uint8_t pushedCount;
     uint8_t fetchX;
@@ -67,4 +68,5 @@ private:
   void fetchData1();
   bool fifoAdd();
   bool windowVisible() const;
+  uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) const;
 };
