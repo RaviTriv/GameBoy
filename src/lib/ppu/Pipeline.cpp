@@ -1,4 +1,5 @@
 #include "../../../include/Pipeline.h"
+#include "../../../include/Lcd.h"
 #include "../../../include/Ppu.h"
 
 Pipeline::Pipeline(PPU *ppu) : ppu(ppu)
@@ -6,6 +7,20 @@ Pipeline::Pipeline(PPU *ppu) : ppu(ppu)
 }
 
 void Pipeline::process()
+{
+  state.mapY = calculateMapY();
+  state.mapX = calculateMapX();
+  state.tileY = calculateTileY();
+
+  if ((ppu->state.lineTicks & 1) == 0)
+  {
+    fetch();
+  }
+
+  pushPixel();
+}
+
+void Pipeline::fetch()
 {
   switch (state.fetchState)
   {
@@ -22,6 +37,21 @@ void Pipeline::process()
   default:
     throw std::runtime_error("Trying to process unknown fetch state");
     break;
+  }
+}
+
+void Pipeline::pushPixel()
+{
+  if (state.fifoSize > 8)
+  {
+    uint32_t pixel = fifoPop();
+
+    if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
+    {
+      // TODO: Push to video buffer
+    }
+
+    state.lineX++;
   }
 }
 
@@ -66,4 +96,19 @@ uint32_t Pipeline::fifoPop()
   state.fifoHead = (state.fifoHead + 1) % state.pixelFifo.size();
   state.fifoSize--;
   return pixel;
+}
+
+uint8_t Pipeline::calculateMapY() const
+{
+  return ppu->lcd->state.ly + ppu->lcd->state.scrollY;
+}
+
+uint8_t Pipeline::calculateMapX() const
+{
+  return state.fetchX + ppu->lcd->state.scrollX;
+}
+
+uint8_t Pipeline::calculateTileY() const
+{
+  return ((ppu->lcd->state.ly + ppu->lcd->state.scrollY) % 8) * 2;
 }

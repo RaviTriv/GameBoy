@@ -26,6 +26,10 @@ class Pipeline
     uint8_t fetchX;
     std::array<uint8_t, 3> bgwBuffer;
     std::array<uint8_t, 6> objectBuffer;
+    uint8_t mapX;
+    uint8_t mapY;
+    uint8_t tileX;
+    uint8_t tileY;
   };
 
 public:
@@ -36,8 +40,13 @@ public:
 private:
   PPU *ppu;
   State state;
+  void fetch();
   bool fifoIsEmpty() const;
   bool fifoIsFull() const;
   void fifoPush(uint32_t pixel);
   uint32_t fifoPop();
+  void pushPixel();
+  uint8_t calculateMapX() const;
+  uint8_t calculateMapY() const;
+  uint8_t calculateTileY() const;
 };

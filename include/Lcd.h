@@ -8,6 +8,7 @@ class DMA;
 class LCD
 {
   friend class PPU;
+  friend class Pipeline;
   enum PaletteType
   {
     BGP = 0,
