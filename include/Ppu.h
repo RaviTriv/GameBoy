@@ -11,6 +11,10 @@ class CPU;
 class LCD;
 class PPU
 {
+  static constexpr int XRES = 160;
+  static constexpr int YRES = 144;
+  static constexpr int BUFFER_SIZE = XRES * YRES;
+
   struct OAM_ENTRY
   {
     uint8_t y;
@@ -39,6 +43,7 @@ class PPU
     uint32_t lineTicks;
     uint8_t windowLine;
     std::list<OAM_ENTRY> currentLineSprites;
+    std::array<uint32_t, BUFFER_SIZE> videoBuffer;
   };
 
 public:
@@ -63,8 +68,6 @@ private:
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
-  static constexpr int XRES = 160;
-  static constexpr int YRES = 144;
 
   void incrementLY();
   void loadLineSprites();

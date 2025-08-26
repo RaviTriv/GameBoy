@@ -49,4 +49,5 @@ private:
   uint8_t calculateMapX() const;
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
+  uint32_t Pipeline::bufferIndex() const;
 };

@@ -48,7 +48,8 @@ void Pipeline::pushPixel()
 
     if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
     {
-      // TODO: Push to video buffer
+      ppu->state.videoBuffer[bufferIndex()] = pixel;
+      state.pushedCount++;
     }
 
     state.lineX++;
@@ -111,4 +112,9 @@ uint8_t Pipeline::calculateMapX() const
 uint8_t Pipeline::calculateTileY() const
 {
   return ((ppu->lcd->state.ly + ppu->lcd->state.scrollY) % 8) * 2;
+}
+
+uint32_t Pipeline::bufferIndex() const
+{
+  return state.pushedCount + ppu->lcd->state.ly * PPU::XRES;
 }
