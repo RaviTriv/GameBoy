@@ -96,6 +96,7 @@ void Pipeline::pushPixel()
 
     if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
     {
+      Logger::GetLogger()->info("PUSHING PIXEL: {}", pixel);
       ppu->state.videoBuffer[bufferIndex()] = pixel;
       state.pushedCount++;
     }
@@ -259,7 +260,7 @@ bool Pipeline::fifoAdd()
     int bit = 7 - i;
     uint8_t hi = !!(state.bgwBuffer[1] && (1 << bit));
     uint8_t lo = !!(state.bgwBuffer[2] && (1 << bit)) << 1;
-    uint8_t color = ppu->lcd->state.bgColors[(hi | lo)];
+    uint32_t color = ppu->lcd->state.bgColors[(hi | lo)];
 
     if (!(ppu->lcd->state.lcdcBits.bgWindowEnablePriority))
     {
