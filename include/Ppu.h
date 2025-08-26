@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./Pipeline.h"
+#include "./OamTypes.h"
 
 #include <array>
 #include <cstdint>
@@ -15,26 +16,6 @@ class PPU
   static constexpr int XRES = 160;
   static constexpr int YRES = 144;
   static constexpr int BUFFER_SIZE = XRES * YRES;
-
-  struct OAM_ENTRY
-  {
-    uint8_t y;
-    uint8_t x;
-    uint8_t tile;
-    union
-    {
-      struct
-      {
-        uint8_t cgbPn : 3;
-        uint8_t cgbVramBank : 1;
-        uint8_t pn : 1;
-        uint8_t xFlip : 1;
-        uint8_t yFlip : 1;
-        uint8_t bgp : 1;
-      };
-      uint8_t flags;
-    };
-  };
 
   struct State
   {

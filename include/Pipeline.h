@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./OamTypes.h"
+
 #include <cstdint>
 #include <array>
 
@@ -29,6 +31,7 @@ class Pipeline
     uint8_t fetchX;
     std::array<uint8_t, 3> bgwBuffer;
     std::array<uint8_t, 6> objectBuffer;
+    std::array<OAM_ENTRY, 3> fetchedEntries;
     uint8_t mapX;
     uint8_t mapY;
     uint8_t tileX;
