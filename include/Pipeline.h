@@ -63,4 +63,5 @@ private:
   void loadSpriteData(uint8_t offset);
   void fetchData1();
   bool fifoAdd();
+  bool windowVisible() const;
 };

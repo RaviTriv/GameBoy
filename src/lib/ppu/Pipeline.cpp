@@ -177,9 +177,32 @@ uint8_t Pipeline::bgw1ReadAddress() const
   return ppu->lcd->getBgWindowDataArea() + (state.bgwBuffer[0] * 16) + state.tileY;
 }
 
+bool Pipeline::windowVisible() const
+{
+  return ppu->lcd->state.lcdcBits.windowEnable && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= 144);
+}
+
 void Pipeline::loadWindowTile()
 {
-  // TODO: Load Window Tile
+  if (windowVisible())
+  {
+    return;
+  }
+
+  if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
+  {
+    if (ppu->lcd->state.ly >= ppu->lcd->state.windowY && ppu->lcd->state.ly < ppu->lcd->state.windowY + 160)
+    {
+      uint8_t wTileY = (ppu->state.windowLine % PIXEL_TILE_DIMENSION);
+
+      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + wTileY * BACKGROUND_MAP_DIMENSION);
+
+      if (ppu->lcd->getBgWindowDataArea() == 0x8800)
+      {
+        state.bgwBuffer[0] += 128;
+      }
+    }
+  }
 }
 
 void Pipeline::loadSpriteTile()

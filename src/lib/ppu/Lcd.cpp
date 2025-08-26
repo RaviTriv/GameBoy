@@ -143,3 +143,8 @@ uint16_t LCD::getBgWindowDataArea() const
 {
   return state.lcdcBits.bgWindowTiles ? 0x8000 : 0x8800;
 }
+
+uint16_t LCD::getWindowMapArea() const
+{
+  return state.lcdcBits.windowTileMap ? 0x9C00 : 0x9800;
+}

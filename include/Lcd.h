@@ -110,6 +110,7 @@ public:
   bool isLcdStatIntEnabled(uint8_t source);
   uint16_t getBgMapArea() const;
   uint16_t getBgWindowDataArea() const;
+  uint16_t getWindowMapArea() const;
 
 private:
   State state;
