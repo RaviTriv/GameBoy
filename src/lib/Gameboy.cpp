@@ -56,7 +56,6 @@ void GameBoy::run()
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     ui->handleEvents();
-    // TODO: check current frame against prev frame to avoid unnecessary redraws
     if (prevFrame != ppu->getCurrentFrame())
     {
       ui->update();

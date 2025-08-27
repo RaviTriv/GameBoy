@@ -6,7 +6,6 @@
 
 PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this), ui(ui)
 {
-  // std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
 }
 
 void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
@@ -112,11 +111,9 @@ void PPU::loadLineSprites()
 
   uint8_t spriteHeight = lcd->state.lcdcBits.objSize ? 16 : 8;
 
-  pipeline.clearFetchedEntries();
-
   for (int i = 0; i < 40; i++)
   {
-    OAM_ENTRY &entry = state.oamRam[i];
+    OAM_ENTRY entry = state.oamRam[i];
 
     if (!entry.x)
     {
@@ -130,13 +127,14 @@ void PPU::loadLineSprites()
 
     if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16)
     {
-      auto iter = state.currentLineSprites.begin();
-      while (iter != state.currentLineSprites.end() && iter->x <= entry.x)
-      {
-        ++iter;
-      }
+      auto idx = std::find_if(state.currentLineSprites.begin(),
+                              state.currentLineSprites.end(),
+                              [&entry](const OAM_ENTRY &e)
+                              {
+                                return e.x > entry.x;
+                              });
 
-      state.currentLineSprites.insert(iter, {entry});
+      state.currentLineSprites.insert(idx, entry);
     }
   }
 }
