@@ -64,7 +64,7 @@ void CPU::step()
 
   if (state.ime)
   {
-    // TODO: Handle interrupts
+    interrupt.handleInterrupts();
     state.imeScheduled = false;
   }
 

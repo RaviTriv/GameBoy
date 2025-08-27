@@ -52,20 +52,21 @@ void Cartridge::loadCartridge(std::string_view romPath)
 
   state.ramData.resize(ramBanks * 0x2000);
 
-  switch (state.header->type)
-  {
-  case CartridgeType::ROM_ONLY:
-    mbc = std::make_unique<MBC0>(state.romData);
-    break;
-  // case CartridgeType::MBC1:
-  // case CartridgeType::MBC1_RAM:
-  // case CartridgeType::MBC1_RAM_BATTERY:
-  //   mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks, ramBanks);
+  // switch (state.header->type)
+  // {
+  // case CartridgeType::ROM_ONLY:
+  //   mbc = std::make_unique<MBC0>(state.romData);
   //   break;
-  default:
-    Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(state.header->type));
-    break;
-  }
+  // // case CartridgeType::MBC1:
+  // // case CartridgeType::MBC1_RAM:
+  // // case CartridgeType::MBC1_RAM_BATTERY:
+  // //   mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks, ramBanks);
+  // //   break;
+  // default:
+  //   Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(state.header->type));
+  //   break;
+  // }
+  mbc = std::make_unique<MBC0>(state.romData);
 
   Logger::GetLogger()
       ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", state.header->title.data(), state.header->version, cartridgeType(state.header->type), state.romSize);

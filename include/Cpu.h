@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <string>
 
 constexpr uint8_t FLAG_Z_BIT = 7;
 constexpr uint8_t FLAG_N_BIT = 6;
