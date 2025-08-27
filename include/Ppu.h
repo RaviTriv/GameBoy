@@ -28,12 +28,15 @@ class PPU
     uint8_t lineSpritesCount;
     std::list<OAM_ENTRY> currentLineSprites;
     std::array<uint32_t, BUFFER_SIZE> videoBuffer;
+
+    uint32_t currentFrame;
   };
 
 public:
+  PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui);
   void init();
   void tick();
-  PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui);
+  uint32_t getCurrentFrame();
 
   void oamWrite(uint16_t addr, uint8_t value);
   uint8_t oamRead(uint16_t addr);

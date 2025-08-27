@@ -51,12 +51,17 @@ void GameBoy::run()
   // After Cpu is initialized
   timer->setDiv(0xABCC);
 
+  uint32_t prevFrame = 0;
   while (state.isRunning)
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     ui->handleEvents();
     // TODO: check current frame against prev frame to avoid unnecessary redraws
-    ui->update();
+    if (prevFrame != ppu->getCurrentFrame())
+    {
+      ui->update();
+    }
+    prevFrame = ppu->getCurrentFrame();
   }
 }
 

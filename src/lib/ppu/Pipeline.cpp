@@ -65,7 +65,7 @@ void Pipeline::fetchTile()
     loadWindowTile();
   }
 
-  if (ppu->lcd->state.lcdcBits.objEnable && ppu->state.currentLineSprites.size() > 0)
+  if (ppu->lcd->state.lcdcBits.objEnable && !ppu->state.currentLineSprites.empty())
   {
     loadSpriteTile();
   }

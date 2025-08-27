@@ -191,6 +191,8 @@ void PPU::hBlankMode()
         cpu->requestInterrupt(InterruptType::LCD_STAT);
       }
       // TODO: Add in Delay and Leverage this for Fast Foward Feature
+      state.currentFrame++;
+
       uint32_t end = ui->getTicks();
       uint32_t frameTime = end - prevFrameTime;
       if (frameTime < targetFrameTime)
@@ -233,3 +235,8 @@ void PPU::vBlankMode()
 /*
 <-----PPU-SM-END----->
 */
+
+uint32_t PPU::getCurrentFrame()
+{
+  return state.currentFrame;
+}
