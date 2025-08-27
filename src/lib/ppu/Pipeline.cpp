@@ -183,42 +183,42 @@ bool Pipeline::windowVisible() const
 
 void Pipeline::loadWindowTile()
 {
-  if (!windowVisible())
-  {
-    return;
-  }
+  // if (!windowVisible())
+  // {
+  //   return;
+  // }
 
-  if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
-  {
-    if (ppu->lcd->state.ly >= ppu->lcd->state.windowY && ppu->lcd->state.ly < ppu->lcd->state.windowY + 160)
-    {
-      uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
+  // if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
+  // {
+  //   if (ppu->lcd->state.ly >= ppu->lcd->state.windowY && ppu->lcd->state.ly < ppu->lcd->state.windowY + 160)
+  //   {
+  //     uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
-      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
+  //     state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
 
-      if (ppu->lcd->getBgWindowDataArea() == 0x8800)
-      {
-        state.bgwBuffer[0] += 128;
-      }
-    }
-  }
+  //     if (ppu->lcd->getBgWindowDataArea() == 0x8800)
+  //     {
+  //       state.bgwBuffer[0] += 128;
+  //     }
+  //   }
+  // }
 }
 
 void Pipeline::loadSpriteTile()
 {
-  for (const auto &entry : ppu->state.currentLineSprites)
-  {
-    int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
-    if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) || ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
-    {
-      state.fetchedEntries[state.entryCount] = entry;
-      state.entryCount++;
-    }
-    if (state.entryCount >= 3)
-    {
-      break;
-    }
-  }
+  // for (const auto &entry : ppu->state.currentLineSprites)
+  // {
+  //   int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
+  //   if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) || ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
+  //   {
+  //     state.fetchedEntries[state.entryCount] = entry;
+  //     state.entryCount++;
+  //   }
+  //   if (state.entryCount >= 3)
+  //   {
+  //     break;
+  //   }
+  // }
 }
 
 void Pipeline::loadSpriteData(uint8_t offset)
@@ -257,8 +257,8 @@ bool Pipeline::fifoAdd()
   for (int i = 0; i < PIXEL_TILE_DIMENSION; i++)
   {
     int bit = 7 - i;
-    uint8_t hi = !!(state.bgwBuffer[1] && (1 << bit));
-    uint8_t lo = !!(state.bgwBuffer[2] && (1 << bit)) << 1;
+    uint8_t hi = !!(state.bgwBuffer[1] & (1 << bit));
+    uint8_t lo = !!(state.bgwBuffer[2] & (1 << bit)) << 1;
     uint32_t color = ppu->lcd->state.bgColors[(hi | lo)];
 
     if (!(ppu->lcd->state.lcdcBits.bgWindowEnablePriority))
