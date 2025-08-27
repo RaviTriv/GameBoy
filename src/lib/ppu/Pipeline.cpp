@@ -272,7 +272,7 @@ bool Pipeline::fifoAdd()
 
     if (ppu->lcd->state.lcdcBits.objEnable)
     {
-      fetchSpritePixels(bit, color, hi | lo);
+      color = fetchSpritePixels(bit, color, hi | lo);
     }
 
     if (x >= 0)
