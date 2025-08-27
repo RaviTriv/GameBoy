@@ -5,7 +5,7 @@
 
 PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this)
 {
-  //std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
+  // std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
 }
 
 void PPU::init()
