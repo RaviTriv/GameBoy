@@ -66,6 +66,16 @@ void UI::handleEvents()
   }
 }
 
+void UI::delay(uint32_t ms)
+{
+  SDL_Delay(ms);
+}
+
+uint32_t UI::getTicks()
+{
+  return SDL_GetTicks();
+}
+
 UI::~UI()
 {
   SDL_DestroyTexture(sdlTexture);

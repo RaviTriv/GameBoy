@@ -188,9 +188,11 @@ void Pipeline::loadWindowTile()
     return;
   }
 
+  uint8_t windowY = ppu->lcd->state.windowY;
+
   if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
   {
-    if (ppu->lcd->state.ly >= ppu->lcd->state.windowY && ppu->lcd->state.ly < ppu->lcd->state.windowY + 160)
+    if (ppu->lcd->state.ly >= windowY && ppu->lcd->state.ly < windowY + 160)
     {
       uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
@@ -225,9 +227,11 @@ void Pipeline::loadSpriteData(uint8_t offset)
 {
   uint8_t spriteHeight = ppu->lcd->state.lcdcBits.objSize ? 16 : 8;
 
+  int curY = ppu->lcd->state.ly;
+
   for (int i = 0; i < state.entryCount; i++)
   {
-    uint8_t tileY = ((ppu->lcd->state.ly + 16) - state.fetchedEntries[i].y) * 2;
+    uint8_t tileY = ((curY + 16) - state.fetchedEntries[i].y) * 2;
 
     if (state.fetchedEntries[i].yFlip)
     {

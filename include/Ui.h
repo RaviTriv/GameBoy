@@ -21,6 +21,8 @@ public:
   void init();
   void handleEvents();
   void update();
+  uint32_t getTicks();
+  void delay(uint32_t ms);
   ~UI();
 
 private:

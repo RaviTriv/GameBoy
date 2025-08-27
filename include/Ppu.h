@@ -11,6 +11,7 @@
 class Bus;
 class CPU;
 class LCD;
+class UI;
 class PPU
 {
   static constexpr int XRES = 160;
@@ -32,7 +33,7 @@ class PPU
 public:
   void init();
   void tick();
-  PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd);
+  PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui);
 
   void oamWrite(uint16_t addr, uint8_t value);
   uint8_t oamRead(uint16_t addr);
@@ -41,6 +42,7 @@ public:
 
   void setCpu(std::shared_ptr<CPU> cpu);
   void setBus(std::shared_ptr<Bus> bus);
+  void setUi(std::shared_ptr<UI> ui);
   const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
 
 private:
@@ -48,6 +50,7 @@ private:
   std::shared_ptr<Bus> bus;
   std::shared_ptr<CPU> cpu;
   std::shared_ptr<LCD> lcd;
+  std::shared_ptr<UI> ui;
   friend class Pipeline;
   Pipeline pipeline;
 
@@ -55,6 +58,11 @@ private:
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
+
+  uint32_t targetFrameTime = 1000 / 60;
+  long prevFrameTime = 0;
+  long startTimer = 0;
+  long frameCount = 0;
 
   void incrementLY();
   void loadLineSprites();

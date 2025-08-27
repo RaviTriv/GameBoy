@@ -1,21 +1,24 @@
 #include "../../../include/Ppu.h"
 #include "../../../include/Cpu.h"
 #include "../../../include/Lcd.h"
+#include "../../../include/Ui.h"
 #include "../../../include/Logger.h"
 
-PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this)
+PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this), ui(ui)
 {
   // std::fill(state.videoBuffer.begin(), state.videoBuffer.end(), 0xFFFFFFFF);
-}
-
-void PPU::init()
-{
-  lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
 }
 
 void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 void PPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
+
+void PPU::setUi(std::shared_ptr<UI> ui) { this->ui = ui; }
+
+void PPU::init()
+{
+  lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+}
 
 const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
 {
@@ -188,6 +191,20 @@ void PPU::hBlankMode()
         cpu->requestInterrupt(InterruptType::LCD_STAT);
       }
       // TODO: Add in Delay and Leverage this for Fast Foward Feature
+      uint32_t end = ui->getTicks();
+      uint32_t frameTime = end - prevFrameTime;
+      if (frameTime < targetFrameTime)
+      {
+        ui->delay((targetFrameTime - frameTime));
+      }
+      if (end - startTimer >= 1000)
+      {
+        startTimer = end;
+        frameCount = 0;
+      }
+
+      frameCount++;
+      prevFrameTime = ui->getTicks();
     }
     else
     {
