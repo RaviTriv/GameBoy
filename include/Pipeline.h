@@ -10,6 +10,8 @@ class Pipeline
 {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
   constexpr static int PIXEL_TILE_DIMENSION = 8;
+  static constexpr int YRES = 144;
+  static constexpr int XRES = 160;
 
   enum class FETCH_STATE
   {
