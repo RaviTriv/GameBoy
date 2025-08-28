@@ -4,19 +4,7 @@
 
 LCD::LCD(std::shared_ptr<DMA> dma) : dma(dma)
 {
-  state.lcdc = 0x91;
-  state.scrollX = 0;
-  state.scrollY = 0;
-  state.ly = 0;
-  state.lyCompare = 0;
-  state.windowX = 0;
-  state.windowY = 0;
-  for (int i = 0; i < 4; i++)
-  {
-    state.bgColors[i] = defaultColors[i];
-    state.ob1Colors[i] = defaultColors[i];
-    state.ob2Colors[i] = defaultColors[i];
-  }
+
 }
 
 uint8_t LCD::read(uint16_t address)

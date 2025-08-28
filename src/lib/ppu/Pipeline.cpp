@@ -134,7 +134,7 @@ uint32_t Pipeline::bufferIndex() const
 
 uint16_t Pipeline::bgw0ReadAddress() const
 {
-  return ppu->lcd->getBgMapArea() + (state.mapX / PIXEL_TILE_DIMENSION) + (((state.mapY / PIXEL_TILE_DIMENSION)) * BACKGROUND_MAP_DIMENSION);
+  return ppu->lcd->getBgMapArea() + (state.mapX / 8) + (((state.mapY / 8)) * 32);
 }
 
 uint16_t Pipeline::bgw1ReadAddress() const
@@ -158,13 +158,13 @@ void Pipeline::loadWindowTile()
 
   uint8_t windowY = ppu->lcd->getWinY();
 
-  if (state.fetchX + 7 >= ppu->lcd->getWinX() && state.fetchX + 7 < ppu->lcd->getWinX() + 144 + 14)
+  if (state.fetchX + 7 >= ppu->lcd->getWinX() && state.fetchX + 7 < ppu->lcd->getWinX() + YRES + 14)
   {
-    if (ppu->lcd->getLy() >= windowY && ppu->lcd->getLy() < windowY + 160)
+    if (ppu->lcd->getLy() >= windowY && ppu->lcd->getLy() < windowY + XRES)
     {
-      uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
+      uint8_t wTileY = (ppu->state.windowLine / 8);
 
-      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->getWinX()) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
+      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->getWinX()) / 8) + (wTileY * 32));
 
       if (ppu->lcd->getBgWindowDataArea() == 0x8800)
       {
@@ -179,7 +179,7 @@ void Pipeline::loadSpriteTile()
   for (const auto &entry : ppu->state.currentLineSprites)
   {
     int spriteX = (entry.x - 8) + (ppu->lcd->getScrollX() % 8);
-    if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) ||
+    if ((spriteX >= state.fetchX && spriteX < state.fetchX + 8) ||
         ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
     {
       state.fetchedEntries[state.entryCount] = entry;
@@ -226,7 +226,7 @@ bool Pipeline::fifoAdd()
 
   int x = state.fetchX - (8 - (ppu->lcd->getScrollX() % 8));
 
-  for (int i = 0; i < PIXEL_TILE_DIMENSION; i++)
+  for (int i = 0; i < 8; i++)
   {
     int bit = 7 - i;
     uint8_t hi = !!(state.bgwBuffer[1] & (1 << bit));
@@ -258,14 +258,14 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor)
   {
     int spriteX = (state.fetchedEntries[i].x - 8) + (ppu->lcd->getScrollX() % 8);
 
-    if ((spriteX + 8) < state.fifoX)
+    if (spriteX + 8 < state.fifoX)
     {
       continue;
     }
 
     int offset = state.fifoX - spriteX;
 
-    if (offset < 0 || offset >= PIXEL_TILE_DIMENSION)
+    if (offset < 0 || offset >= 8)
     {
       continue;
     }

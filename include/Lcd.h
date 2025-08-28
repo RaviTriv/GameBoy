@@ -42,8 +42,6 @@ class LCD
     std::array<uint32_t, 4> ob2Colors;
   };
 
-
-
 public:
   LCD(std::shared_ptr<DMA> dma);
   uint8_t read(uint16_t address);
