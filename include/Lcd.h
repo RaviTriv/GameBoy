@@ -27,42 +27,10 @@ class LCD
     };
     uint8_t palette;
   };
-
-  struct LCDCBits
-  {
-    uint8_t bgWindowEnablePriority : 1;
-    uint8_t objEnable : 1;
-    uint8_t objSize : 1;
-    uint8_t bgTileMap : 1;
-    uint8_t bgWindowTiles : 1;
-    uint8_t windowEnable : 1;
-    uint8_t windowTileMap : 1;
-    uint8_t lcdEnable : 1;
-  };
-
-  struct LCDSBits
-  {
-    uint8_t ppuMode : 2;
-    uint8_t lycFlag : 1;
-    uint8_t mode0Select : 1;
-    uint8_t mode1Select : 1;
-    uint8_t mode2Select : 1;
-    uint8_t lycSelect : 1;
-  };
-
   struct State
   {
-
-    union
-    {
-      LCDCBits lcdcBits;
-      uint8_t lcdc;
-    };
-    union
-    {
-      LCDSBits lcdsBits;
-      uint8_t lcds;
-    };
+    uint8_t lcdc;
+    uint8_t lcds;
     uint8_t scrollX;
     uint8_t scrollY;
     uint8_t ly;
@@ -111,10 +79,20 @@ public:
   uint16_t getBgMapArea() const;
   uint16_t getBgWindowDataArea() const;
   uint16_t getWindowMapArea() const;
+  uint8_t getObjHeight();
+  bool isWindowEnabled();
+  bool isBgWindowEnabled();
+  bool isObjEnabled();
+  int getLcdMode() const;
+  void setLcdMode(MODE mode);
+  bool isLycFlag();
+  void setLycFlag(bool value);
 
 private:
   State state;
   std::shared_ptr<DMA> dma;
   static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
+  bool getBit(uint8_t value, int bit) const;
+  void setBit(uint8_t &value, int bit, bool set);
 };

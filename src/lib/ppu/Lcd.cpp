@@ -134,17 +134,75 @@ bool LCD::isLcdStatIntEnabled(uint8_t source)
   return (state.lcds & source) != 0;
 }
 
+bool LCD::getBit(uint8_t value, int bit) const
+{
+  return (value & (1 << bit)) != 0;
+}
+
+void LCD::setBit(uint8_t &value, int bit, bool set)
+{
+  if (set)
+  {
+    value |= (1 << bit);
+  }
+  else
+  {
+    value &= ~(1 << bit);
+  }
+}
+
+bool LCD::isBgWindowEnabled()
+{
+  return getBit(state.lcdc, 0);
+}
+
+bool LCD::isObjEnabled()
+{
+  return getBit(state.lcdc, 1);
+}
+
+uint8_t LCD::getObjHeight()
+{
+  return getBit(state.lcdc, 2) ? 16 : 8;
+}
+
 uint16_t LCD::getBgMapArea() const
 {
-  return state.lcdcBits.bgTileMap ? 0x9C00 : 0x9800;
+  return getBit(state.lcdc, 3) ? 0x9C00 : 0x9800;
 }
 
 uint16_t LCD::getBgWindowDataArea() const
 {
-  return state.lcdcBits.bgWindowTiles ? 0x8000 : 0x8800;
+  return getBit(state.lcdc, 4) ? 0x8000 : 0x8800;
+}
+
+bool LCD::isWindowEnabled()
+{
+  return getBit(state.lcdc, 5);
 }
 
 uint16_t LCD::getWindowMapArea() const
 {
-  return state.lcdcBits.windowTileMap ? 0x9C00 : 0x9800;
+  return getBit(state.lcdc, 6) ? 0x9C00 : 0x9800;
+}
+
+int LCD::getLcdMode() const
+{
+  return static_cast<MODE>(state.lcds & 0b11);
+}
+
+void LCD::setLcdMode(MODE mode)
+{
+  state.lcds &= ~0b11;
+  state.lcds |= static_cast<uint8_t>(mode);
+}
+
+bool LCD::isLycFlag()
+{
+  return getBit(state.lcds, 2);
+}
+
+void LCD::setLycFlag(bool value)
+{
+  setBit(state.lcds, 2, value);
 }

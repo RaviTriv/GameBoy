@@ -47,7 +47,6 @@ public:
   void oamReset();
   uint8_t getPushedCount();
   bool windowVisible() const;
-  void clearFetchedEntries();
 private:
   PPU *ppu;
   State state;

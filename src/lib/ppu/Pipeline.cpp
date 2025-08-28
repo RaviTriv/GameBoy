@@ -54,7 +54,7 @@ void Pipeline::fetchTile()
 {
   state.entryCount = 0;
 
-  if (ppu->lcd->state.lcdcBits.bgWindowEnablePriority)
+  if (ppu->lcd->isBgWindowEnabled())
   {
     state.bgwBuffer[0] = ppu->bus->read8(bgw0ReadAddress());
 
@@ -65,7 +65,7 @@ void Pipeline::fetchTile()
     loadWindowTile();
   }
 
-  if (ppu->lcd->state.lcdcBits.objEnable && !ppu->state.currentLineSprites.empty())
+  if (ppu->lcd->isObjEnabled() && !ppu->state.currentLineSprites.empty())
   {
     loadSpriteTile();
   }
@@ -112,40 +112,6 @@ void Pipeline::reset()
   }
 }
 
-bool Pipeline::fifoIsEmpty() const
-{
-  return state.fifoSize == 0;
-}
-
-bool Pipeline::fifoIsFull() const
-{
-  return state.fifoSize == state.pixelFifo.size();
-}
-
-void Pipeline::fifoPush(uint32_t pixel)
-{
-  if (fifoIsFull())
-  {
-    return;
-  }
-
-  state.pixelFifo[state.fifoTail] = pixel;
-  state.fifoTail = (state.fifoTail + 1) % state.pixelFifo.size();
-  state.fifoSize++;
-}
-
-uint32_t Pipeline::fifoPop()
-{
-  if (fifoIsEmpty())
-  {
-    return 0;
-  }
-  uint32_t pixel = state.pixelFifo[state.fifoHead];
-  state.fifoHead = (state.fifoHead + 1) % state.pixelFifo.size();
-  state.fifoSize--;
-  return pixel;
-}
-
 uint8_t Pipeline::calculateMapY() const
 {
   return ppu->lcd->state.ly + ppu->lcd->state.scrollY;
@@ -178,7 +144,7 @@ uint16_t Pipeline::bgw1ReadAddress() const
 
 bool Pipeline::windowVisible() const
 {
-  return ppu->lcd->state.lcdcBits.windowEnable && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= 144);
+  return (ppu->lcd->isWindowEnabled()) && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= 144);
 }
 
 void Pipeline::loadWindowTile()
@@ -211,7 +177,8 @@ void Pipeline::loadSpriteTile()
   for (const auto &entry : ppu->state.currentLineSprites)
   {
     int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
-    if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) || ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
+    if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) ||
+        ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
     {
       state.fetchedEntries[state.entryCount] = entry;
       state.entryCount++;
@@ -225,9 +192,8 @@ void Pipeline::loadSpriteTile()
 
 void Pipeline::loadSpriteData(uint8_t offset)
 {
-  uint8_t spriteHeight = ppu->lcd->state.lcdcBits.objSize ? 16 : 8;
-
   int curY = ppu->lcd->state.ly;
+  uint8_t spriteHeight = ppu->lcd->getObjHeight();
 
   for (int i = 0; i < state.entryCount; i++)
   {
@@ -265,12 +231,12 @@ bool Pipeline::fifoAdd()
     uint8_t lo = !!(state.bgwBuffer[2] & (1 << bit)) << 1;
     uint32_t color = ppu->lcd->state.bgColors[(hi | lo)];
 
-    if (!(ppu->lcd->state.lcdcBits.bgWindowEnablePriority))
+    if (!(ppu->lcd->isBgWindowEnabled()))
     {
       color = ppu->lcd->state.bgColors[0];
     }
 
-    if (ppu->lcd->state.lcdcBits.objEnable)
+    if (ppu->lcd->isObjEnabled())
     {
       color = fetchSpritePixels(bit, color, hi | lo);
     }
@@ -338,11 +304,8 @@ void Pipeline::oamReset()
   state.fetchState = FETCH_STATE::TILE;
   state.lineX = 0;
   state.fetchX = 0;
-  state.fifoX = 0;
-  state.fifoHead = 0;
-  state.fifoTail = 0;
-  state.fifoSize = 0;
   state.pushedCount = 0;
+  state.fifoX = 0;
 }
 
 uint8_t Pipeline::getPushedCount()
@@ -350,7 +313,43 @@ uint8_t Pipeline::getPushedCount()
   return state.pushedCount;
 }
 
-void Pipeline::clearFetchedEntries()
+/*
+ <--- FIFO-START --->
+*/
+
+bool Pipeline::fifoIsEmpty() const
 {
-  state.fetchedEntries.fill({0});
+  return state.fifoSize == 0;
 }
+
+bool Pipeline::fifoIsFull() const
+{
+  return state.fifoSize == state.pixelFifo.size();
+}
+
+void Pipeline::fifoPush(uint32_t pixel)
+{
+  if (fifoIsFull())
+  {
+    return;
+  }
+
+  state.pixelFifo[state.fifoTail] = pixel;
+  state.fifoTail = (state.fifoTail + 1) % state.pixelFifo.size();
+  state.fifoSize++;
+}
+
+uint32_t Pipeline::fifoPop()
+{
+  if (fifoIsEmpty())
+  {
+    return 0;
+  }
+  uint32_t pixel = state.pixelFifo[state.fifoHead];
+  state.fifoHead = (state.fifoHead + 1) % state.pixelFifo.size();
+  state.fifoSize--;
+  return pixel;
+}
+/*
+ <--- FIFO-END --->
+*/
