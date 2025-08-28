@@ -5,28 +5,25 @@
 #include <memory>
 
 class DMA;
+
+enum MODE
+{
+  HBLANK,
+  VBLANK,
+  OAM,
+  DRAWING
+};
+
+enum LCDS_SRC
+{
+  S_HBLANK = (1 << 3),
+  S_VBLANK = (1 << 4),
+  S_OAM = (1 << 5),
+  S_LYC = (1 << 6),
+};
+
 class LCD
 {
-  friend class PPU;
-  friend class Pipeline;
-  enum PaletteType
-  {
-    BGP = 0,
-    OBP0 = 1,
-    OBP1 = 2
-  };
-
-  union PaletteRegister
-  {
-    struct
-    {
-      uint8_t colorId0 : 2;
-      uint8_t colorId1 : 2;
-      uint8_t colorId2 : 2;
-      uint8_t colorId3 : 2;
-    };
-    uint8_t palette;
-  };
   struct State
   {
     uint8_t lcdc;
@@ -36,18 +33,8 @@ class LCD
     uint8_t ly;
     uint8_t lyCompare;
     uint8_t dma;
-    union
-    {
-      struct
-      {
-        uint8_t colorId0 : 2;
-        uint8_t colorId1 : 2;
-        uint8_t colorId2 : 2;
-        uint8_t colorId3 : 2;
-      };
-      uint8_t bgp;
-    };
-    std::array<PaletteRegister, 3> palettes;
+    uint8_t bgPalette;
+    std::array<uint8_t, 2> objPalettes;
     uint8_t windowX;
     uint8_t windowY;
     std::array<uint32_t, 4> bgColors;
@@ -55,21 +42,7 @@ class LCD
     std::array<uint32_t, 4> ob2Colors;
   };
 
-  enum MODE
-  {
-    HBLANK,
-    VBLANK,
-    OAM,
-    DRAWING
-  };
 
-  enum LCDS_SRC
-  {
-    S_HBLANK = (1 << 3),
-    S_VBLANK = (1 << 4),
-    S_OAM = (1 << 5),
-    S_LYC = (1 << 6),
-  };
 
 public:
   LCD(std::shared_ptr<DMA> dma);
@@ -87,12 +60,25 @@ public:
   void setLcdMode(MODE mode);
   bool isLycFlag();
   void setLycFlag(bool value);
+  uint8_t getLy();
+  uint8_t getLyCompare();
+  void incrementLy();
+  void setLy(uint8_t value);
+
+  uint8_t getScrollX();
+  uint8_t getScrollY();
+  uint8_t getWinX();
+  uint8_t getWinY();
+
+  uint32_t getBgColor(uint8_t idx);
+  uint32_t getOb1Colors(uint8_t idx);
+  uint32_t getOb2Colors(uint8_t idx);
 
 private:
   State state;
   std::shared_ptr<DMA> dma;
   static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
-  void updatePalettes(PaletteType type, uint8_t value);
+  void updatePalettes(uint8_t paletteData, uint8_t pal);
   bool getBit(uint8_t value, int bit) const;
   void setBit(uint8_t &value, int bit, bool set);
 };

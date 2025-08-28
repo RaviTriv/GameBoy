@@ -47,27 +47,33 @@ public:
   void oamReset();
   uint8_t getPushedCount();
   bool windowVisible() const;
+
 private:
   PPU *ppu;
   State state;
   void fetch();
   void fetchTile();
   void fetchData0();
-  bool fifoIsEmpty() const;
-  bool fifoIsFull() const;
-  void fifoPush(uint32_t pixel);
-  uint32_t fifoPop();
+
   void pushPixel();
   uint8_t calculateMapX() const;
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
   uint32_t bufferIndex() const;
-  uint16_t bgw0ReadAddress() const;
-  uint16_t bgw1ReadAddress() const;
-  void loadWindowTile();
-  void loadSpriteTile();
-  void loadSpriteData(uint8_t offset);
+
   void fetchData1();
   bool fifoAdd();
   uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor);
+
+  uint16_t bgw0ReadAddress() const;
+  uint16_t bgw1ReadAddress() const;
+
+  bool fifoIsEmpty() const;
+  bool fifoIsFull() const;
+  void fifoPush(uint32_t pixel);
+  uint32_t fifoPop();
+
+  void loadWindowTile();
+  void loadSpriteTile();
+  void loadSpriteData(uint8_t offset);
 };

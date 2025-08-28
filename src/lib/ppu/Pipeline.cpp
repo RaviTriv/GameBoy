@@ -94,7 +94,7 @@ void Pipeline::pushPixel()
   {
     uint32_t pixel = fifoPop();
 
-    if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
+    if (state.lineX >= (ppu->lcd->getScrollX()) % 8)
     {
       ppu->state.videoBuffer[bufferIndex()] = pixel;
       state.pushedCount++;
@@ -114,22 +114,22 @@ void Pipeline::reset()
 
 uint8_t Pipeline::calculateMapY() const
 {
-  return ppu->lcd->state.ly + ppu->lcd->state.scrollY;
+  return ppu->lcd->getLy() + ppu->lcd->getScrollY();
 }
 
 uint8_t Pipeline::calculateMapX() const
 {
-  return state.fetchX + ppu->lcd->state.scrollX;
+  return state.fetchX + ppu->lcd->getScrollX();
 }
 
 uint8_t Pipeline::calculateTileY() const
 {
-  return ((ppu->lcd->state.ly + ppu->lcd->state.scrollY) % 8) * 2;
+  return ((ppu->lcd->getLy() + ppu->lcd->getScrollY()) % 8) * 2;
 }
 
 uint32_t Pipeline::bufferIndex() const
 {
-  return state.pushedCount + ppu->lcd->state.ly * PPU::XRES;
+  return state.pushedCount + ppu->lcd->getLy() * PPU::XRES;
 }
 
 uint16_t Pipeline::bgw0ReadAddress() const
@@ -144,7 +144,9 @@ uint16_t Pipeline::bgw1ReadAddress() const
 
 bool Pipeline::windowVisible() const
 {
-  return (ppu->lcd->isWindowEnabled()) && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= 144);
+  return ppu->lcd->isWindowEnabled() && ppu->lcd->getWinX() >= 0 &&
+         ppu->lcd->getWinX() <= 166 && ppu->lcd->getWinY() >= 0 &&
+         ppu->lcd->getWinY() <= 144;
 }
 
 void Pipeline::loadWindowTile()
@@ -154,15 +156,15 @@ void Pipeline::loadWindowTile()
     return;
   }
 
-  uint8_t windowY = ppu->lcd->state.windowY;
+  uint8_t windowY = ppu->lcd->getWinY();
 
-  if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
+  if (state.fetchX + 7 >= ppu->lcd->getWinX() && state.fetchX + 7 < ppu->lcd->getWinX() + 144 + 14)
   {
-    if (ppu->lcd->state.ly >= windowY && ppu->lcd->state.ly < windowY + 160)
+    if (ppu->lcd->getLy() >= windowY && ppu->lcd->getLy() < windowY + 160)
     {
       uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
-      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->state.windowX) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
+      state.bgwBuffer[0] = ppu->bus->read8(ppu->lcd->getWindowMapArea() + ((state.fetchX + 7 - ppu->lcd->getWinX()) / 8) + (wTileY * BACKGROUND_MAP_DIMENSION));
 
       if (ppu->lcd->getBgWindowDataArea() == 0x8800)
       {
@@ -176,7 +178,7 @@ void Pipeline::loadSpriteTile()
 {
   for (const auto &entry : ppu->state.currentLineSprites)
   {
-    int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
+    int spriteX = (entry.x - 8) + (ppu->lcd->getScrollX() % 8);
     if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) ||
         ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
     {
@@ -192,7 +194,7 @@ void Pipeline::loadSpriteTile()
 
 void Pipeline::loadSpriteData(uint8_t offset)
 {
-  int curY = ppu->lcd->state.ly;
+  int curY = ppu->lcd->getLy();
   uint8_t spriteHeight = ppu->lcd->getObjHeight();
 
   for (int i = 0; i < state.entryCount; i++)
@@ -222,18 +224,18 @@ bool Pipeline::fifoAdd()
     return false;
   }
 
-  int x = state.fetchX - (8 - (ppu->lcd->state.scrollX % 8));
+  int x = state.fetchX - (8 - (ppu->lcd->getScrollX() % 8));
 
   for (int i = 0; i < PIXEL_TILE_DIMENSION; i++)
   {
     int bit = 7 - i;
     uint8_t hi = !!(state.bgwBuffer[1] & (1 << bit));
     uint8_t lo = !!(state.bgwBuffer[2] & (1 << bit)) << 1;
-    uint32_t color = ppu->lcd->state.bgColors[(hi | lo)];
+    uint32_t color = ppu->lcd->getBgColor(hi | lo);
 
     if (!(ppu->lcd->isBgWindowEnabled()))
     {
-      color = ppu->lcd->state.bgColors[0];
+      color = ppu->lcd->getBgColor(0);
     }
 
     if (ppu->lcd->isObjEnabled())
@@ -254,7 +256,7 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor)
 {
   for (int i = 0; i < state.entryCount; i++)
   {
-    int spriteX = (state.fetchedEntries[i].x - 8) + (ppu->lcd->state.scrollX % 8);
+    int spriteX = (state.fetchedEntries[i].x - 8) + (ppu->lcd->getScrollX() % 8);
 
     if ((spriteX + 8) < state.fifoX)
     {
@@ -287,7 +289,7 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor)
 
     if (!bgPriority || bgColor == 0)
     {
-      color = state.fetchedEntries[i].pn ? ppu->lcd->state.ob2Colors[(hi | lo)] : ppu->lcd->state.ob1Colors[(hi | lo)];
+      color = state.fetchedEntries[i].pn ? ppu->lcd->getOb2Colors(hi | lo) : ppu->lcd->getOb1Colors(hi | lo);
 
       if (hi | lo)
       {
