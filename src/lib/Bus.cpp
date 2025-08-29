@@ -60,7 +60,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address == 0xFFFF)
   {
     // Interrupt Enable Register
-    cpu->getInterruptEnable();
+    return cpu->getInterruptEnable();
   }
   return ram->readHRAM(address);
 }
