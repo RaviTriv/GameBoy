@@ -1,8 +1,9 @@
 #include "../../include/Ui.h"
 #include "../../include/Ppu.h"
+#include "../../include/Gamepad.h"
 #include "../../include/Logger.h"
 
-UI::UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu) : onClose(closeCallback), ppu(ppu)
+UI::UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad) : onClose(closeCallback), ppu(ppu), gamepad(gamepad)
 {
 }
 
@@ -50,6 +51,40 @@ void UI::update()
   SDL_RenderPresent(renderer);
 }
 
+void UI::onKey(bool isDown, SDL_Keycode keyCode)
+{
+  switch (keyCode)
+  {
+  case SDLK_Z:
+    gamepad->setBPressed(isDown);
+    break;
+  case SDLK_X:
+    gamepad->setAPressed(isDown);
+    break;
+  case SDLK_RETURN:
+    gamepad->setStartPressed(isDown);
+    break;
+  case SDLK_TAB:
+    gamepad->setSelectPressed(isDown);
+    break;
+  case SDLK_UP:
+    gamepad->setUpPressed(isDown);
+    break;
+  case SDLK_DOWN:
+    gamepad->setDownPressed(isDown);
+    break;
+  case SDLK_LEFT:
+    gamepad->setLeftPressed(isDown);
+    break;
+  case SDLK_RIGHT:
+    gamepad->setRightPressed(isDown);
+    break;
+  case SDLK_S:
+    // TODO: Save State
+    break;
+  }
+}
+
 void UI::handleEvents()
 {
   SDL_Event e;
@@ -58,6 +93,12 @@ void UI::handleEvents()
   {
     switch (e.type)
     {
+    case SDL_EVENT_KEY_DOWN:
+      onKey(true, e.key.key);
+      break;
+    case SDL_EVENT_KEY_UP:
+      onKey(false, e.key.key);
+      break;
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
       onClose();
     default:

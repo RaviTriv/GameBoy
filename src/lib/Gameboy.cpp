@@ -1,4 +1,5 @@
 #include "../../include/Gameboy.h"
+#include "../../include/Gamepad.h"
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
@@ -17,11 +18,12 @@ void GameBoy::init(std::string romPath)
   cartridge = std::make_unique<Cartridge>(romPath);
   dma = std::make_unique<DMA>(nullptr, nullptr);
   ram = std::make_unique<RAM>();
-  io = std::make_unique<IO>(nullptr, nullptr, nullptr);
+  gamepad = std::make_unique<Gamepad>();
+  io = std::make_unique<IO>(nullptr, nullptr, nullptr, gamepad);
   lcd = std::make_shared<LCD>(dma);
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
   ui = std::make_shared<UI>([this]()
-                            { state.isRunning = false; }, nullptr);
+                            { state.isRunning = false; }, nullptr, gamepad);
   bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
@@ -33,6 +35,7 @@ void GameBoy::init(std::string romPath)
   io->setTimer(timer);
   io->setCPU(cpu);
   io->setLCD(lcd);
+  io->setGamepad(gamepad);
   ppu->setCpu(cpu);
   ppu->setBus(bus);
   ui->setPpu(ppu);
@@ -66,12 +69,10 @@ void GameBoy::run()
 
 void GameBoy::cpuLoop()
 {
+  Logger::GetLogger()->info("Starting CPU Loop");
   while (state.isRunning)
   {
-    if (!state.isPaused)
-    {
-      cpu->step();
-    }
+    cpu->step();
   }
 }
 

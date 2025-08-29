@@ -2,21 +2,24 @@
 #include "../../include/Cpu.h"
 #include "../../include/Lcd.h"
 #include "../../include/Timer.h"
+#include "../../include/Gamepad.h"
+#include "../../include/Logger.h"
 
-IO::IO(std::shared_ptr<CPU> cpu, std::shared_ptr<Timer> timer, std::shared_ptr<LCD> lcd) : cpu(cpu), timer(timer), lcd(lcd)
+IO::IO(std::shared_ptr<CPU> cpu, std::shared_ptr<Timer> timer, std::shared_ptr<LCD> lcd, std::shared_ptr<Gamepad> gamepad) : cpu(cpu), timer(timer), lcd(lcd)
 {
 }
 
 void IO::setTimer(std::shared_ptr<Timer> timer) { this->timer = timer; }
 void IO::setCPU(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 void IO::setLCD(std::shared_ptr<LCD> lcd) { this->lcd = lcd; }
+void IO::setGamepad(std::shared_ptr<Gamepad> gamepad) { this->gamepad = gamepad; }
 
 uint8_t IO::read(uint16_t address) const
 {
   if (address == 0xFF00)
   {
     // Gamepad
-    return 0xFF;
+    return gamepad->getOutput();
   }
 
   if (address == 0xFF01)
@@ -65,6 +68,8 @@ void IO::write(uint16_t address, uint8_t value)
   if (address == 0xFF00)
   {
     // Gamepad
+    gamepad->setSel(value);
+    return;
   }
 
   if (address == 0xFF01)

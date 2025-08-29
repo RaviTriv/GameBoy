@@ -12,11 +12,12 @@
 #include <memory>
 
 class PPU;
+class Gamepad;
 class UI
 {
 public:
   using CloseCallback = std::function<void()>;
-  UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu);
+  UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad);
   void setPpu(std::shared_ptr<PPU> ppu);
   void init();
   void handleEvents();
@@ -27,6 +28,7 @@ public:
 
 private:
   std::shared_ptr<PPU> ppu;
+  std::shared_ptr<Gamepad> gamepad;
 
   static constexpr int YRES = 144;
   static constexpr int XRES = 160;
@@ -38,4 +40,6 @@ private:
   SDL_Surface *screen;
   SDL_Texture *sdlTexture;
   CloseCallback onClose;
+
+  void onKey(bool isDown, SDL_Keycode keyCode);
 };

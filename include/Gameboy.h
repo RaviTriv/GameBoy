@@ -15,6 +15,7 @@ class LCD;
 class PPU;
 class RAM;
 class Timer;
+class Gamepad;
 class UI;
 class GameBoy
 {
@@ -41,6 +42,7 @@ private:
   std::shared_ptr<PPU> ppu;
   std::shared_ptr<RAM> ram;
   std::shared_ptr<Timer> timer;
+  std::shared_ptr<Gamepad> gamepad;
   std::shared_ptr<UI> ui;
 
   std::thread cpuThread;
