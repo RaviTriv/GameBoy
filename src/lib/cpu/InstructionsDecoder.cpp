@@ -1,6 +1,7 @@
 #include "../../../include/InstructionsDecoder.h"
 #include "../../../include/Bus.h"
 #include "../../../include/Cpu.h"
+#include "../../../include/Logger.h"
 
 InstructionsDecoder::InstructionsDecoder(CPU *cpu) : cpu(cpu) {}
 
@@ -8,6 +9,31 @@ const Instruction &InstructionsDecoder::getInstruction(uint8_t opcode)
 {
   return INSTRUCTIONS[opcode];
 }
+
+InstructionsDecoder::AddressModeHandler InstructionsDecoder::addressModeHandlers[] = {
+    &InstructionsDecoder::none,
+    &InstructionsDecoder::imp,
+    &InstructionsDecoder::r_d16,
+    &InstructionsDecoder::r_r,
+    &InstructionsDecoder::mr_r,
+    &InstructionsDecoder::r,
+    &InstructionsDecoder::r_d8,
+    &InstructionsDecoder::r_mr,
+    &InstructionsDecoder::r_hli,
+    &InstructionsDecoder::r_hld,
+    &InstructionsDecoder::hli_r,
+    &InstructionsDecoder::hld_r,
+    &InstructionsDecoder::r_a8,
+    &InstructionsDecoder::a8_r,
+    &InstructionsDecoder::hl_spr,
+    &InstructionsDecoder::r_d16,
+    &InstructionsDecoder::d8,
+    &InstructionsDecoder::a16_r,
+    &InstructionsDecoder::mr_d8,
+    &InstructionsDecoder::mr,
+    &InstructionsDecoder::a16_r,
+    &InstructionsDecoder::r_a16
+};
 
 void InstructionsDecoder::decode(uint8_t opcode)
 {
@@ -19,113 +45,7 @@ void InstructionsDecoder::decode(uint8_t opcode)
   cpu->state.memoryAddress = 0;
   cpu->state.isMemoryOp = false;
 
-  switch (instruction.addressMode)
-  {
-  case AddressingMode::IMP:
-  {
-    imp();
-    return;
-  }
-  case AddressingMode::R:
-  {
-    r();
-    return;
-  }
-  case AddressingMode::R_R:
-  {
-    r_r();
-    return;
-  }
-  case AddressingMode::R_D8:
-  {
-    r_d8();
-    return;
-  }
-  case AddressingMode::D16:
-  case AddressingMode::R_D16:
-  {
-    r_d16();
-    return;
-  }
-  case AddressingMode::MR_R:
-  {
-    mr_r();
-    return;
-  }
-  case AddressingMode::R_MR:
-  {
-    r_mr();
-    return;
-  }
-  case AddressingMode::R_HLI:
-  {
-    r_hli();
-    return;
-  }
-  case AddressingMode::R_HLD:
-  {
-    r_hld();
-    return;
-  }
-  case AddressingMode::HLI_R:
-  {
-    hli_r();
-    return;
-  }
-  case AddressingMode::HLD_R:
-  {
-    hld_r();
-    return;
-  }
-  case AddressingMode::R_A8:
-  {
-    r_a8();
-    return;
-  }
-  case AddressingMode::A8_R:
-  {
-    a8_r();
-    return;
-  }
-  case AddressingMode::D8:
-  {
-    d8();
-    return;
-  }
-  case AddressingMode::HL_SPR:
-  {
-    hl_spr();
-    return;
-  }
-  case AddressingMode::A16_R:
-  case AddressingMode::D16_R:
-  {
-    a16_r();
-    return;
-  }
-  case AddressingMode::MR_D8:
-  {
-    mr_d8();
-    return;
-  }
-  case AddressingMode::MR:
-  {
-    mr();
-    return;
-  }
-  case AddressingMode::R_A16:
-  {
-    r_a16();
-    return;
-  }
-  case AddressingMode::NONE:
-  {
-    none();
-    return;
-  }
-  default:
-    throw std::runtime_error("Unknown CPU addressing mode");
-  }
+  (this->*addressModeHandlers[static_cast<int>(instruction.addressMode)])();
 }
 
 void InstructionsDecoder::none()

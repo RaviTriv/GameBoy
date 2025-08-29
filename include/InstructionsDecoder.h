@@ -14,7 +14,9 @@ public:
 
 private:
   CPU *cpu;
-
+  using AddressModeHandler = void (InstructionsDecoder::*)();
+  static AddressModeHandler addressModeHandlers[];
+  
   static const Instruction &getInstruction(uint8_t opcode);
   void imp();
   void r();
