@@ -18,6 +18,7 @@ add_executable(gameboy
     src/lib/cpu/InstructionsExecuter.cpp
     src/lib/cpu/Interrupts.cpp
     src/lib/Gameboy.cpp
+    src/lib/Gamepad.cpp
     src/lib/Io.cpp
     src/lib/ppu/Dma.cpp
     src/lib/ppu/Lcd.cpp
