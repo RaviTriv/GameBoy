@@ -69,7 +69,6 @@ void GameBoy::run()
 
 void GameBoy::cpuLoop()
 {
-  Logger::GetLogger()->info("Starting CPU Loop");
   while (state.isRunning)
   {
     cpu->step();
