@@ -16,6 +16,7 @@ uint8_t IO::read(uint16_t address) const
   if (address == 0xFF00)
   {
     // Gamepad
+    return 0xFF;
   }
 
   if (address == 0xFF01)

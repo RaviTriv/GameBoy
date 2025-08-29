@@ -211,7 +211,7 @@ void Pipeline::loadSpriteTile()
   for (const auto &entry : ppu->state.currentLineSprites)
   {
     int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
-    if ((spriteX > state.fetchX && spriteX < state.fetchX + 8) || ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
+    if ((spriteX >= state.fetchX && spriteX < state.fetchX + 8) || ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))
     {
       state.fetchedEntries[state.entryCount] = entry;
       state.entryCount++;
@@ -338,11 +338,8 @@ void Pipeline::oamReset()
   state.fetchState = FETCH_STATE::TILE;
   state.lineX = 0;
   state.fetchX = 0;
-  state.fifoX = 0;
-  state.fifoHead = 0;
-  state.fifoTail = 0;
-  state.fifoSize = 0;
   state.pushedCount = 0;
+  state.fifoX = 0;
 }
 
 uint8_t Pipeline::getPushedCount()

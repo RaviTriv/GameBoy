@@ -28,6 +28,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xC000)
   {
     // External RAM
+    // TODO
   }
   else if (address < 0xE000)
   {
@@ -60,7 +61,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address == 0xFFFF)
   {
     // Interrupt Enable Register
-    cpu->getInterruptEnable();
+    return cpu->getInterruptEnable();
   }
   return ram->readHRAM(address);
 }
@@ -77,6 +78,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   if (address < 0x8000)
   {
     // Cartridge
+    // TODO
   }
   else if (address < 0xA000)
   {
