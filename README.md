@@ -13,3 +13,6 @@ make
 ```console
 ./gameboy ${PATH_TO_ROM}
 ```
+
+## Screenshots
+![Tetris](images/tetris.png)
