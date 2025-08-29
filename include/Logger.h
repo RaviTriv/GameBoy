@@ -21,6 +21,7 @@ public:
       console_sink->set_level(spdlog::level::info);
 
       auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("../logs/gameboy.log", true);
+      // file_sink->set_pattern("%v");
 
       logger = std::make_shared<spdlog::async_logger>(
           "CORE",

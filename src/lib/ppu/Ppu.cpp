@@ -16,7 +16,7 @@ void PPU::setUi(std::shared_ptr<UI> ui) { this->ui = ui; }
 
 void PPU::init()
 {
-  lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+  lcd->setLcdMode(MODE::OAM);
 }
 
 const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
@@ -27,22 +27,22 @@ const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
 void PPU::tick()
 {
   state.lineTicks++;
-  switch (lcd->state.lcdsBits.ppuMode)
+  switch (lcd->getLcdMode())
   {
-  case LCD::MODE::OAM:
+  case MODE::OAM:
     oamMode();
     break;
-  case LCD::MODE::DRAWING:
+  case MODE::DRAWING:
     drawingMode();
     break;
-  case LCD::MODE::HBLANK:
+  case MODE::HBLANK:
     hBlankMode();
     break;
-  case LCD::MODE::VBLANK:
+  case MODE::VBLANK:
     vBlankMode();
     break;
   default:
-    Logger::GetLogger()->error("Unknown PPU mode: {}", static_cast<int>(lcd->state.lcdsBits.ppuMode));
+    Logger::GetLogger()->error("Unknown PPU mode: {}", lcd->getLcdMode());
     break;
   }
 }
@@ -83,33 +83,34 @@ uint8_t PPU::vramRead(uint16_t address) const
 
 void PPU::incrementLY()
 {
-  if (pipeline.windowVisible() && lcd->state.ly >= lcd->state.windowY && lcd->state.ly < lcd->state.windowY + YRES)
+  if (pipeline.windowVisible() && lcd->getLy() >= lcd->getWinY() &&
+      lcd->getLy() < lcd->getWinY() + YRES)
   {
     state.windowLine++;
   }
 
-  lcd->state.ly++;
+  lcd->incrementLy();
 
-  if (lcd->state.ly == lcd->state.lyCompare)
+  if (lcd->getLy() == lcd->getLyCompare())
   {
-    lcd->state.lcdsBits.lycFlag = 1;
+    lcd->setLycFlag(1);
 
-    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC)))
+    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCDS_SRC::S_LYC)))
     {
       cpu->requestInterrupt(InterruptType::LCD_STAT);
     }
   }
   else
   {
-    lcd->state.lcdsBits.lycFlag = 0;
+    lcd->setLycFlag(0);
   }
 }
 
 void PPU::loadLineSprites()
 {
-  int curY = lcd->state.ly;
+  int curY = lcd->getLy();
 
-  uint8_t spriteHeight = lcd->state.lcdcBits.objSize ? 16 : 8;
+  uint8_t spriteHeight = lcd->getObjHeight();
 
   for (int i = 0; i < 40; i++)
   {
@@ -150,7 +151,7 @@ void PPU::oamMode()
 
   if (state.lineTicks >= 80)
   {
-    lcd->state.lcdsBits.ppuMode = LCD::MODE::DRAWING;
+    lcd->setLcdMode(MODE::DRAWING);
 
     pipeline.oamReset();
   }
@@ -163,9 +164,9 @@ void PPU::drawingMode()
   if (pipeline.getPushedCount() >= XRES)
   {
     pipeline.reset();
-    lcd->state.lcdsBits.ppuMode = LCD::MODE::HBLANK;
+    lcd->setLcdMode(MODE::HBLANK);
 
-    if (lcd->state.lcds & (static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
+    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCDS_SRC::S_HBLANK)))
     {
       cpu->requestInterrupt(InterruptType::LCD_STAT);
     }
@@ -178,13 +179,13 @@ void PPU::hBlankMode()
   {
     incrementLY();
 
-    if (lcd->state.ly >= YRES)
+    if (lcd->getLy() >= YRES)
     {
-      lcd->state.lcdsBits.ppuMode = LCD::MODE::VBLANK;
+      lcd->setLcdMode(MODE::VBLANK);
 
       cpu->requestInterrupt(InterruptType::VBLANK);
 
-      if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK)))
+      if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCDS_SRC::S_VBLANK)))
       {
         cpu->requestInterrupt(InterruptType::LCD_STAT);
       }
@@ -208,8 +209,9 @@ void PPU::hBlankMode()
     }
     else
     {
-      lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
+      lcd->setLcdMode(MODE::OAM);
     }
+
     state.lineTicks = 0;
   }
 }
@@ -220,10 +222,10 @@ void PPU::vBlankMode()
   {
     incrementLY();
 
-    if (lcd->state.ly >= LINES_PER_FRAME)
+    if (lcd->getLy() >= LINES_PER_FRAME)
     {
-      lcd->state.lcdsBits.ppuMode = LCD::MODE::OAM;
-      lcd->state.ly = 0;
+      lcd->setLcdMode(MODE::OAM);
+      lcd->setLy(0);
       state.windowLine = 0;
     }
     state.lineTicks = 0;

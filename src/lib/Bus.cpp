@@ -28,7 +28,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xC000)
   {
     // External RAM
-    // TODO
+    return cartridge->read(address);
   }
   else if (address < 0xE000)
   {
