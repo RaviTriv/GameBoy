@@ -1,14 +1,16 @@
 #include "../../include/Io.h"
+#include "../../include/Apu.h"
 #include "../../include/Cpu.h"
 #include "../../include/Lcd.h"
 #include "../../include/Timer.h"
 #include "../../include/Gamepad.h"
 #include "../../include/Logger.h"
 
-IO::IO(std::shared_ptr<CPU> cpu, std::shared_ptr<Timer> timer, std::shared_ptr<LCD> lcd, std::shared_ptr<Gamepad> gamepad) : cpu(cpu), timer(timer), lcd(lcd)
+IO::IO(std::shared_ptr<CPU> cpu, std::shared_ptr<Timer> timer, std::shared_ptr<LCD> lcd, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu) : cpu(cpu), timer(timer), lcd(lcd), apu(apu)
 {
 }
 
+void IO::setApu(std::shared_ptr<APU> apu) { this->apu = apu; }
 void IO::setTimer(std::shared_ptr<Timer> timer) { this->timer = timer; }
 void IO::setCPU(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 void IO::setLCD(std::shared_ptr<LCD> lcd) { this->lcd = lcd; }
@@ -47,11 +49,13 @@ uint8_t IO::read(uint16_t address) const
   if ((address >= 0xFF10) && (address <= 0xFF26))
   {
     // Apu
+    return apu->read(address);
   }
 
   if ((address >= 0xFF30) && (address <= 0xFF3F))
   {
     // Apu
+    return apu->read(address);
   }
 
   if ((address >= 0xFF40) && (address <= 0xFF4B))
@@ -101,11 +105,15 @@ void IO::write(uint16_t address, uint8_t value)
   if ((address >= 0xFF10) && (address <= 0xFF26))
   {
     // Apu
+    apu->write(address, value);
+    return;
   }
 
   if ((address >= 0xFF30) && (address <= 0xFF3F))
   {
     // Apu
+    apu->write(address, value);
+    return;
   }
 
   if ((address >= 0xFF40) && (address <= 0xFF4B))

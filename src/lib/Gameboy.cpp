@@ -1,5 +1,6 @@
 #include "../../include/Gameboy.h"
 #include "../../include/Gamepad.h"
+#include "../../include/Apu.h"
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
 #include "../../include/Cpu.h"
@@ -19,11 +20,12 @@ void GameBoy::init(std::string romPath)
   dma = std::make_unique<DMA>(nullptr, nullptr);
   ram = std::make_unique<RAM>();
   gamepad = std::make_unique<Gamepad>();
-  io = std::make_unique<IO>(nullptr, nullptr, nullptr, gamepad);
+  io = std::make_unique<IO>(nullptr, nullptr, nullptr, gamepad, nullptr);
   lcd = std::make_shared<LCD>(dma);
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
   ui = std::make_shared<UI>([this]()
                             { state.isRunning = false; }, nullptr, gamepad);
+  apu = std::make_shared<APU>();
   bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
       [this](int cycles)
@@ -40,6 +42,8 @@ void GameBoy::init(std::string romPath)
   ppu->setBus(bus);
   ui->setPpu(ppu);
   ppu->setUi(ui);
+  //TODO: SET APU IN BUS
+  io->setApu(apu);
   state.isRunning = true;
 }
 

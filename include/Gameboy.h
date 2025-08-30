@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+class APU;
 class Bus;
 class Cartridge;
 class CPU;
@@ -33,6 +34,7 @@ public:
 
 private:
   State state;
+  std::shared_ptr<APU> apu;
   std::shared_ptr<Bus> bus;
   std::shared_ptr<Cartridge> cartridge;
   std::shared_ptr<CPU> cpu;
