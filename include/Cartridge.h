@@ -67,4 +67,6 @@ private:
 
   int getRomBanksCount(uint8_t type) const;
   static std::string cartridgeType(CartridgeType type);
+
+  void outputCartridgeInfo();
 };

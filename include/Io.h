@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+
 class CPU;
 class Timer;
 class LCD;

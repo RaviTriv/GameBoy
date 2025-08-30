@@ -67,15 +67,24 @@ void Cartridge::loadCartridge(std::string_view romPath)
   //   break;
   // }
   mbc = std::make_unique<MBC0>(state.romData);
+  outputCartridgeInfo();
+  // Logger::GetLogger()
+  //     ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", state.header->title.data(), state.header->version, cartridgeType(state.header->type), state.romSize);
+}
 
-  Logger::GetLogger()
-      ->info("Cartridge Loaded | Title: {}, Version: {}, Type: {}, Size: {}", state.header->title.data(), state.header->version, cartridgeType(state.header->type), state.romSize);
+void Cartridge::outputCartridgeInfo()
+{
+  Logger::GetLogger()->info("Cartridge Loaded");
+  Logger::GetLogger()->info("Title: {}", state.header->title.data());
+  Logger::GetLogger()->info("Cartridge Type: {}", cartridgeType(state.header->type));
+  Logger::GetLogger()->info("Rom Size: {} bytes", state.romSize);
+  Logger::GetLogger()->info("Ram Size: {} bytes", state.ramData.size());
 }
 
 uint8_t Cartridge::read(uint16_t address) const
 {
   return state.romData[address];
-  //return mbc->read(address);
+  // return mbc->read(address);
 }
 
 int Cartridge::getRomBanksCount(uint8_t type) const

@@ -14,5 +14,8 @@ make
 ./gameboy ${PATH_TO_ROM}
 ```
 
+## Documentation
+Core components are documented under `docs`
+
 ## Screenshots
 ![Tetris](images/tetris.png)
