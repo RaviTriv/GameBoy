@@ -28,6 +28,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address < 0xC000)
   {
     // External RAM
+    return cartridge->read(address);
   }
   else if (address < 0xE000)
   {
@@ -77,6 +78,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   if (address < 0x8000)
   {
     // Cartridge
+    cartridge->write(address, value);
   }
   else if (address < 0xA000)
   {
@@ -86,6 +88,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address < 0xC000)
   {
     // External RAM
+    cartridge->write(address, value);
   }
   else if (address < 0xE000)
   {
