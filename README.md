@@ -15,7 +15,7 @@ make
 ```
 
 ## Documentation
-Core components are documented under `docs`
+Core components are documented under [`docs`](docs/)
 
 ## Screenshots
 ![Tetris](images/tetris.png)
