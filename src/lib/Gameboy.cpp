@@ -24,7 +24,7 @@ void GameBoy::init(std::string romPath)
   lcd = std::make_shared<LCD>(dma);
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
   ui = std::make_shared<UI>([this]()
-                            { state.isRunning = false; }, nullptr, gamepad);
+                            { state.isRunning = false; }, nullptr, gamepad, nullptr);
   apu = std::make_shared<APU>(nullptr);
   bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
@@ -45,11 +45,13 @@ void GameBoy::init(std::string romPath)
 
   apu->setBus(bus);
   io->setApu(apu);
+  ui->setApu(apu);
   state.isRunning = true;
 }
 
 void GameBoy::run()
 {
+  apu->init();
   ppu->init();
   ui->init();
 

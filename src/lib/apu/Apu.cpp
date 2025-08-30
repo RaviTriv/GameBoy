@@ -10,17 +10,52 @@ APU::APU(std::shared_ptr<Bus> bus) : bus(bus)
 
 void APU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; };
 
-void APU::write(uint16_t address, uint8_t value)
+void APU::init()
 {
-  // TODO: Implement APU write
-  Logger::GetLogger()->info("APU WRITE");
+  state.channel1.setBus(bus);
 }
 
 uint8_t APU::read(uint16_t address)
 {
   // TODO: Implement APU read
-  Logger::GetLogger()->info("APU READ");
+  switch (address)
+  {
+  case 0xFF11:
+    return state.channel1.nrx1;
+  case 0xFF12:
+    return state.channel1.nrx2;
+  case 0xFF13:
+    return state.channel1.nrx3;
+  case 0xFF14:
+    return state.channel1.nrx4;
+  default:
+    Logger::GetLogger()->info("APU READ");
+    break;
+  }
   return 0;
+}
+
+void APU::write(uint16_t address, uint8_t value)
+{
+  // TODO: Implement APU write
+  switch (address)
+  {
+  case 0xFF11:
+    state.channel1.nrx1 = value;
+    break;
+  case 0xFF12:
+    state.channel1.nrx2 = value;
+    break;
+  case 0xFF13:
+    state.channel1.nrx3 = value;
+    break;
+  case 0xFF14:
+    state.channel1.nrx4 = value;
+    break;
+  default:
+    Logger::GetLogger()->info("APU WRITE");
+    break;
+  };
 }
 
 uint8_t APU::getChannel1Sample()
@@ -46,6 +81,11 @@ uint8_t APU::getChannel1Sample()
   state.channel1.frameSequencerAction();
 
   state.channel1.enabled &= state.channel1.lengthTimerAction();
+
+  if(state.channel1.envelopeEnabled)
+  {
+    state.channel1.envelopeAction();
+  }
 
   return state.channel1.getSample();
 }

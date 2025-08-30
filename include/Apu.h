@@ -29,9 +29,13 @@ public:
   APU(std::shared_ptr<Bus> bus);
   void setBus(std::shared_ptr<Bus> bus);
 
+  void init();
+
   void write(uint16_t address, uint8_t value);
   uint8_t read(uint16_t address);
   uint8_t getSample();
+
+  static constexpr int audioFreq = 44100;
 
 private:
   State state;

@@ -1,13 +1,15 @@
 #include "../../include/Ui.h"
+#include "../../include/Apu.h"
 #include "../../include/Ppu.h"
 #include "../../include/Gamepad.h"
 #include "../../include/Logger.h"
 
-UI::UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad) : onClose(closeCallback), ppu(ppu), gamepad(gamepad)
+UI::UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu) : onClose(closeCallback), ppu(ppu), gamepad(gamepad), apu(apu)
 {
 }
 
 void UI::setPpu(std::shared_ptr<PPU> ppu) { this->ppu = ppu; }
+void UI::setApu(std::shared_ptr<APU> apu) { this->apu = apu; }
 
 void UI::init()
 {
@@ -20,6 +22,28 @@ void UI::init()
                                  SDL_PIXELFORMAT_ARGB8888,
                                  SDL_TEXTUREACCESS_STREAMING,
                                  SCREEN_WIDTH, SCREEN_HEIGHT);
+
+  SDL_InitSubSystem(SDL_INIT_AUDIO);
+  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, apu->audioFreq};
+  SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
+  SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+}
+
+void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amount, int _length)
+{
+  uint8_t *stream = (uint8_t *)_stream;
+  UI *ui = (UI *)_sound;
+  int length = _length / sizeof(stream[0]);
+
+  uint8_t *data = SDL_stack_alloc(uint8_t, _length);
+  for (int i = 0; i < _length; i += 2)
+  {
+    uint8_t sample = ui->apu->getSample();
+    data[i] = sample;
+    data[i + 1] = sample;
+  }
+  SDL_PutAudioStreamData(_stream, data, _length);
+  SDL_stack_free(data);
 }
 
 void UI::update()

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 
 class APU;
 class Bus;
@@ -47,9 +48,11 @@ private:
   bool hasSweep = false;
 
   static const std::array<std::array<uint8_t, 8>, 4> duties;
-
+  std::shared_ptr<Bus> bus;
+  friend class APU;
 public:
   SquareChannel();
+  void setBus(std::shared_ptr<Bus> bus);
 
   void reset() override;
   bool timerAction() override;
