@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 
+class Bus;
 class APU
 {
   struct Registers
@@ -17,6 +18,7 @@ class APU
   struct State
   {
     Registers registers;
+    SquareChannel channel1;
     std::array<uint8_t, 16> wavePattern;
     bool enabled;
     uint32_t sampleRate;
@@ -24,9 +26,16 @@ class APU
   };
 
 public:
+  APU(std::shared_ptr<Bus> bus);
+  void setBus(std::shared_ptr<Bus> bus);
+
   void write(uint16_t address, uint8_t value);
   uint8_t read(uint16_t address);
+  uint8_t getSample();
 
 private:
   State state;
+  std::shared_ptr<Bus> bus;
+  static constexpr int SAMPLE_RATE = 95;
+  uint8_t getChannel1Sample();
 };

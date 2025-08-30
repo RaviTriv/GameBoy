@@ -3,6 +3,10 @@
 ## Overview
 APU is responsible for producing sound
 
+Typically digital signals are produced by taking a sample at every x.
+
+
+
 - 4 channels
   - 1,2 square channels, pulse width modulated waves
     

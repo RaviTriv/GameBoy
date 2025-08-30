@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 
+class APU;
 class Bus;
 class Channel
 {
@@ -16,6 +17,7 @@ protected:
   int lengthTimer = 0;
   int frameTimer = 0;
   int frameSequence = 0;
+  friend class APU;
 
 public:
   virtual ~Channel() = default;
@@ -32,7 +34,7 @@ public:
 class SquareChannel : public Channel
 {
 private:
-  uint8_t NRx0 = 0; 
+  uint8_t NRx0 = 0;
   uint8_t NRx1 = 0;
   uint8_t NRx2 = 0;
   uint8_t NRx3 = 0;
@@ -47,11 +49,12 @@ private:
   static const std::array<std::array<uint8_t, 8>, 4> duties;
 
 public:
-  SquareChannel(Bus *bus, uint16_t baseAddress, bool hasSweep = false);
+  SquareChannel();
 
   void reset() override;
   bool timerAction() override;
   bool lengthTimerAction() override;
+  void frameSequencerAction() override;
   void envelopeAction();
   void dutyAction();
   uint8_t getSample() override;
