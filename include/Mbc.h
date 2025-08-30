@@ -51,3 +51,37 @@ public:
   uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
+
+class MBC2 : public MBC
+{
+private:
+  bool ramEnabled = false;
+  uint8_t romBank = 1;
+  uint8_t ramBank = 0;
+  uint8_t bankingMode = 0;
+
+public:
+  MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
+       uint16_t romBanks, uint16_t ramBanks)
+      : MBC(rom, ram, romBanks, ramBanks) {}
+
+  uint8_t read(uint16_t address) const override;
+  void write(uint16_t address, uint8_t value) override;
+};
+
+class MBC3 : public MBC
+{
+private:
+  bool ramEnabled = false;
+  uint8_t romBank = 1;
+  uint8_t ramBank = 0;
+  uint8_t bankingMode = 0;
+
+public:
+  MBC3(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
+       uint16_t romBanks, uint16_t ramBanks)
+      : MBC(rom, ram, romBanks, ramBanks) {}
+
+  uint8_t read(uint16_t address) const override;
+  void write(uint16_t address, uint8_t value) override;
+};

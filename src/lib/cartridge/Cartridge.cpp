@@ -62,6 +62,17 @@ void Cartridge::loadCartridge(std::string_view romPath)
   case CartridgeType::MBC1_RAM_BATTERY:
     mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks, ramBanks);
     break;
+  case CartridgeType::MBC2:
+  case CartridgeType::MBC2_BATTERY:
+    mbc = std::make_unique<MBC2>(state.romData, state.ramData, romBanks, ramBanks);
+    break;
+  case CartridgeType::MBC3:
+  case CartridgeType::MBC3_RAM:
+  case CartridgeType::MBC3_RAM_BATTERY:
+  case CartridgeType::MBC3_TIMER_BATTERY:
+  case CartridgeType::MBC3_TIMER_RAM_BATTERY:
+    mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks, ramBanks);
+    break;
   default:
     Logger::GetLogger()->error("Unsupported cartridge type: {}", cartridgeType(state.header->type));
     break;

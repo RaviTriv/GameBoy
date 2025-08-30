@@ -19,3 +19,5 @@ Core components are documented under `docs`
 
 ## Screenshots
 ![Tetris](images/tetris.png)
+![Zelda Link's Awakening](images/zelda.png)
+![Pokemon Red](images/pokemonRed.png)
