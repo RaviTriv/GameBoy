@@ -180,3 +180,8 @@ uint8_t WaveChannel::getSample()
 {
   return 0;
 }
+
+uint8_t WaveChannel::getSample(uint8_t s)
+{
+  return s * enabled * (nrx0 >> 7);
+}

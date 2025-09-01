@@ -68,6 +68,6 @@ public:
   bool timerAction() override;
   bool lengthTimerAction() override;
   void frameSequencerAction() override;
-
   uint8_t getSample() override;
+  uint8_t getSample(uint8_t s);
 };

@@ -268,7 +268,7 @@ uint8_t APU::getChannel3Sample()
 
   sample >>= shiftVol;
 
-  return sample * state.channel3.enabled * (state.channel3.nrx0 >> 7);
+  return state.channel3.getSample(sample);
 }
 
 uint8_t APU::getSample()
