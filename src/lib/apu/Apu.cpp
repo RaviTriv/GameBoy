@@ -237,7 +237,7 @@ uint8_t APU::getChannel2Sample()
 
 uint8_t APU::getChannel3Sample()
 {
-  if (state.channel3.nrx4 & 0x80)
+  if ((state.channel3.nrx4 & 0x80) != 0)
   {
     state.channel3.reset();
   }
@@ -248,14 +248,14 @@ uint8_t APU::getChannel3Sample()
 
   if (timerTriggered)
   {
-    state.channel3.sample %= 32;
+    ++state.channel3.sample %= 32;
   }
 
   uint8_t sample = state.wavePattern[state.channel3.sample / 2];
 
   if (state.channel3.sample % 2)
   {
-    sample &= 0x0F;
+    sample = sample & 0x0F;
   }
   else
   {
@@ -267,6 +267,7 @@ uint8_t APU::getChannel3Sample()
   int shiftVol = ((state.channel3.nrx2 >> 5) & 0x03) ? ((state.channel3.nrx2 >> 5) & 0x03) - 1 : 4;
 
   sample >>= shiftVol;
+
   return sample * state.channel3.enabled * (state.channel3.nrx0 >> 7);
 }
 

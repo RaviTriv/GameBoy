@@ -118,19 +118,61 @@ void SquareChannel::sweepAction()
 
 void WaveChannel::reset()
 {
+  nrx4 &= ~0x80;
+  enabled = true;
+  sample = 0;
+  if (!lengthTimer)
+  {
+    lengthTimer = 256 - nrx1;
+  }
 }
 
 void WaveChannel::frameSequencerAction()
 {
+  frameTimer++;
+  if (frameTimer == 8192)
+  {
+    frameTimer = 0;
+    frameSequence++;
+    frameSequence %= 8;
+
+    triggerLength = frameSequence % 2 == 0;
+    triggerEnvelope = frameSequence == 7;
+    triggerSweep = frameSequence == 2 || frameSequence == 6;
+  }
+  else
+  {
+    triggerLength = false;
+    triggerEnvelope = false;
+    triggerSweep = false;
+  }
 }
 
 bool WaveChannel::timerAction()
 {
+  if (freqTimer <= 0)
+  {
+    uint16_t wavelen = ((nrx4 & 0x07) << 8) | nrx3;
+    freqTimer = 4 * (2048 - wavelen);
+    return true;
+  }
+  else
+  {
+    freqTimer--;
+  }
   return false;
 }
 
 bool WaveChannel::lengthTimerAction()
 {
+  if (triggerLength && ((nrx4 & 0x40) != 0) && lengthTimer)
+  {
+    lengthTimer--;
+    if (lengthTimer <= 0)
+    {
+      return false;
+    }
+  }
   return true;
 }
 
