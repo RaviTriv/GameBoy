@@ -50,7 +50,6 @@ void GameBoy::init(std::string romPath)
 
 void GameBoy::run()
 {
-  apu->init();
   ppu->init();
   ui->init();
 

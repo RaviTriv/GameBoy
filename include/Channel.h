@@ -75,7 +75,9 @@ class NoiseChannel : public Channel
 {
 private:
   friend class APU;
+  bool envelopeEnabled;
   int envelopeVolume;
+  int envelopeTimer;
   uint16_t lfsr;
   static const std::array<int, 8> divisor;
 

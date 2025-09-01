@@ -190,19 +190,71 @@ const std::array<int, 8> NoiseChannel::divisor = {8, 16, 32, 48, 64, 80, 96, 112
 
 void NoiseChannel::reset()
 {
+  nrx4 &= ~0x80;
+  if (!lengthTimer)
+  {
+    lengthTimer = 64 - (nrx1 & 0x3F);
+  }
+  enabled = true;
+  lfsr = 0x7FFF;
+  envelopeVolume = nrx2 >> 4;
+  envelopeEnabled = true;
 }
 
 void NoiseChannel::frameSequencerAction()
 {
+  frameTimer++;
+  if (frameTimer == 8192)
+  {
+    frameTimer = 0;
+    frameSequence++;
+    frameSequence %= 8;
+
+    triggerLength = frameSequence % 2 == 0;
+    triggerEnvelope = frameSequence == 7;
+    triggerSweep = frameSequence == 2 || frameSequence == 6;
+  }
+  else
+  {
+    triggerLength = false;
+    triggerEnvelope = false;
+    triggerSweep = false;
+  }
 }
 
 bool NoiseChannel::lengthTimerAction()
 {
-  return false;
+  if (triggerLength && ((nrx4 & 0x40) != 0) && triggerLength)
+  {
+    lengthTimer--;
+    if (lengthTimer <= 0)
+    {
+      return false;
+    }
+  }
+  return true;
 }
 
 void NoiseChannel::envelopeAction()
 {
+  if (triggerEnvelope && envelopeEnabled && nrx2 & 0x07)
+  {
+    envelopeTimer--;
+    if (envelopeTimer <= 0)
+    {
+      envelopeTimer = nrx2 & 0x07;
+      int direction = (nrx2 & 0x08) ? 1 : -1;
+      int new_volume = envelopeVolume + direction;
+      if (new_volume >= 0 && new_volume <= 0x0F)
+      {
+        envelopeVolume = new_volume;
+      }
+      else
+      {
+        envelopeEnabled = false;
+      }
+    }
+  }
 }
 
 uint8_t NoiseChannel::getSample()

@@ -2,19 +2,8 @@
 #include "../../../include/Channel.h"
 #include "../../../include/Logger.h"
 
-APU::APU()
-{
-  // state.channel1 = SquareChannel();
-  //  state.channel2 = SquareChannel(0xFF15);
-}
-
-void APU::init()
-{
-}
-
 uint8_t APU::read(uint16_t address)
 {
-  // TODO: Implement APU read
   switch (address)
   {
   case 0xFF10:
@@ -45,6 +34,20 @@ uint8_t APU::read(uint16_t address)
     return state.channel3.nrx3;
   case 0xFF1E:
     return state.channel3.nrx4;
+  case 0xFF20:
+    return state.channel4.nrx1;
+  case 0xFF21:
+    return state.channel4.nrx2;
+  case 0xFF22:
+    return state.channel4.nrx3;
+  case 0xFF23:
+    return state.channel4.nrx4;
+  case 0xFF24:
+    return state.registers.NR50;
+  case 0xFF25:
+    return state.registers.NR51;
+  case 0xFF26:
+    return state.registers.NR52 | (state.enabled ? 0x80 : 0x00);
   case 0xFF31:
     return state.wavePattern[1];
   case 0xFF32:
@@ -76,7 +79,7 @@ uint8_t APU::read(uint16_t address)
   case 0xFF3F:
     return state.wavePattern[15];
   default:
-    // Logger::GetLogger()->info("APU READ");
+    throw std::runtime_error("Invalid APU read");
     break;
   }
   return 0;
@@ -84,7 +87,6 @@ uint8_t APU::read(uint16_t address)
 
 void APU::write(uint16_t address, uint8_t value)
 {
-  // TODO: Implement APU write
   switch (address)
   {
   case 0xFF10:
@@ -128,6 +130,36 @@ void APU::write(uint16_t address, uint8_t value)
     break;
   case 0xFF1E:
     state.channel3.nrx4 = value;
+    break;
+  case 0xFF20:
+    state.channel4.nrx1 = value;
+    break;
+  case 0xFF21:
+    state.channel4.nrx2 = value;
+    break;
+  case 0xFF22:
+    state.channel4.nrx3 = value;
+    break;
+  case 0xFF23:
+    state.channel4.nrx4 = value;
+    break;
+  case 0xFF24:
+    state.registers.NR50 = value;
+    break;
+  case 0xFF25:
+    state.registers.NR51 = value;
+    break;
+  case 0xFF26:
+    state.registers.NR52 = value;
+    state.enabled = (value & 0x80) != 0;
+    if (!state.enabled)
+    {
+      state.channel1 = {};
+      state.channel2 = {};
+      state.channel3 = {};
+      state.channel4 = {};
+      state.wavePattern.fill(0);
+    }
     break;
   case 0xFF30:
     state.wavePattern[0] = value;
@@ -178,7 +210,7 @@ void APU::write(uint16_t address, uint8_t value)
     state.wavePattern[15] = value;
     break;
   default:
-    // Logger::GetLogger()->info("APU WRITE");
+    throw std::runtime_error("Invalid APU write");
     break;
   };
 }
