@@ -8,10 +8,8 @@ APU::APU()
   //  state.channel2 = SquareChannel(0xFF15);
 }
 
-
 void APU::init()
 {
- 
 }
 
 uint8_t APU::read(uint16_t address)
@@ -108,7 +106,31 @@ uint8_t APU::getChannel1Sample()
   return state.channel1.getSample();
 }
 
+uint8_t APU::getChannel2Sample()
+{
+  if ((state.channel2.nrx4 & 0x80) != 0)
+  {
+    state.channel2.reset();
+  }
 
+  bool timerTriggered = state.channel2.timerAction();
+
+  if (timerTriggered)
+  {
+    state.channel2.dutyAction();
+  }
+
+  state.channel2.frameSequencerAction();
+
+  state.channel2.enabled &= state.channel2.lengthTimerAction();
+
+  if (state.channel2.envelopeEnabled)
+  {
+    state.channel2.envelopeAction();
+  }
+
+  return state.channel2.getSample();
+}
 
 uint8_t APU::getSample()
 {
@@ -118,6 +140,8 @@ uint8_t APU::getSample()
   for (int i = 0; i < SAMPLE_RATE; i++)
   {
     ch1Sample = getChannel1Sample();
+    ch2Sample = getChannel2Sample();
   }
+
   return ch1Sample + ch2Sample;
 }
