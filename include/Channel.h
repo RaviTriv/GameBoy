@@ -28,20 +28,11 @@ public:
   virtual void frameSequencerAction() = 0;
   virtual bool lengthTimerAction() = 0;
   virtual uint8_t getSample() = 0;
-
-  void write(uint8_t reg, uint8_t value);
-  uint8_t read(uint8_t reg);
 };
 
 class SquareChannel : public Channel
 {
 private:
-  uint8_t NRx0 = 0;
-  uint8_t NRx1 = 0;
-  uint8_t NRx2 = 0;
-  uint8_t NRx3 = 0;
-  uint8_t NRx4 = 0;
-
   uint8_t duty = 0;
   int envelopeVolume = 0;
   int envelopeTimer = 0;
@@ -50,6 +41,7 @@ private:
 
   static const std::array<std::array<uint8_t, 8>, 4> duties;
   friend class APU;
+
 public:
   SquareChannel();
 
