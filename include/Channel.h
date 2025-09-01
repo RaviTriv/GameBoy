@@ -55,3 +55,19 @@ public:
 
   void sweepAction();
 };
+
+class WaveChannel : public Channel
+{
+private:
+  friend class APU;
+
+  uint8_t sample = 0;
+
+public:
+  void reset() override;
+  bool timerAction() override;
+  bool lengthTimerAction() override;
+  void frameSequencerAction() override;
+
+  uint8_t getSample() override;
+};

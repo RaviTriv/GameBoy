@@ -12,6 +12,7 @@ SquareChannel::SquareChannel()
   envelopeVolume = 0;
   envelopeTimer = 0;
   envelopeEnabled = false;
+  // Todo: check if this is needed
   hasSweep = false;
 }
 
@@ -113,4 +114,27 @@ void SquareChannel::dutyAction()
 
 void SquareChannel::sweepAction()
 {
+}
+
+void WaveChannel::reset()
+{
+}
+
+void WaveChannel::frameSequencerAction()
+{
+}
+
+bool WaveChannel::timerAction()
+{
+  return false;
+}
+
+bool WaveChannel::lengthTimerAction()
+{
+  return true;
+}
+
+uint8_t WaveChannel::getSample()
+{
+  return 0;
 }

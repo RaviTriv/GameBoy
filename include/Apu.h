@@ -19,6 +19,7 @@ class APU
     Registers registers;
     SquareChannel channel1;
     SquareChannel channel2;
+    WaveChannel channel3;
     std::array<uint8_t, 16> wavePattern;
     bool enabled;
     uint32_t sampleRate;
@@ -41,4 +42,5 @@ private:
   static constexpr int SAMPLE_RATE = 95;
   uint8_t getChannel1Sample();
   uint8_t getChannel2Sample();
+  uint8_t getChannel3Sample();
 };

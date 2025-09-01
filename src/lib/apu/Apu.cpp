@@ -4,7 +4,7 @@
 
 APU::APU()
 {
-  state.channel1 = SquareChannel();
+  // state.channel1 = SquareChannel();
   //  state.channel2 = SquareChannel(0xFF15);
 }
 
@@ -35,6 +35,46 @@ uint8_t APU::read(uint16_t address)
     return state.channel2.nrx3;
   case 0xFF19:
     return state.channel2.nrx4;
+  case 0xFF1A:
+    return state.channel3.nrx0;
+  case 0xFF1B:
+    return state.channel3.nrx1;
+  case 0xFF1C:
+    return state.channel3.nrx2;
+  case 0xFF1D:
+    return state.channel3.nrx3;
+  case 0xFF1E:
+    return state.channel3.nrx4;
+  case 0xFF31:
+    return state.wavePattern[1];
+  case 0xFF32:
+    return state.wavePattern[2];
+  case 0xFF33:
+    return state.wavePattern[3];
+  case 0xFF34:
+    return state.wavePattern[4];
+  case 0xFF35:
+    return state.wavePattern[5];
+  case 0xFF36:
+    return state.wavePattern[6];
+  case 0xFF37:
+    return state.wavePattern[7];
+  case 0xFF38:
+    return state.wavePattern[8];
+  case 0xFF39:
+    return state.wavePattern[9];
+  case 0xFF3A:
+    return state.wavePattern[10];
+  case 0xFF3B:
+    return state.wavePattern[11];
+  case 0xFF3C:
+    return state.wavePattern[12];
+  case 0xFF3D:
+    return state.wavePattern[13];
+  case 0xFF3E:
+    return state.wavePattern[14];
+  case 0xFF3F:
+    return state.wavePattern[15];
   default:
     // Logger::GetLogger()->info("APU READ");
     break;
@@ -73,6 +113,69 @@ void APU::write(uint16_t address, uint8_t value)
     break;
   case 0xFF19:
     state.channel2.nrx4 = value;
+    break;
+  case 0xFF1A:
+    state.channel3.nrx0 = value;
+    break;
+  case 0xFF1B:
+    state.channel3.nrx1 = value;
+    break;
+  case 0xFF1C:
+    state.channel3.nrx2 = value;
+    break;
+  case 0xFF1D:
+    state.channel3.nrx3 = value;
+    break;
+  case 0xFF1E:
+    state.channel3.nrx4 = value;
+    break;
+  case 0xFF30:
+    state.wavePattern[0] = value;
+    break;
+  case 0xFF31:
+    state.wavePattern[1] = value;
+    break;
+  case 0xFF32:
+    state.wavePattern[2] = value;
+    break;
+  case 0xFF33:
+    state.wavePattern[3] = value;
+    break;
+  case 0xFF34:
+    state.wavePattern[4] = value;
+    break;
+  case 0xFF35:
+    state.wavePattern[5] = value;
+    break;
+  case 0xFF36:
+    state.wavePattern[6] = value;
+    break;
+  case 0xFF37:
+    state.wavePattern[7] = value;
+    break;
+  case 0xFF38:
+    state.wavePattern[8] = value;
+    break;
+  case 0xFF39:
+    state.wavePattern[9] = value;
+    break;
+  case 0xFF3A:
+    state.wavePattern[10] = value;
+    break;
+  case 0xFF3B:
+    state.wavePattern[11] = value;
+    break;
+  case 0xFF3C:
+    state.wavePattern[12] = value;
+    break;
+  case 0xFF3D:
+    state.wavePattern[13] = value;
+    break;
+  case 0xFF3E:
+    state.wavePattern[14] = value;
+    break;
+  case 0xFF3F:
+    state.wavePattern[15] = value;
     break;
   default:
     // Logger::GetLogger()->info("APU WRITE");
@@ -132,16 +235,53 @@ uint8_t APU::getChannel2Sample()
   return state.channel2.getSample();
 }
 
+uint8_t APU::getChannel3Sample()
+{
+  if (state.channel3.nrx4 & 0x80)
+  {
+    state.channel3.reset();
+  }
+
+  state.channel3.frameSequencerAction();
+
+  bool timerTriggered = state.channel3.timerAction();
+
+  if (timerTriggered)
+  {
+    state.channel3.sample %= 32;
+  }
+
+  uint8_t sample = state.wavePattern[state.channel3.sample / 2];
+
+  if (state.channel3.sample % 2)
+  {
+    sample &= 0x0F;
+  }
+  else
+  {
+    sample = sample >> 4;
+  }
+
+  state.channel3.enabled &= state.channel3.lengthTimerAction();
+
+  int shiftVol = ((state.channel3.nrx2 >> 5) & 0x03) ? ((state.channel3.nrx2 >> 5) & 0x03) - 1 : 4;
+
+  sample >>= shiftVol;
+  return sample * state.channel3.enabled * (state.channel3.nrx0 >> 7);
+}
+
 uint8_t APU::getSample()
 {
   uint8_t ch1Sample = 0;
   uint8_t ch2Sample = 0;
+  uint8_t ch3Sample = 0;
 
   for (int i = 0; i < SAMPLE_RATE; i++)
   {
     ch1Sample = getChannel1Sample();
     ch2Sample = getChannel2Sample();
+    ch3Sample = getChannel3Sample();
   }
 
-  return ch1Sample + ch2Sample;
+  return ch1Sample + ch2Sample + ch3Sample;
 }
