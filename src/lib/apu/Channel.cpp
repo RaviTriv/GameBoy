@@ -2,12 +2,10 @@
 #include "../../../include/Bus.h"
 #include "../../../include/Logger.h"
 
-const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {{
-    {0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 1, 1},
-    {0, 1, 1, 1, 1, 1, 1, 0} 
-}};
+const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {{{0, 0, 0, 0, 0, 0, 0, 1},
+                                                                      {1, 0, 0, 0, 0, 0, 0, 1},
+                                                                      {1, 0, 0, 0, 0, 1, 1, 1},
+                                                                      {0, 1, 1, 1, 1, 1, 1, 0}}};
 
 SquareChannel::SquareChannel()
 {
@@ -18,12 +16,9 @@ SquareChannel::SquareChannel()
   hasSweep = false;
 }
 
-void SquareChannel::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
-
 void SquareChannel::reset()
 {
   nrx4 &= ~0x80;
-  bus->write8(0xFF14, nrx4);
 
   envelopeVolume = (nrx2 & 0xF0) >> 4;
   enabled = true;
@@ -36,15 +31,17 @@ void SquareChannel::reset()
 
 bool SquareChannel::timerAction()
 {
-  if (triggerLength && ((nrx4 & 0x40) != 0) && lengthTimer)
+  if (freqTimer <= 0)
   {
-    lengthTimer--;
-    if (lengthTimer <= 0)
-    {
-      return false;
-    }
+    uint16_t wavelen = ((nrx4 & 0x07) << 8) | nrx3;
+    freqTimer = 4 * (2048 - wavelen);
+    return true;
   }
-  return true;
+  else
+  {
+    freqTimer--;
+  }
+  return false;
 }
 
 void SquareChannel::frameSequencerAction()
@@ -70,7 +67,7 @@ void SquareChannel::frameSequencerAction()
 
 bool SquareChannel::lengthTimerAction()
 {
-  if (triggerLength && ((nrx4& 0x40) != 0) && lengthTimer)
+  if (triggerLength && ((nrx4 & 0x40) != 0) && lengthTimer)
   {
     lengthTimer--;
     if (lengthTimer <= 0)
