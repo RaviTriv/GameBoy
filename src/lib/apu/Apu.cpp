@@ -271,18 +271,52 @@ uint8_t APU::getChannel3Sample()
   return state.channel3.getSample(sample);
 }
 
+uint8_t APU::getChannel4Sample()
+{
+  if ((state.channel4.nrx4 & 0x80) != 0)
+  {
+    state.channel4.reset();
+  }
+
+  state.channel4.frameSequencerAction();
+
+  state.channel4.freqTimer--;
+
+  if (state.channel4.freqTimer <= 0)
+  {
+    state.channel4.freqTimer = NoiseChannel::divisor[state.channel4.nrx3 & 0x07] << (state.channel4.nrx3 >> 4);
+    uint8_t xorRes = (state.channel4.lfsr & 0x01) ^ ((state.channel4.lfsr & 0x02) >> 1);
+    state.channel4.lfsr = (state.channel4.lfsr >> 1) | (xorRes << 14);
+
+    if ((state.channel4.nrx3 >> 3) & 0x01)
+    {
+      state.channel4.lfsr &= ~(1 << 6);
+      state.channel4.lfsr |= (xorRes << 6);
+    }
+  }
+
+  state.channel4.enabled &= state.channel4.lengthTimerAction();
+
+  state.channel4.envelopeAction();
+
+  uint8_t sample = (~state.channel4.lfsr & 0x01) * state.channel4.envelopeVolume;
+  return sample * state.channel4.enabled;
+}
+
 uint8_t APU::getSample()
 {
   uint8_t ch1Sample = 0;
   uint8_t ch2Sample = 0;
   uint8_t ch3Sample = 0;
+  uint8_t ch4Sample = 0;
 
   for (int i = 0; i < SAMPLE_RATE; i++)
   {
     ch1Sample = getChannel1Sample();
     ch2Sample = getChannel2Sample();
     ch3Sample = getChannel3Sample();
+    ch4Sample = getChannel4Sample();
   }
 
-  return ch1Sample + ch2Sample + ch3Sample;
+  return ch1Sample + ch2Sample + ch3Sample + ch4Sample;
 }

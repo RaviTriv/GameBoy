@@ -20,6 +20,7 @@ class APU
     SquareChannel channel1;
     SquareChannel channel2;
     WaveChannel channel3;
+    NoiseChannel channel4;
     std::array<uint8_t, 16> wavePattern;
     bool enabled;
     uint32_t sampleRate;
@@ -43,4 +44,5 @@ private:
   uint8_t getChannel1Sample();
   uint8_t getChannel2Sample();
   uint8_t getChannel3Sample();
+  uint8_t getChannel4Sample();
 };

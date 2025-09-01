@@ -185,3 +185,32 @@ uint8_t WaveChannel::getSample(uint8_t s)
 {
   return s * enabled * (nrx0 >> 7);
 }
+
+const std::array<int, 8> NoiseChannel::divisor = {8, 16, 32, 48, 64, 80, 96, 112};
+
+void NoiseChannel::reset()
+{
+}
+
+void NoiseChannel::frameSequencerAction()
+{
+}
+
+bool NoiseChannel::lengthTimerAction()
+{
+  return false;
+}
+
+void NoiseChannel::envelopeAction()
+{
+}
+
+uint8_t NoiseChannel::getSample()
+{
+  return 0;
+}
+
+bool NoiseChannel::timerAction()
+{
+  return false;
+}
