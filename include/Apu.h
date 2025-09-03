@@ -37,6 +37,14 @@ public:
 private:
   State state;
   static constexpr int SAMPLE_RATE = 95;
+  uint16_t frameTimer = 0;
+  uint8_t frameSequence = 0;
+  bool triggerLength = false;
+  bool triggerEnvelope = false;
+  bool triggerSweep = false;
+
+  void frameSequencerAction();
+
   uint8_t getChannel1Sample();
   uint8_t getChannel2Sample();
   uint8_t getChannel3Sample();

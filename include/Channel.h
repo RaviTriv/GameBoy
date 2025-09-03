@@ -16,16 +16,14 @@ protected:
   bool triggerSweep = false;
   int freqTimer = 0;
   int lengthTimer = 0;
-  int frameTimer = 0;
-  int frameSequence = 0;
   uint16_t baseAddress = 0;
   friend class APU;
 
 public:
   virtual ~Channel() = default;
+  void updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool sweepTrigger);
   virtual void reset() = 0;
   virtual bool timerAction() = 0;
-  virtual void frameSequencerAction() = 0;
   virtual bool lengthTimerAction() = 0;
   virtual uint8_t getSample() = 0;
 };
@@ -48,7 +46,6 @@ public:
   void reset() override;
   bool timerAction() override;
   bool lengthTimerAction() override;
-  void frameSequencerAction() override;
   void envelopeAction();
   void dutyAction();
   uint8_t getSample() override;
@@ -65,7 +62,6 @@ private:
 public:
   void reset() override;
   bool timerAction() override;
-  void frameSequencerAction() override;
   bool lengthTimerAction() override;
   uint8_t getSample() override;
   uint8_t getSample(uint8_t s);
@@ -84,7 +80,6 @@ private:
 public:
   void reset() override;
   bool timerAction() override;
-  void frameSequencerAction() override;
   bool lengthTimerAction() override;
   void envelopeAction();
   uint8_t getSample() override;

@@ -6,6 +6,13 @@ const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {{{0, 0, 0, 
                                                                       {1, 0, 0, 0, 0, 1, 1, 1},
                                                                       {0, 1, 1, 1, 1, 1, 1, 0}}};
 
+void Channel::updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool sweepTrigger)
+{
+  triggerLength = lengthTrigger;
+  triggerEnvelope = envelopeTrigger;
+  triggerSweep = sweepTrigger;
+}
+
 SquareChannel::SquareChannel()
 {
   duty = 0;
@@ -42,27 +49,6 @@ bool SquareChannel::timerAction()
     freqTimer--;
   }
   return false;
-}
-
-void SquareChannel::frameSequencerAction()
-{
-  frameTimer++;
-  if (frameTimer == 8192)
-  {
-    frameTimer = 0;
-    frameSequence++;
-    frameSequence %= 8;
-
-    triggerLength = frameSequence % 2 == 0;
-    triggerEnvelope = frameSequence == 7;
-    triggerSweep = frameSequence == 2 || frameSequence == 6;
-  }
-  else
-  {
-    triggerLength = false;
-    triggerEnvelope = false;
-    triggerSweep = false;
-  }
 }
 
 bool SquareChannel::lengthTimerAction()
@@ -127,27 +113,6 @@ void WaveChannel::reset()
   }
 }
 
-void WaveChannel::frameSequencerAction()
-{
-  frameTimer++;
-  if (frameTimer == 8192)
-  {
-    frameTimer = 0;
-    frameSequence++;
-    frameSequence %= 8;
-
-    triggerLength = frameSequence % 2 == 0;
-    triggerEnvelope = frameSequence == 7;
-    triggerSweep = frameSequence == 2 || frameSequence == 6;
-  }
-  else
-  {
-    triggerLength = false;
-    triggerEnvelope = false;
-    triggerSweep = false;
-  }
-}
-
 bool WaveChannel::timerAction()
 {
   if (freqTimer <= 0)
@@ -199,27 +164,6 @@ void NoiseChannel::reset()
   lfsr = 0x7FFF;
   envelopeVolume = nrx2 >> 4;
   envelopeEnabled = true;
-}
-
-void NoiseChannel::frameSequencerAction()
-{
-  frameTimer++;
-  if (frameTimer == 8192)
-  {
-    frameTimer = 0;
-    frameSequence++;
-    frameSequence %= 8;
-
-    triggerLength = frameSequence % 2 == 0;
-    triggerEnvelope = frameSequence == 7;
-    triggerSweep = frameSequence == 2 || frameSequence == 6;
-  }
-  else
-  {
-    triggerLength = false;
-    triggerEnvelope = false;
-    triggerSweep = false;
-  }
 }
 
 bool NoiseChannel::lengthTimerAction()
