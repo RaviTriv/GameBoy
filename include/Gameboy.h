@@ -49,4 +49,5 @@ private:
 
   std::thread cpuThread;
   void cpuLoop();
+  void displayBootArt();
 };
