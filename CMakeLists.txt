@@ -27,6 +27,7 @@ add_executable(gameboy
     src/lib/ppu/Pipeline.cpp
     src/lib/ppu/Ppu.cpp
     src/lib/Ram.cpp
+    src/lib/StateSerializer.cpp
     src/lib/Timer.cpp
     src/lib/Ui.cpp
     src/main.cpp

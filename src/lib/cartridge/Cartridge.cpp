@@ -156,3 +156,8 @@ std::string Cartridge::cartridgeType(CartridgeType type)
     return "UNKNOWN";
   }
 }
+
+std::string Cartridge::getTitle() const
+{
+  return std::string(state.header->title.data());
+}

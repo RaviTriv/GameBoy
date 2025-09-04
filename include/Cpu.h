@@ -58,6 +58,8 @@ public:
   void setInterruptEnable(uint8_t value);
   uint8_t getInterruptFlags() const;
   void setInterruptFlags(uint8_t value);
+  CPU::State getState() const;
+  void setState(const State &state);
 
 private:
   CycleCallback cycleCallback;

@@ -206,3 +206,13 @@ void LCD::setLycFlag(bool value)
 {
   setBit(state.lcds, 2, value);
 }
+
+LCD::State LCD::getState() const
+{
+  return state;
+}
+
+void LCD::setState(const State &state)
+{
+  this->state = state;
+}

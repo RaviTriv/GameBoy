@@ -19,6 +19,8 @@ class Pipeline
     IDLE,
     PUSH
   };
+
+public:
   struct State
   {
     FETCH_STATE fetchState;
@@ -39,17 +41,16 @@ class Pipeline
     uint8_t tileY;
     uint8_t entryCount;
   };
-
-public:
   Pipeline(PPU *ppu);
   void process();
   void reset();
   void oamReset();
   uint8_t getPushedCount();
   bool windowVisible() const;
+  State state;
+
 private:
   PPU *ppu;
-  State state;
   void fetch();
   void fetchTile();
   void fetchData0();

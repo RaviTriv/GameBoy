@@ -16,6 +16,23 @@ class LCD
     OBP1 = 2
   };
 
+   enum MODE
+  {
+    HBLANK,
+    VBLANK,
+    OAM,
+    DRAWING
+  };
+
+  enum LCDS_SRC
+  {
+    S_HBLANK = (1 << 3),
+    S_VBLANK = (1 << 4),
+    S_OAM = (1 << 5),
+    S_LYC = (1 << 6),
+  };
+
+public:
   union PaletteRegister
   {
     struct
@@ -55,23 +72,6 @@ class LCD
     std::array<uint32_t, 4> ob2Colors;
   };
 
-  enum MODE
-  {
-    HBLANK,
-    VBLANK,
-    OAM,
-    DRAWING
-  };
-
-  enum LCDS_SRC
-  {
-    S_HBLANK = (1 << 3),
-    S_VBLANK = (1 << 4),
-    S_OAM = (1 << 5),
-    S_LYC = (1 << 6),
-  };
-
-public:
   LCD(std::shared_ptr<DMA> dma);
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t value);
@@ -87,6 +87,8 @@ public:
   void setLcdMode(MODE mode);
   bool isLycFlag();
   void setLycFlag(bool value);
+  LCD::State getState() const;
+  void setState(const State &state);
 
 private:
   State state;

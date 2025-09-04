@@ -239,3 +239,23 @@ uint32_t PPU::getCurrentFrame()
 {
   return state.currentFrame;
 }
+
+PPU::State PPU::getState() const
+{
+  return state;
+}
+
+void PPU::setState(const State &state)
+{
+  this->state = state;
+};
+
+Pipeline::State PPU::getPipelineState() const
+{
+  return pipeline.state;
+}
+
+void PPU::setPipelineState(const Pipeline::State &state)
+{
+  pipeline.state = state;
+};

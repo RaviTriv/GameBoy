@@ -381,3 +381,10 @@ uint8_t CPU::getInterruptFlags() const
 {
   return state.intf;
 }
+
+CPU::State CPU::getState() const
+{
+  return state;
+}
+
+void CPU::setState(const State &state) { this->state = state; }

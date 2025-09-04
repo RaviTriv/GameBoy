@@ -18,7 +18,8 @@ class UI
 {
 public:
   using CloseCallback = std::function<void()>;
-  UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu);
+  using SaveStateCallback = std::function<void()>;
+  UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu);
   void setPpu(std::shared_ptr<PPU> ppu);
   void setApu(std::shared_ptr<APU> apu);
   void init();
@@ -43,6 +44,7 @@ private:
   SDL_Surface *screen;
   SDL_Texture *sdlTexture;
   CloseCallback onClose;
+  SaveStateCallback onSaveState;
 
   void onKey(bool isDown, SDL_Keycode keyCode);
 };

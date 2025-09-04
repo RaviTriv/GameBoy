@@ -4,7 +4,7 @@
 #include "../../include/Gamepad.h"
 #include "../../include/Logger.h"
 
-UI::UI(CloseCallback closeCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu) : onClose(closeCallback), ppu(ppu), gamepad(gamepad), apu(apu)
+UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu) : onClose(closeCallback), onSaveState(saveStateCallback), ppu(ppu), gamepad(gamepad), apu(apu)
 {
 }
 
@@ -104,7 +104,10 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode)
     gamepad->setRightPressed(isDown);
     break;
   case SDLK_S:
-    // TODO: Save State
+    if (isDown)
+    {
+      onSaveState();
+    }
     break;
   }
 }

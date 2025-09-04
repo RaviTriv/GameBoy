@@ -17,7 +17,7 @@ class PPU
   static constexpr int XRES = 160;
   static constexpr int YRES = 144;
   static constexpr int BUFFER_SIZE = XRES * YRES;
-
+public:
   struct State
   {
     std::array<OAM_ENTRY, 40> oamRam;
@@ -31,8 +31,6 @@ class PPU
 
     uint32_t currentFrame;
   };
-
-public:
   PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui);
   void init();
   void tick();
@@ -47,6 +45,12 @@ public:
   void setBus(std::shared_ptr<Bus> bus);
   void setUi(std::shared_ptr<UI> ui);
   const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
+
+  PPU::State getState() const;
+  void setState(const State &state);
+
+  Pipeline::State getPipelineState() const;
+  void setPipelineState(const Pipeline::State &state);
 
 private:
   State state;

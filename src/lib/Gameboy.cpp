@@ -9,13 +9,14 @@
 #include "../../include/Lcd.h"
 #include "../../include/Ppu.h"
 #include "../../include/Ram.h"
+#include "../../include/StateSerializer.h"
 #include "../../include/Timer.h"
 #include "../../include/Ui.h"
 #include "../../include/Logger.h"
 
 #include <iostream>
 
-void GameBoy::init(std::string romPath)
+void GameBoy::init(std::string romPath, bool trace, bool loadSave)
 {
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
@@ -26,8 +27,14 @@ void GameBoy::init(std::string romPath)
   io = std::make_unique<IO>(nullptr, nullptr, nullptr, gamepad, nullptr);
   lcd = std::make_shared<LCD>(dma);
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
-  ui = std::make_shared<UI>([this]()
-                            { state.isRunning = false; }, nullptr, gamepad, nullptr);
+  ui = std::make_shared<UI>(
+      [this]()
+      { state.isRunning = false; },
+      [this]()
+      { this->saveState(); },
+      ppu,
+      gamepad,
+      nullptr);
   apu = std::make_shared<APU>();
   bus = std::make_unique<Bus>(cartridge, nullptr, dma, io, ppu, ram);
   cpu = std::make_shared<CPU>(
@@ -48,13 +55,26 @@ void GameBoy::init(std::string romPath)
 
   io->setApu(apu);
   ui->setApu(apu);
+  stateSerializer = std::make_shared<StateSerializer>(cpu, ram, ppu, lcd);
   state.isRunning = true;
+  this->trace = trace;
+  this->loadSave = loadSave;
+}
+
+void GameBoy::saveState()
+{
+  stateSerializer->saveState(cartridge->getTitle());
 }
 
 void GameBoy::run()
 {
   ppu->init();
   ui->init();
+
+  if (loadSave)
+  {
+    stateSerializer->loadState(cartridge->getTitle());
+  }
 
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
   cpuThread.detach();
@@ -99,7 +119,7 @@ void GameBoy::cycle(int cycles)
 
 void GameBoy::displayBootArt()
 {
-    std::cout << R"(              
+  std::cout << R"(              
     __ _  __ _ _ __ ___   ___| |__   ___  _   _ 
   / _` |/ _` | '_ ` _ \ / _ \ '_ \ / _ \| | | |
   | (_| | (_| | | | | | |  __/ |_) | (_) | |_| |

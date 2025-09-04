@@ -15,6 +15,7 @@ class IO;
 class LCD;
 class PPU;
 class RAM;
+class StateSerializer;
 class Timer;
 class Gamepad;
 class UI;
@@ -27,7 +28,7 @@ public:
     bool isPaused;
     uint64_t ticks;
   };
-  void init(std::string romPath);
+  void init(std::string romPath, bool trace, bool loadSave);
   void run();
 
   void cycle(int cycles);
@@ -46,8 +47,12 @@ private:
   std::shared_ptr<Timer> timer;
   std::shared_ptr<Gamepad> gamepad;
   std::shared_ptr<UI> ui;
+  std::shared_ptr<StateSerializer> stateSerializer;
 
   std::thread cpuThread;
   void cpuLoop();
   void displayBootArt();
+  void saveState();
+  bool trace;
+  bool loadSave;
 };

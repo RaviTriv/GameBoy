@@ -44,3 +44,7 @@ void RAM::writeHRAM(uint16_t address, uint8_t value)
   size_t offset = address - HRAM_BASE;
   state.hram[offset] = value;
 }
+
+RAM::State RAM::getState() const { return state; };
+
+void RAM::setState(const State &state) { this->state = state; }
