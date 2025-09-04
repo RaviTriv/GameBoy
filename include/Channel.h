@@ -35,22 +35,17 @@ private:
   int envelopeVolume = 0;
   int envelopeTimer = 0;
   bool envelopeEnabled = false;
-  bool hasSweep = false;
 
   static const std::array<std::array<uint8_t, 8>, 4> duties;
   friend class APU;
 
 public:
-  SquareChannel();
-
   void reset() override;
   bool timerAction() override;
   bool lengthTimerAction() override;
   void envelopeAction();
   void dutyAction();
   uint8_t getSample() override;
-
-  void sweepAction();
 };
 
 class WaveChannel : public Channel

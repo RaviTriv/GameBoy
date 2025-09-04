@@ -251,7 +251,7 @@ uint8_t APU::getChannel1Sample()
   }
 
   state.channel1.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
-  
+
   state.channel1.enabled &= state.channel1.lengthTimerAction();
 
   if (state.channel1.envelopeEnabled)
@@ -333,27 +333,13 @@ uint8_t APU::getChannel4Sample()
 
   state.channel4.updateTriggers(triggerLength, triggerEnvelope, false);
 
-  state.channel4.freqTimer--;
-
-  if (state.channel4.freqTimer <= 0)
-  {
-    state.channel4.freqTimer = NoiseChannel::divisor[state.channel4.nrx3 & 0x07] << (state.channel4.nrx3 >> 4);
-    uint8_t xorRes = (state.channel4.lfsr & 0x01) ^ ((state.channel4.lfsr & 0x02) >> 1);
-    state.channel4.lfsr = (state.channel4.lfsr >> 1) | (xorRes << 14);
-
-    if ((state.channel4.nrx3 >> 3) & 0x01)
-    {
-      state.channel4.lfsr &= ~(1 << 6);
-      state.channel4.lfsr |= (xorRes << 6);
-    }
-  }
+  state.channel4.timerAction();
 
   state.channel4.enabled &= state.channel4.lengthTimerAction();
 
   state.channel4.envelopeAction();
 
-  uint8_t sample = (~state.channel4.lfsr & 0x01) * state.channel4.envelopeVolume;
-  return sample * state.channel4.enabled;
+  return state.channel4.getSample();
 }
 
 uint8_t APU::getSample()

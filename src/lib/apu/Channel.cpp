@@ -13,16 +13,6 @@ void Channel::updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool swee
   triggerSweep = sweepTrigger;
 }
 
-SquareChannel::SquareChannel()
-{
-  duty = 0;
-  envelopeVolume = 0;
-  envelopeTimer = 0;
-  envelopeEnabled = false;
-  // Todo: check if this is needed
-  hasSweep = false;
-}
-
 void SquareChannel::reset()
 {
   nrx4 &= ~0x80;
@@ -96,10 +86,6 @@ void SquareChannel::dutyAction()
 {
   duty++;
   duty %= 8;
-}
-
-void SquareChannel::sweepAction()
-{
 }
 
 void WaveChannel::reset()
@@ -203,10 +189,25 @@ void NoiseChannel::envelopeAction()
 
 uint8_t NoiseChannel::getSample()
 {
-  return 0;
+  return (~lfsr & 0x01) * envelopeVolume * enabled;
 }
 
 bool NoiseChannel::timerAction()
 {
+  freqTimer--;
+
+  if (freqTimer <= 0)
+  {
+    freqTimer = divisor[nrx3 & 0x07] << (nrx3 >> 4);
+    uint8_t xorRes = (lfsr & 0x01) ^ ((lfsr & 0x02) >> 1);
+    lfsr = (lfsr >> 1) | (xorRes << 14);
+
+    if ((nrx3 >> 3) & 0x01)
+    {
+      lfsr &= ~(1 << 6);
+      lfsr |= (xorRes << 6);
+    }
+    return true;
+  }
   return false;
 }
