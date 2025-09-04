@@ -188,23 +188,25 @@ void PPU::hBlankMode()
       {
         cpu->requestInterrupt(InterruptType::LCD_STAT);
       }
-      // TODO: Add in Delay and Leverage this for Fast Foward Feature
+
       state.currentFrame++;
-
-      uint32_t end = ui->getTicks();
-      uint32_t frameTime = end - prevFrameTime;
-      if (frameTime < targetFrameTime)
+      if (!fastForward)
       {
-        ui->delay((targetFrameTime - frameTime));
-      }
-      if (end - startTimer >= 1000)
-      {
-        startTimer = end;
-        frameCount = 0;
-      }
+        uint32_t end = ui->getTicks();
+        uint32_t frameTime = end - prevFrameTime;
+        if (frameTime < targetFrameTime)
+        {
+          ui->delay((targetFrameTime - frameTime));
+        }
+        if (end - startTimer >= 1000)
+        {
+          startTimer = end;
+          frameCount = 0;
+        }
 
-      frameCount++;
-      prevFrameTime = ui->getTicks();
+        frameCount++;
+        prevFrameTime = ui->getTicks();
+      }
     }
     else
     {
@@ -259,3 +261,13 @@ void PPU::setPipelineState(const Pipeline::State &state)
 {
   pipeline.state = state;
 };
+
+void PPU::setFastForward(bool fastForward)
+{
+  this->fastForward = fastForward;
+}
+
+bool PPU::isFastForward() const
+{
+  return fastForward;
+}

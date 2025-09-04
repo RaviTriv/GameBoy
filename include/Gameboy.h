@@ -28,7 +28,7 @@ public:
     bool isPaused;
     uint64_t ticks;
   };
-  void init(std::string romPath, bool trace, bool loadSave);
+  void init(std::string romPath, bool trace, bool loadSave, bool fastForward);
   void run();
 
   void cycle(int cycles);
@@ -55,4 +55,5 @@ private:
   void saveState();
   bool trace;
   bool loadSave;
+  bool fastForward;
 };

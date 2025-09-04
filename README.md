@@ -1,6 +1,7 @@
 # GameBoy
 DMG-01 Game Boy Emulator
 
+Play games, tested with few games such as, pokemon red, tetris, zelda's awakening
 
 ## Building
 ```console
@@ -19,6 +20,7 @@ make
 | `<rom_path>` | Yes | Path to the GameBoy ROM file (.gb or .gbc) |
 | `--trace` | No | Enables debug trace mode |
 | `--loadSave` | No | Loads saved game data if available |
+| `--fastForward` | No | Speeds up the game when enabled |
 
 ## Documentation
 Core components are documented under [`docs`](docs/).
@@ -36,6 +38,7 @@ Core components are documented under [`docs`](docs/).
 | ← (Left)     | D-pad Left     | Move left |
 | → (Right)    | D-pad Right    | Move right |
 | S            | N/A            | Save state |
+| F            | N/A            | Toggle fast forward |
 
 ## Screenshots
 ![Tetris](images/tetris.png)

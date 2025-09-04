@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-void GameBoy::init(std::string romPath, bool trace, bool loadSave)
+void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForward)
 {
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
@@ -59,6 +59,8 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave)
   state.isRunning = true;
   this->trace = trace;
   this->loadSave = loadSave;
+  this->fastForward = fastForward;
+  ppu->setFastForward(fastForward);
 }
 
 void GameBoy::saveState()

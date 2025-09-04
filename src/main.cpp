@@ -13,6 +13,7 @@ int main(int argc, char **argv)
   std::string romPath;
   bool trace = false;
   bool loadSave = false;
+  bool fastForward = false;
 
   for (int i = 1; i < argc; ++i)
   {
@@ -25,6 +26,10 @@ int main(int argc, char **argv)
     else if (arg == "--loadSave")
     {
       loadSave = true;
+    }
+    else if (arg == "--fastForward")
+    {
+      fastForward = true;
     }
     else
     {
@@ -42,7 +47,7 @@ int main(int argc, char **argv)
 
   GameBoy gameboy;
 
-  gameboy.init(romPath, trace, loadSave);
+  gameboy.init(romPath, trace, loadSave, fastForward);
   gameboy.run();
   return 0;
 }

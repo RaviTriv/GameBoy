@@ -17,6 +17,7 @@ class PPU
   static constexpr int XRES = 160;
   static constexpr int YRES = 144;
   static constexpr int BUFFER_SIZE = XRES * YRES;
+
 public:
   struct State
   {
@@ -51,6 +52,8 @@ public:
 
   Pipeline::State getPipelineState() const;
   void setPipelineState(const Pipeline::State &state);
+  void setFastForward(bool fastForward);
+  bool isFastForward() const;
 
 private:
   State state;
@@ -60,6 +63,7 @@ private:
   std::shared_ptr<UI> ui;
   friend class Pipeline;
   Pipeline pipeline;
+  bool fastForward;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;

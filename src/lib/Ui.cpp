@@ -109,6 +109,12 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode)
       onSaveState();
     }
     break;
+  case SDLK_F:
+    if (isDown)
+    {
+      ppu->setFastForward(!ppu->isFastForward());
+    }
+    break;
   }
 }
 
