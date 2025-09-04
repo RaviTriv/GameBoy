@@ -12,7 +12,7 @@ make
 
 ## Running
 ```console
-./gameboy ${PATH_TO_ROM} [--trace] [--loadSave]
+./gameboy ${PATH_TO_ROM} [--trace] [--loadSave] [--fastForward]
 ```
 
 | Argument | Required | Description |
