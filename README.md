@@ -1,7 +1,7 @@
 # GameBoy
 DMG-01 Game Boy Emulator
 
-Play games, tested with few games such as, pokemon red, tetris, zelda's awakening
+This application emulates the orginal Game Boy hardware allowing users to  play Game Boy games. It has been tested with a few games such as, Pokemon Red, Tetris and Zelda's Awakening.
 
 ## Building
 ```console
@@ -22,9 +22,6 @@ make
 | `--loadSave` | No | Loads saved game data if available |
 | `--fastForward` | No | Speeds up the game when enabled |
 
-## Documentation
-Core components are documented under [`docs`](docs/).
-
 ## Controls
 
 | Keyboard Key | GameBoy Button | Function |
@@ -39,6 +36,9 @@ Core components are documented under [`docs`](docs/).
 | → (Right)    | D-pad Right    | Move right |
 | S            | N/A            | Save state |
 | F            | N/A            | Toggle fast forward |
+
+## Documentation
+Core components are documented under [`docs`](docs/).
 
 ## Screenshots
 ![Tetris](images/tetris.png)

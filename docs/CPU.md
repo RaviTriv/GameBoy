@@ -1,7 +1,24 @@
 # CPU
 
 ## Overview
-The CPU reads and executes instructions from memory. It is a state machine that follows a fetch -> decode -> execute cycle. 
+The CPU reads and executes instructions from memory. 
+
+```
+┌───────────┐      ┌──────────┐      ┌───────────┐
+│           │      │          │      │           │
+│   FETCH   ├─────►│  DECODE  ├─────►│  EXECUTE  │
+│           │      │          │      │           │
+└─────┬─────┘      └──────────┘      └─────┬─────┘
+      ▲                                    │
+      │                                    │
+      └────────────────────────────────────┘
+```
+
+| State | Description |
+|-------|-------------|
+| FETCH | Read instruction that PC points to |
+| DECODE | Use opcode returned from fetch to find operation |
+| EXECUTE | Perform operation, update registers and flags |
 
 - 8 bit, processes 8 bits at a time
 - interrupt handling
@@ -24,15 +41,35 @@ The CPU reads and executes instructions from memory. It is a state machine that 
   - `pc` 16 bit, program counter, keeps track of instruction to execute
   - `sp` 16 bit, stack pointer, used to keep track of stack, which is used for storing variables, return addresses, function arguements, 
 
+  The 8 bit registers can be paired and used togther
+  - `af`
+  - `bc`
+  - `de`
+  - `hl`
+Conditions
+  `z`: if z is set
+  `nz`: if z is not set
+  `c`: if c is set
+  `nc` if c is not set
+
+
 - TODO: List how registers can be used together
+
 ### Instruction Set Architecture (ISA)
-
-- Arimethic 
+The CPU can perform the following operations
+- Arimethic
+  - `ADD`, `ADDC`, `CP`, `SUB`, `SUBC`, `INC`, `DEC`
 - Load
+  - `LD`, `LDH`
 - Bitwise
+  - `AND`, `XOR`, `BIT`
 - Jump
+  - `JP`, `JR`, `CALL`
 - Stack
+  - `PUSH`, `POP`
 - Interrupt
+  - `EI`, `DI`
 - Control
+  - `HALT`, `STOP`, `NOP`
 
-TODO: List key operations of each type
+### Addressing Modes
