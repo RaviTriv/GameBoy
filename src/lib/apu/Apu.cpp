@@ -6,77 +6,77 @@ uint8_t APU::read(uint16_t address)
 {
   switch (address)
   {
-  case 0xFF10:
+  case NR10_REGISTER:
     return state.channel1.nrx0;
-  case 0xFF11:
+  case NR11_REGISTER:
     return state.channel1.nrx1;
-  case 0xFF12:
+  case NR12_REGISTER:
     return state.channel1.nrx2;
-  case 0xFF13:
+  case NR13_REGISTER:
     return state.channel1.nrx3;
-  case 0xFF14:
+  case NR14_REGISTER:
     return state.channel1.nrx4;
-  case 0xFF16:
+  case NR21_REGISTER:
     return state.channel2.nrx1;
-  case 0xFF17:
+  case NR22_REGISTER:
     return state.channel2.nrx2;
-  case 0xFF18:
+  case NR23_REGISTER:
     return state.channel2.nrx3;
-  case 0xFF19:
+  case NR24_REGISTER:
     return state.channel2.nrx4;
-  case 0xFF1A:
+  case NR30_REGISTER:
     return state.channel3.nrx0;
-  case 0xFF1B:
+  case NR31_REGISTER:
     return state.channel3.nrx1;
-  case 0xFF1C:
+  case NR32_REGISTER:
     return state.channel3.nrx2;
-  case 0xFF1D:
+  case NR33_REGISTER:
     return state.channel3.nrx3;
-  case 0xFF1E:
+  case NR34_REGISTER:
     return state.channel3.nrx4;
-  case 0xFF20:
+  case NR41_REGISTER:
     return state.channel4.nrx1;
-  case 0xFF21:
+  case NR42_REGISTER:
     return state.channel4.nrx2;
-  case 0xFF22:
+  case NR43_REGISTER:
     return state.channel4.nrx3;
-  case 0xFF23:
+  case NR44_REGISTER:
     return state.channel4.nrx4;
-  case 0xFF24:
+  case NR50_REGISTER:
     return state.registers.NR50;
-  case 0xFF25:
+  case NR51_REGISTER:
     return state.registers.NR51;
-  case 0xFF26:
-    return state.registers.NR52 | (state.enabled ? 0x80 : 0x00);
-  case 0xFF31:
+  case NR52_REGISTER:
+    return state.registers.NR52 | (state.enabled ? ENABLE_BIT : 0x00);
+  case WAVE_RAM_START + 1:
     return state.wavePattern[1];
-  case 0xFF32:
+  case WAVE_RAM_START + 2:
     return state.wavePattern[2];
-  case 0xFF33:
+  case WAVE_RAM_START + 3:
     return state.wavePattern[3];
-  case 0xFF34:
+  case WAVE_RAM_START + 4:
     return state.wavePattern[4];
-  case 0xFF35:
+  case WAVE_RAM_START + 5:
     return state.wavePattern[5];
-  case 0xFF36:
+  case WAVE_RAM_START + 6:
     return state.wavePattern[6];
-  case 0xFF37:
+  case WAVE_RAM_START + 7:
     return state.wavePattern[7];
-  case 0xFF38:
+  case WAVE_RAM_START + 8:
     return state.wavePattern[8];
-  case 0xFF39:
+  case WAVE_RAM_START + 9:
     return state.wavePattern[9];
-  case 0xFF3A:
+  case WAVE_RAM_START + 10:
     return state.wavePattern[10];
-  case 0xFF3B:
+  case WAVE_RAM_START + 11:
     return state.wavePattern[11];
-  case 0xFF3C:
+  case WAVE_RAM_START + 12:
     return state.wavePattern[12];
-  case 0xFF3D:
+  case WAVE_RAM_START + 13:
     return state.wavePattern[13];
-  case 0xFF3E:
+  case WAVE_RAM_START + 14:
     return state.wavePattern[14];
-  case 0xFF3F:
+  case WAVE_RAM_START + 15:
     return state.wavePattern[15];
   default:
     throw std::runtime_error("Invalid APU read");
@@ -89,69 +89,69 @@ void APU::write(uint16_t address, uint8_t value)
 {
   switch (address)
   {
-  case 0xFF10:
+  case NR10_REGISTER:
     state.channel1.nrx0 = value;
     break;
-  case 0xFF11:
+  case NR11_REGISTER:
     state.channel1.nrx1 = value;
     break;
-  case 0xFF12:
+  case NR12_REGISTER:
     state.channel1.nrx2 = value;
     break;
-  case 0xFF13:
+  case NR13_REGISTER:
     state.channel1.nrx3 = value;
     break;
-  case 0xFF14:
+  case NR14_REGISTER:
     state.channel1.nrx4 = value;
     break;
-  case 0xFF16:
+  case NR21_REGISTER:
     state.channel2.nrx1 = value;
     break;
-  case 0xFF17:
+  case NR22_REGISTER:
     state.channel2.nrx2 = value;
     break;
-  case 0xFF18:
+  case NR23_REGISTER:
     state.channel2.nrx3 = value;
     break;
-  case 0xFF19:
+  case NR24_REGISTER:
     state.channel2.nrx4 = value;
     break;
-  case 0xFF1A:
+  case NR30_REGISTER:
     state.channel3.nrx0 = value;
     break;
-  case 0xFF1B:
+  case NR31_REGISTER:
     state.channel3.nrx1 = value;
     break;
-  case 0xFF1C:
+  case NR32_REGISTER:
     state.channel3.nrx2 = value;
     break;
-  case 0xFF1D:
+  case NR33_REGISTER:
     state.channel3.nrx3 = value;
     break;
-  case 0xFF1E:
+  case NR34_REGISTER:
     state.channel3.nrx4 = value;
     break;
-  case 0xFF20:
+  case NR41_REGISTER:
     state.channel4.nrx1 = value;
     break;
-  case 0xFF21:
+  case NR42_REGISTER:
     state.channel4.nrx2 = value;
     break;
-  case 0xFF22:
+  case NR43_REGISTER:
     state.channel4.nrx3 = value;
     break;
-  case 0xFF23:
+  case NR44_REGISTER:
     state.channel4.nrx4 = value;
     break;
-  case 0xFF24:
+  case NR50_REGISTER:
     state.registers.NR50 = value;
     break;
-  case 0xFF25:
+  case NR51_REGISTER:
     state.registers.NR51 = value;
     break;
-  case 0xFF26:
+  case NR52_REGISTER:
     state.registers.NR52 = value;
-    state.enabled = (value & 0x80) != 0;
+    state.enabled = (value & ENABLE_BIT) != 0;
     if (!state.enabled)
     {
       state.channel1 = {};
@@ -161,52 +161,52 @@ void APU::write(uint16_t address, uint8_t value)
       state.wavePattern.fill(0);
     }
     break;
-  case 0xFF30:
+  case WAVE_RAM_START:
     state.wavePattern[0] = value;
     break;
-  case 0xFF31:
+  case WAVE_RAM_START + 1:
     state.wavePattern[1] = value;
     break;
-  case 0xFF32:
+  case WAVE_RAM_START + 2:
     state.wavePattern[2] = value;
     break;
-  case 0xFF33:
+  case WAVE_RAM_START + 3:
     state.wavePattern[3] = value;
     break;
-  case 0xFF34:
+  case WAVE_RAM_START + 4:
     state.wavePattern[4] = value;
     break;
-  case 0xFF35:
+  case WAVE_RAM_START + 5:
     state.wavePattern[5] = value;
     break;
-  case 0xFF36:
+  case WAVE_RAM_START + 6:
     state.wavePattern[6] = value;
     break;
-  case 0xFF37:
+  case WAVE_RAM_START + 7:
     state.wavePattern[7] = value;
     break;
-  case 0xFF38:
+  case WAVE_RAM_START + 8:
     state.wavePattern[8] = value;
     break;
-  case 0xFF39:
+  case WAVE_RAM_START + 9:
     state.wavePattern[9] = value;
     break;
-  case 0xFF3A:
+  case WAVE_RAM_START + 10:
     state.wavePattern[10] = value;
     break;
-  case 0xFF3B:
+  case WAVE_RAM_START + 11:
     state.wavePattern[11] = value;
     break;
-  case 0xFF3C:
+  case WAVE_RAM_START + 12:
     state.wavePattern[12] = value;
     break;
-  case 0xFF3D:
+  case WAVE_RAM_START + 13:
     state.wavePattern[13] = value;
     break;
-  case 0xFF3E:
+  case WAVE_RAM_START + 14:
     state.wavePattern[14] = value;
     break;
-  case 0xFF3F:
+  case WAVE_RAM_START + 15:
     state.wavePattern[15] = value;
     break;
   default:
@@ -218,11 +218,11 @@ void APU::write(uint16_t address, uint8_t value)
 void APU::frameSequencerAction()
 {
   frameTimer++;
-  if (frameTimer == 8192)
+  if (frameTimer == FRAME_SEQUENCER_CLOCK)
   {
     frameTimer = 0;
     frameSequence++;
-    frameSequence %= 8;
+    frameSequence %= FRAME_SEQUENCER_STEPS;
 
     triggerLength = frameSequence % 2 == 0;
     triggerEnvelope = frameSequence == 7;
@@ -238,7 +238,7 @@ void APU::frameSequencerAction()
 
 uint8_t APU::getChannel1Sample()
 {
-  if ((state.channel1.nrx4 & 0x80) != 0)
+  if ((state.channel1.nrx4 & TRIGGER_BIT) != 0)
   {
     state.channel1.reset();
   }
@@ -264,7 +264,7 @@ uint8_t APU::getChannel1Sample()
 
 uint8_t APU::getChannel2Sample()
 {
-  if ((state.channel2.nrx4 & 0x80) != 0)
+  if ((state.channel2.nrx4 & TRIGGER_BIT) != 0)
   {
     state.channel2.reset();
   }
@@ -290,7 +290,7 @@ uint8_t APU::getChannel2Sample()
 
 uint8_t APU::getChannel3Sample()
 {
-  if ((state.channel3.nrx4 & 0x80) != 0)
+  if ((state.channel3.nrx4 & TRIGGER_BIT) != 0)
   {
     state.channel3.reset();
   }
@@ -301,23 +301,23 @@ uint8_t APU::getChannel3Sample()
 
   if (timerTriggered)
   {
-    ++state.channel3.sample %= 32;
+    ++state.channel3.sample %= WAVE_SAMPLE_COUNT;
   }
 
   uint8_t sample = state.wavePattern[state.channel3.sample / 2];
 
   if (state.channel3.sample % 2)
   {
-    sample = sample & 0x0F;
+    sample = sample & WAVE_LOW_NIBBLE_MASK;
   }
   else
   {
-    sample = sample >> 4;
+    sample = sample >> NIBBLE_SIZE;
   }
 
   state.channel3.enabled &= state.channel3.lengthTimerAction();
 
-  int shiftVol = ((state.channel3.nrx2 >> 5) & 0x03) ? ((state.channel3.nrx2 >> 5) & 0x03) - 1 : 4;
+  int shiftVol = ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) ? ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) - 1 : 4;
 
   sample >>= shiftVol;
 
@@ -326,7 +326,7 @@ uint8_t APU::getChannel3Sample()
 
 uint8_t APU::getChannel4Sample()
 {
-  if ((state.channel4.nrx4 & 0x80) != 0)
+  if ((state.channel4.nrx4 & TRIGGER_BIT) != 0)
   {
     state.channel4.reset();
   }

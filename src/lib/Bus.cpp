@@ -3,6 +3,7 @@
 #include "../../include/Cpu.h"
 #include "../../include/Dma.h"
 #include "../../include/Io.h"
+#include "../../include/Common.h"
 #include "../../include/Ppu.h"
 #include "../../include/Ram.h"
 #include "../../include/Logger.h"
@@ -15,31 +16,31 @@ void Bus::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
 
 uint8_t Bus::read8(uint16_t address)
 {
-  if (address < 0x8000)
+  if (address <= ROM_END)
   {
     // Cartridge
     return cartridge->read(address);
   }
-  else if (address < 0xA000)
+  else if (address <= VRAM_END)
   {
     // PPU VRAM
     return ppu->vramRead(address);
   }
-  else if (address < 0xC000)
+  else if (address <= CART_RAM_END)
   {
     // External RAM
     return cartridge->read(address);
   }
-  else if (address < 0xE000)
+  else if (address <= WRAM_END)
   {
     return ram->readWRAM(address);
   }
-  else if (address < 0xFE00)
+  else if (address <= ECHO_RAM_END)
   {
     // echo RAM
     return 0;
   }
-  else if (address < 0xFEA0)
+  else if (address <= OAM_END)
   {
     // Object Attribute Memory (OAM)
     if (dma->isTransferring())
@@ -48,17 +49,17 @@ uint8_t Bus::read8(uint16_t address)
     }
     return ppu->oamRead(address);
   }
-  else if (address < 0xFF00)
+  else if (address <= UNUSED_END)
   {
     // Reserved
     return 0;
   }
-  else if (address < 0xFF80)
+  else if (address <= IO_REGISTERS_END)
   {
     // I/O Registers
     return io->read(address);
   }
-  else if (address == 0xFFFF)
+  else if (address == IE_REGISTER)
   {
     // Interrupt Enable Register
     return cpu->getInterruptEnable();
@@ -70,34 +71,34 @@ uint16_t Bus::read16(uint16_t address)
 {
   uint8_t low = read8(address);
   uint8_t high = read8(address + 1);
-  return low | (high << 8);
+  return low | (high << BYTE_BITS);
 }
 
 void Bus::write8(uint16_t address, uint8_t value)
 {
-  if (address < 0x8000)
+  if (address <= ROM_END)
   {
     // Cartridge
     cartridge->write(address, value);
   }
-  else if (address < 0xA000)
+  else if (address <= VRAM_END)
   {
     // PPU VRAM
     ppu->vramWrite(address, value);
   }
-  else if (address < 0xC000)
+  else if (address <= CART_RAM_END)
   {
     // External RAM
     cartridge->write(address, value);
   }
-  else if (address < 0xE000)
+  else if (address <= WRAM_END)
   {
     ram->writeWRAM(address, value);
   }
-  else if (address < 0xFE00)
+  else if (address <= ECHO_RAM_END)
   {
   }
-  else if (address < 0xFEA0)
+  else if (address <= OAM_END)
   {
     // Object Attribute Memory (OAM)
     if (dma->isTransferring())
@@ -106,15 +107,15 @@ void Bus::write8(uint16_t address, uint8_t value)
     }
     ppu->oamWrite(address, value);
   }
-  else if (address < 0xFF00)
+  else if (address <= UNUSED_END)
   {
   }
-  else if (address < 0xFF80)
+  else if (address <= IO_REGISTERS_END)
   {
     // I/O Registers
     io->write(address, value);
   }
-  else if (address == 0xFFFF)
+  else if (address == IE_REGISTER)
   {
     // Interrupt Enable Register
     cpu->setInterruptEnable(value);
@@ -127,6 +128,6 @@ void Bus::write8(uint16_t address, uint8_t value)
 
 void Bus::write16(uint16_t address, uint16_t value)
 {
-  write8(address + 1, (value >> 8) & 0xFF);
-  write8(address, value & 0xFF);
+  write8(address + 1, (value >> BYTE_BITS) & BYTE_MASK);
+  write8(address, value & BYTE_MASK);
 }

@@ -44,4 +44,8 @@ private:
   State state;
   bool directionSelected;
   bool actionSelected;
+
+  static constexpr uint8_t ACTION_SELECT_BIT = 0x20;
+  static constexpr uint8_t DIRECTION_SELECT_BIT = 0x10;
+  static constexpr uint8_t DEFAULT_OUTPUT = 0xCF;
 };

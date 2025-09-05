@@ -78,13 +78,13 @@ bool Gamepad::directionSel()
 
 void Gamepad::setSel(uint8_t value)
 {
-  actionSelected = value & 0x20;
-  directionSelected = value & 0x10;
+  actionSelected = value & ACTION_SELECT_BIT;
+  directionSelected = value & DIRECTION_SELECT_BIT;
 }
 
 uint8_t Gamepad::getOutput()
 {
-  uint8_t output = 0xCF;
+  uint8_t output = DEFAULT_OUTPUT;
 
   if (!actionSel())
   {

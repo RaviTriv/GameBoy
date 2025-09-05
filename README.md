@@ -17,7 +17,7 @@ make
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `<rom_path>` | Yes | Path to the GameBoy ROM file (.gb or .gbc) |
+| `<rom_path>` | Yes | Path to the GameBoy ROM file |
 | `--trace` | No | Enables debug trace mode |
 | `--loadSave` | No | Loads saved game data if available |
 | `--fastForward` | No | Speeds up the game when enabled |

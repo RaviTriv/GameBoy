@@ -3,12 +3,7 @@
 
 Timer::Timer(std::shared_ptr<CPU> cpu) : cpu(cpu)
 {
-  state.div = 0xAC00;
-}
-
-void Timer::setDiv(uint16_t value)
-{
-  state.div = value;
+  state.div = INITIAL_DIV_VALUE;
 }
 
 void Timer::tick()
@@ -19,7 +14,7 @@ void Timer::tick()
 
   bool updateTimer = false;
 
-  switch (state.tac & (0b11))
+  switch (state.tac & (FREQUENCY_BITS_MASK))
   {
   case 0b00:
     updateTimer = (prevDivider & (1 << 9)) && (!(state.div & (1 << 9)));
@@ -39,7 +34,7 @@ void Timer::tick()
   {
     state.tima++;
 
-    if (state.tima == 0xFF)
+    if (state.tima == TIMA_OVERFLOW)
     {
       state.tima = state.tma;
 
@@ -52,19 +47,19 @@ void Timer::write(uint16_t address, uint8_t value)
 {
   switch (address)
   {
-  case 0xFF04:
+  case DIV_REGISTER:
     state.div = 0;
     break;
 
-  case 0xFF05:
+  case TIMA_REGISTER:
     state.tima = value;
     break;
 
-  case 0xFF06:
+  case TMA_REGISTER:
     state.tma = value;
     break;
 
-  case 0xFF07:
+  case TAC_REGISTER:
     state.tac = value;
     break;
   }
@@ -74,13 +69,13 @@ uint8_t Timer::read(uint16_t address)
 {
   switch (address)
   {
-  case 0xFF04:
+  case DIV_REGISTER:
     return state.div >> 8;
-  case 0xFF05:
+  case TIMA_REGISTER:
     return state.tima;
-  case 0xFF06:
+  case TMA_REGISTER:
     return state.tma;
-  case 0xFF07:
+  case TAC_REGISTER:
     return state.tac;
   }
 }

@@ -3,6 +3,7 @@
 #include "../../include/Apu.h"
 #include "../../include/Bus.h"
 #include "../../include/Cartridge.h"
+#include "../../include/Common.h"
 #include "../../include/Cpu.h"
 #include "../../include/Dma.h"
 #include "../../include/Io.h"
@@ -81,13 +82,10 @@ void GameBoy::run()
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
   cpuThread.detach();
 
-  // After Cpu is initialized
-  timer->setDiv(0xABCC);
-
   uint32_t prevFrame = 0;
   while (state.isRunning)
   {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(UI_THREAD_SLEEP_MS));
     ui->handleEvents();
     if (prevFrame != ppu->getCurrentFrame())
     {
@@ -109,7 +107,7 @@ void GameBoy::cycle(int cycles)
 {
   for (int i = 0; i < cycles; i++)
   {
-    for (int j = 0; j < 4; j++)
+    for (int j = 0; j < CLOCK_CYCLES; j++)
     {
       state.ticks++;
       timer->tick();

@@ -1,5 +1,6 @@
 #include "../../include/Io.h"
 #include "../../include/Apu.h"
+#include "../../include/Common.h"
 #include "../../include/Cpu.h"
 #include "../../include/Lcd.h"
 #include "../../include/Timer.h"
@@ -18,47 +19,47 @@ void IO::setGamepad(std::shared_ptr<Gamepad> gamepad) { this->gamepad = gamepad;
 
 uint8_t IO::read(uint16_t address) const
 {
-  if (address == 0xFF00)
+  if (address == JOYPAD_REGISTER)
   {
     // Gamepad
     return gamepad->getOutput();
   }
 
-  if (address == 0xFF01)
+  if (address == SERIAL_DATA_REGISTER)
   {
-    return serialData[0];
+    return serialData[SERIAL_DATA_INDEX];
   }
 
-  if (address == 0xFF02)
+  if (address == SERIAL_CONTROL_REGISTER)
   {
-    return serialData[1];
+    return serialData[SERIAL_CONTROL_INDEX];
   }
 
-  if ((address >= 0xFF04) && (address <= 0xFF07))
+  if ((address >= TIMER_START) && (address <= TIMER_END))
   {
     // Timer
     return timer->read(address);
   }
 
-  if (address == 0xFF0F)
+  if (address == IF_REGISTER)
   {
     // Interrupt flags
     return cpu->getInterruptFlags();
   }
 
-  if ((address >= 0xFF10) && (address <= 0xFF26))
+  if ((address >= APU_START) && (address <= APU_END))
   {
     // Apu
     return apu->read(address);
   }
 
-  if ((address >= 0xFF30) && (address <= 0xFF3F))
+  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END))
   {
     // Apu
     return apu->read(address);
   }
 
-  if ((address >= 0xFF40) && (address <= 0xFF4B))
+  if ((address >= LCD_START) && (address <= LCD_END))
   {
     // Lcd
     return lcd->read(address);
@@ -69,54 +70,54 @@ uint8_t IO::read(uint16_t address) const
 
 void IO::write(uint16_t address, uint8_t value)
 {
-  if (address == 0xFF00)
+  if (address == JOYPAD_REGISTER)
   {
     // Gamepad
     gamepad->setSel(value);
     return;
   }
 
-  if (address == 0xFF01)
+  if (address == SERIAL_DATA_REGISTER)
   {
-    serialData[0] = value;
+    serialData[SERIAL_DATA_INDEX] = value;
     return;
   }
 
-  if (address == 0xFF02)
+  if (address == SERIAL_CONTROL_REGISTER)
   {
-    serialData[1] = value;
+    serialData[SERIAL_CONTROL_INDEX] = value;
     return;
   }
 
-  if ((address >= 0xFF04) & (address <= 0xFF07))
+  if ((address >= TIMER_START) && (address <= TIMER_END))
   {
     // Timer
     timer->write(address, value);
     return;
   }
 
-  if (address == 0xFF0F)
+  if (address == IF_REGISTER)
   {
     // Interrupt flags
     cpu->setInterruptFlags(value);
     return;
   }
 
-  if ((address >= 0xFF10) && (address <= 0xFF26))
+  if ((address >= APU_START) && (address <= APU_END))
   {
     // Apu
     apu->write(address, value);
     return;
   }
 
-  if ((address >= 0xFF30) && (address <= 0xFF3F))
+  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END))
   {
     // Apu
     apu->write(address, value);
     return;
   }
 
-  if ((address >= 0xFF40) && (address <= 0xFF4B))
+  if ((address >= LCD_START) && (address <= LCD_END))
   {
     // Lcd
     return lcd->write(address, value);

@@ -1,4 +1,5 @@
 #include "../../include/Ram.h"
+#include "../../include/Common.h"
 #include "../../include/Logger.h"
 
 uint8_t RAM::readWRAM(uint16_t address) const
@@ -6,7 +7,7 @@ uint8_t RAM::readWRAM(uint16_t address) const
   if (address < WRAM_BASE || address >= WRAM_BASE + state.wram.size())
   {
     Logger::GetLogger()->error("WRAM read out of bounds: 0x{:04X}", address);
-    return 0xFF;
+    return INVALID_READ_VALUE;
   }
   size_t offset = address - WRAM_BASE;
   return state.wram[offset];
@@ -28,7 +29,7 @@ uint8_t RAM::readHRAM(uint16_t address) const
   if (address < HRAM_BASE || address >= HRAM_BASE + state.hram.size())
   {
     Logger::GetLogger()->error("HRAM read out of bounds: 0x{:04X}", address);
-    return 0xFF;
+    return INVALID_READ_VALUE;
   }
   size_t offset = address - HRAM_BASE;
   return state.hram[offset];

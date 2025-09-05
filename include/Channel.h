@@ -19,6 +19,18 @@ protected:
   uint16_t baseAddress = 0;
   friend class APU;
 
+  static constexpr uint8_t TRIGGER_BIT = 0x80;
+  static constexpr uint8_t LENGTH_ENABLE_BIT = 0x40;
+  static constexpr uint16_t FREQ_HIGH_MASK = 0x07;
+  static constexpr uint8_t FREQ_HIGH_SHIFT = 8;
+  static constexpr uint16_t FREQ_BASE = 2048;
+  static constexpr uint8_t TIMER_MULTIPLIER = 4;
+  static constexpr uint8_t ENVELOPE_VOLUME_SHIFT = 4;
+  static constexpr uint8_t ENVELOPE_PERIOD_MASK = 0x07;
+  static constexpr uint8_t ENVELOPE_VOLUME_MASK = 0xF0;
+  static constexpr uint8_t ENVELOPE_DIRECTION_BIT = 0x08;
+  static constexpr uint8_t MAX_VOLUME = 0x0F;
+
 public:
   virtual ~Channel() = default;
   void updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool sweepTrigger);
@@ -38,7 +50,11 @@ private:
 
   static const std::array<std::array<uint8_t, 8>, 4> duties;
   friend class APU;
-
+  static constexpr uint8_t DUTY_MASK = 0xC0;     
+  static constexpr uint8_t DUTY_SHIFT = 6;      
+  static constexpr uint8_t LENGTH_MASK = 0x3F;   
+  static constexpr uint8_t MAX_LENGTH = 64;     
+  static constexpr uint8_t DUTY_CYCLE_STEPS = 8; 
 public:
   void reset() override;
   bool timerAction() override;
@@ -53,7 +69,10 @@ class WaveChannel : public Channel
 private:
   friend class APU;
   uint8_t sample = 0;
-
+  static constexpr uint16_t MAX_LENGTH = 256;     
+  static constexpr uint8_t DAC_ENABLE_BIT = 0x80; 
+  static constexpr uint8_t DAC_ENABLE_SHIFT = 7;  
+  static constexpr uint8_t WAVE_SAMPLE_COUNT = 32; 
 public:
   void reset() override;
   bool timerAction() override;
@@ -71,7 +90,20 @@ private:
   int envelopeTimer;
   uint16_t lfsr;
   static const std::array<int, 8> divisor;
+  static constexpr uint8_t LENGTH_MASK = 0x3F;     
+  static constexpr uint8_t MAX_LENGTH = 64;     
+  static constexpr uint16_t INITIAL_LFSR = 0x7FFF;
 
+  static constexpr uint8_t DIVISOR_INDEX_MASK = 0x07;
+  static constexpr uint8_t SHIFT_AMOUNT_SHIFT = 4;   
+
+  static constexpr uint8_t LFSR_BIT0_MASK = 0x01;  
+  static constexpr uint8_t LFSR_BIT1_MASK = 0x02;  
+  static constexpr uint8_t LFSR_BIT1_SHIFT = 1;    
+  static constexpr uint8_t LFSR_WIDTH_BIT = 0x08; 
+  static constexpr uint8_t LFSR_WIDTH_SHIFT = 3;  
+  static constexpr uint8_t LFSR_FEEDBACK_BIT = 14;
+  static constexpr uint8_t LFSR_7BIT_TAP = 6;     
 public:
   void reset() override;
   bool timerAction() override;

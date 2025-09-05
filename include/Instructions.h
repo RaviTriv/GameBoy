@@ -1,9 +1,9 @@
 #pragma once
 
+#include "./Common.h"
+
 #include <array>
 #include <cstdint>
-
-static constexpr int BYTE_MASK = 0xFF;
 
 enum class AddressingMode
 {
