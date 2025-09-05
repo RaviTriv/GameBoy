@@ -1,5 +1,6 @@
 #include "../../include/Ui.h"
 #include "../../include/Apu.h"
+#include "../../include/Common.h"
 #include "../../include/Ppu.h"
 #include "../../include/Gamepad.h"
 #include "../../include/Logger.h"

@@ -64,3 +64,6 @@ constexpr int CLOCK_CYCLES = 4;
 constexpr int UI_THREAD_SLEEP_MS = 1;
 
 constexpr uint8_t INVALID_READ_VALUE = 0xFF;
+
+constexpr int XRES = 160;
+constexpr int YRES = 144;

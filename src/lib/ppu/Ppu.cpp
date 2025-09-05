@@ -83,7 +83,7 @@ uint8_t PPU::vramRead(uint16_t address) const
 
 void PPU::incrementLY()
 {
-  if (pipeline.windowVisible() && lcd->state.ly >= lcd->state.windowY && lcd->state.ly < lcd->state.windowY + YRES)
+  if (pipeline.isWindowVisible() && lcd->state.ly >= lcd->state.windowY && lcd->state.ly < lcd->state.windowY + YRES)
   {
     state.windowLine++;
   }

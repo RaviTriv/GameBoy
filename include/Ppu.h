@@ -2,6 +2,7 @@
 
 #include "./Pipeline.h"
 #include "./OamTypes.h"
+#include "./Common.h"
 
 #include <array>
 #include <cstdint>
@@ -14,8 +15,6 @@ class LCD;
 class UI;
 class PPU
 {
-  static constexpr int XRES = 160;
-  static constexpr int YRES = 144;
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
 public:

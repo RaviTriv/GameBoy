@@ -33,9 +33,6 @@ public:
 private:
   std::shared_ptr<PPU> ppu;
   std::shared_ptr<Gamepad> gamepad;
-
-  static constexpr int YRES = 144;
-  static constexpr int XRES = 160;
   static constexpr int SCREEN_WIDTH = 640;
   static constexpr int SCREEN_HEIGHT = 576;
   static constexpr int SCALE = 4;
