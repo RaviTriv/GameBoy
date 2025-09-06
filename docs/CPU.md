@@ -1,7 +1,5 @@
 # CPU
-
-## Overview
-The CPU reads and executes instructions from memory. 
+The Central Processing Unit (CPU) reads and executes instructions from memory. It processes 8-bit chunks of data in a simple fetch, decode, execute cycle.
 
 ```
 ┌───────────┐      ┌──────────┐      ┌───────────┐
@@ -20,11 +18,7 @@ The CPU reads and executes instructions from memory.
 | DECODE | Use opcode returned from fetch to find operation |
 | EXECUTE | Perform operation, update registers and flags |
 
-- 8 bit, processes 8 bits at a time
-- interrupt handling
-
-### State
-- Registers: memory that is quick and easy to access
+## Registers
   - `a` 8 bits, accumulator, holds values from arithmetic operations
   - `f` 8 bits, flags
     - Bit 7: Z (Zero flag), if some operations result was zero or values match from `cp` operation
@@ -41,21 +35,9 @@ The CPU reads and executes instructions from memory.
   - `pc` 16 bit, program counter, keeps track of instruction to execute
   - `sp` 16 bit, stack pointer, used to keep track of stack, which is used for storing variables, return addresses, function arguements, 
 
-  The 8 bit registers can be paired and used togther
-  - `af`
-  - `bc`
-  - `de`
-  - `hl`
-Conditions
-  `z`: if z is set
-  `nz`: if z is not set
-  `c`: if c is set
-  `nc` if c is not set
+  The 8 bit registers can be paired toghether to form 16 bit registers like the following, `af`, `bc`, `de`, `hl`.
 
-
-- TODO: List how registers can be used together
-
-### Instruction Set Architecture (ISA)
+## Instruction Set Architecture (ISA)
 The CPU can perform the following operations
 - Arimethic
   - `ADD`, `ADDC`, `CP`, `SUB`, `SUBC`, `INC`, `DEC`
@@ -71,5 +53,3 @@ The CPU can perform the following operations
   - `EI`, `DI`
 - Control
   - `HALT`, `STOP`, `NOP`
-
-### Addressing Modes
