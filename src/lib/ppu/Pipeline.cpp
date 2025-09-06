@@ -91,7 +91,7 @@ void Pipeline::fetchDataHigh()
 
 bool Pipeline::processTile()
 {
-  if (state.fifoSize > 8)
+  if (pixelFifo.size() > 8)
   {
     return false;
   }
@@ -117,7 +117,7 @@ bool Pipeline::processTile()
 
     if (x >= 0)
     {
-      fifoPush(color);
+      pixelFifo.push(color);
       state.fifoX++;
     }
   }
@@ -126,9 +126,9 @@ bool Pipeline::processTile()
 
 void Pipeline::pushPixel()
 {
-  if (state.fifoSize > 8)
+  if (pixelFifo.size() > 8)
   {
-    uint32_t pixel = fifoPop();
+    uint32_t pixel = pixelFifo.pop();
 
     if (state.lineX >= (ppu->lcd->state.scrollX) % 8)
     {
@@ -266,48 +266,6 @@ void Pipeline::loadSpriteData(uint8_t offset)
 */
 
 /*
- <--- FIFO-START --->
-*/
-
-bool Pipeline::fifoIsEmpty() const
-{
-  return state.fifoSize == 0;
-}
-
-bool Pipeline::fifoIsFull() const
-{
-  return state.fifoSize == state.pixelFifo.size();
-}
-
-void Pipeline::fifoPush(uint32_t pixel)
-{
-  if (fifoIsFull())
-  {
-    return;
-  }
-
-  state.pixelFifo[state.fifoTail] = pixel;
-  state.fifoTail = (state.fifoTail + 1) % state.pixelFifo.size();
-  state.fifoSize++;
-}
-
-uint32_t Pipeline::fifoPop()
-{
-  if (fifoIsEmpty())
-  {
-    return 0;
-  }
-  uint32_t pixel = state.pixelFifo[state.fifoHead];
-  state.fifoHead = (state.fifoHead + 1) % state.pixelFifo.size();
-  state.fifoSize--;
-  return pixel;
-}
-
-/*
- <--- FIFO-END --->
-*/
-
-/*
 <--- CALCULATE-POSITION-START --->
 */
 
@@ -375,9 +333,9 @@ uint8_t Pipeline::getPushedCount()
 
 void Pipeline::reset()
 {
-  while (!fifoIsEmpty())
+  while (!pixelFifo.isEmpty())
   {
-    fifoPop();
+    pixelFifo.pop();
   }
 }
 

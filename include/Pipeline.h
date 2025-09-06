@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./OamTypes.h"
+#include "./PixelFifo.h"
 
 #include <cstdint>
 #include <array>
@@ -24,10 +25,6 @@ public:
   struct State
   {
     FETCH_STATE fetchState;
-    std::array<uint32_t, 16> pixelFifo;
-    size_t fifoHead = 0;
-    size_t fifoTail = 0;
-    size_t fifoSize = 0;
     size_t fifoX = 0;
     uint8_t lineX;
     uint8_t pushedCount;
@@ -51,13 +48,10 @@ public:
 
 private:
   PPU *ppu;
+  PixelFifo pixelFifo;
   void fetch();
   void fetchTile();
   void fetchDataLow();
-  bool fifoIsEmpty() const;
-  bool fifoIsFull() const;
-  void fifoPush(uint32_t pixel);
-  uint32_t fifoPop();
   void pushPixel();
   uint8_t calculateMapX() const;
   uint8_t calculateMapY() const;

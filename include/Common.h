@@ -67,3 +67,5 @@ constexpr uint8_t INVALID_READ_VALUE = 0xFF;
 
 constexpr int XRES = 160;
 constexpr int YRES = 144;
+
+constexpr int FIFO_CAPACITY = 16;

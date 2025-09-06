@@ -25,6 +25,7 @@ add_executable(gameboy
     src/lib/ppu/Dma.cpp
     src/lib/ppu/Lcd.cpp
     src/lib/ppu/Pipeline.cpp
+    src/lib/ppu/PixelFifo.cpp
     src/lib/ppu/Ppu.cpp
     src/lib/Ram.cpp
     src/lib/StateSerializer.cpp
