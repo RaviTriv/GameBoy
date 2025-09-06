@@ -19,6 +19,11 @@
 
 void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForward)
 {
+  Logger::GetLogger()->set_level(spdlog::level::off);
+  if (trace)
+  {
+    Logger::GetLogger()->set_level(spdlog::level::trace);
+  }
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
