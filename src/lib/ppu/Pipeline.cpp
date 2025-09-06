@@ -59,11 +59,12 @@ void Pipeline::fetchTile()
   {
     state.bgwBuffer[0] = ppu->bus->read8(bgw0ReadAddress());
 
+    loadWindowTile();
+
     if (ppu->lcd->getBgWindowDataArea() == 0x8800)
     {
       state.bgwBuffer[0] += 128;
     }
-    loadWindowTile();
   }
 
   if (ppu->lcd->isObjEnabled() && !ppu->state.currentLineSprites.empty())
@@ -202,18 +203,13 @@ void Pipeline::loadWindowTile()
 
   uint8_t windowY = ppu->lcd->state.windowY;
 
-  if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + 144 + 14)
+  if (state.fetchX + 7 >= ppu->lcd->state.windowX && state.fetchX + 7 < ppu->lcd->state.windowX + YRES + 14)
   {
-    if (ppu->lcd->state.ly >= windowY && ppu->lcd->state.ly < windowY + 160)
+    if (ppu->lcd->state.ly >= windowY && ppu->lcd->state.ly < windowY + XRES)
     {
       uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
       state.bgwBuffer[0] = ppu->bus->read8(windowTileReadAddress(wTileY));
-
-      if (ppu->lcd->getBgWindowDataArea() == 0x8800)
-      {
-        state.bgwBuffer[0] += 128;
-      }
     }
   }
 }
@@ -319,12 +315,7 @@ uint16_t Pipeline::windowTileReadAddress(uint8_t wTileY) const
 
 bool Pipeline::isWindowVisible() const
 {
-  return (ppu->lcd->isWindowEnabled()) && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= 144);
-}
-
-uint8_t Pipeline::getPushedCount()
-{
-  return state.pushedCount;
+  return (ppu->lcd->isWindowEnabled()) && (ppu->lcd->state.windowX >= 0) && (ppu->lcd->state.windowX <= 166) && (ppu->lcd->state.windowY >= 0) && (ppu->lcd->state.windowY <= YRES);
 }
 
 /*

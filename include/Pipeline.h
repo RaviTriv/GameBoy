@@ -42,11 +42,11 @@ public:
   void process();
   void reset();
   void oamReset();
-  uint8_t getPushedCount();
   bool isWindowVisible() const;
   State state;
   const PixelFifo *getPixelFifo() const { return &pixelFifo; }
   PixelFifo *getPixelFifo() { return &pixelFifo; }
+  uint8_t getPushedCount() const { return state.pushedCount; }
 
 private:
   PPU *ppu;
