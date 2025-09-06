@@ -1,6 +1,7 @@
 #include "../../include/StateSerializer.h"
 #include "../../include/Cpu.h"
 #include "../../include/Pipeline.h"
+#include "../../include/PixelFifo.h"
 #include "../../include/Ppu.h"
 #include "../../include/OamTypes.h"
 #include "../../include/Lcd.h"
@@ -104,12 +105,17 @@ void StateSerializer::savePPUState(std::ofstream &file)
   file.write(reinterpret_cast<const char *>(ppuState.videoBuffer.data()), ppuState.videoBuffer.size() * sizeof(uint32_t));
 
   const Pipeline::State &pipelineState = ppu->getPipelineState();
+  const PixelFifo *pixelFifo = ppu->getPipeline()->getPixelFifo();
 
   file.write(reinterpret_cast<const char *>(&pipelineState.fetchState), sizeof(pipelineState.fetchState));
-  file.write(reinterpret_cast<const char *>(pipelineState.pixelFifo.data()), pipelineState.pixelFifo.size() * sizeof(uint32_t));
-  file.write(reinterpret_cast<const char *>(&pipelineState.fifoHead), sizeof(pipelineState.fifoHead));
-  file.write(reinterpret_cast<const char *>(&pipelineState.fifoTail), sizeof(pipelineState.fifoTail));
-  file.write(reinterpret_cast<const char *>(&pipelineState.fifoSize), sizeof(pipelineState.fifoSize));
+
+  file.write(reinterpret_cast<const char *>(pixelFifo->getBuffer().data()), pixelFifo->getBuffer().size() * sizeof(uint32_t));
+  size_t head = pixelFifo->getHead();
+  size_t tail = pixelFifo->getTail();
+  size_t count = pixelFifo->getCount();
+  file.write(reinterpret_cast<const char *>(&head), sizeof(head));
+  file.write(reinterpret_cast<const char *>(&tail), sizeof(tail));
+  file.write(reinterpret_cast<const char *>(&count), sizeof(count));
   file.write(reinterpret_cast<const char *>(&pipelineState.fifoX), sizeof(pipelineState.fifoX));
   file.write(reinterpret_cast<const char *>(&pipelineState.lineX), sizeof(pipelineState.lineX));
   file.write(reinterpret_cast<const char *>(&pipelineState.pushedCount), sizeof(pipelineState.pushedCount));
@@ -249,10 +255,15 @@ void StateSerializer::loadPPUState(std::ifstream &file)
   Pipeline::State pipelineState = ppu->getPipelineState();
 
   file.read(reinterpret_cast<char *>(&pipelineState.fetchState), sizeof(pipelineState.fetchState));
-  file.read(reinterpret_cast<char *>(pipelineState.pixelFifo.data()), pipelineState.pixelFifo.size() * sizeof(uint32_t));
-  file.read(reinterpret_cast<char *>(&pipelineState.fifoHead), sizeof(pipelineState.fifoHead));
-  file.read(reinterpret_cast<char *>(&pipelineState.fifoTail), sizeof(pipelineState.fifoTail));
-  file.read(reinterpret_cast<char *>(&pipelineState.fifoSize), sizeof(pipelineState.fifoSize));
+
+  PixelFifo *pixelFifo = ppu->getPipeline()->getPixelFifo();
+  std::array<uint32_t, FIFO_CAPACITY> fifoBuffer;
+  file.read(reinterpret_cast<char *>(fifoBuffer.data()), fifoBuffer.size() * sizeof(uint32_t));
+  size_t fifoHead, fifoTail, fifoCount;
+  file.read(reinterpret_cast<char *>(&fifoHead), sizeof(fifoHead));
+  file.read(reinterpret_cast<char *>(&fifoTail), sizeof(fifoTail));
+  file.read(reinterpret_cast<char *>(&fifoCount), sizeof(fifoCount));
+
   file.read(reinterpret_cast<char *>(&pipelineState.fifoX), sizeof(pipelineState.fifoX));
   file.read(reinterpret_cast<char *>(&pipelineState.lineX), sizeof(pipelineState.lineX));
   file.read(reinterpret_cast<char *>(&pipelineState.pushedCount), sizeof(pipelineState.pushedCount));
@@ -268,6 +279,7 @@ void StateSerializer::loadPPUState(std::ifstream &file)
 
   ppu->setState(state);
   ppu->setPipelineState(pipelineState);
+  pixelFifo->setState(fifoBuffer, fifoHead, fifoTail, fifoCount);
 }
 
 void StateSerializer::loadLCDState(std::ifstream &file)

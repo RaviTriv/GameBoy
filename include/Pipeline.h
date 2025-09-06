@@ -45,6 +45,8 @@ public:
   uint8_t getPushedCount();
   bool isWindowVisible() const;
   State state;
+  const PixelFifo *getPixelFifo() const { return &pixelFifo; }
+  PixelFifo *getPixelFifo() { return &pixelFifo; }
 
 private:
   PPU *ppu;

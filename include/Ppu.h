@@ -50,6 +50,7 @@ public:
   void setState(const State &state);
 
   Pipeline::State getPipelineState() const;
+  Pipeline* getPipeline() { return &pipeline; }
   void setPipelineState(const Pipeline::State &state);
   void setFastForward(bool fastForward);
   bool isFastForward() const;

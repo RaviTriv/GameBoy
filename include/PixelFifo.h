@@ -27,7 +27,10 @@ public:
 
   void reset();
 
+  const std::array<uint32_t, FIFO_CAPACITY> &getBuffer() const;
   size_t getHead() const;
   size_t getTail() const;
   size_t getCount() const;
+  void setState(const std::array<uint32_t, FIFO_CAPACITY> &newBuffer,
+                size_t newHead, size_t newTail, size_t newCount);
 };

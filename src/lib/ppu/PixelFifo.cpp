@@ -55,6 +55,19 @@ void PixelFifo::reset()
   count = 0;
 }
 
+const std::array<uint32_t, FIFO_CAPACITY> &PixelFifo::getBuffer() const
+{
+  return buffer;
+}
 size_t PixelFifo::getHead() const { return head; }
 size_t PixelFifo::getTail() const { return tail; }
 size_t PixelFifo::getCount() const { return count; }
+
+void PixelFifo::setState(const std::array<uint32_t, FIFO_CAPACITY> &newBuffer,
+                         size_t newHead, size_t newTail, size_t newCount)
+{
+  buffer = newBuffer;
+  head = newHead;
+  tail = newTail;
+  count = newCount;
+}
