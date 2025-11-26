@@ -12,8 +12,8 @@ public:
   MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {};
   MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
       uint16_t romBanks, uint16_t ramBanks)
-      : romData(rom), ramData(ram),
-        romBanksCount(romBanks), ramBanksCount(ramBanks) {}
+      : romBanksCount(romBanks), ramBanksCount(ramBanks),
+        romData(rom), ramData(ram) {}
 
 protected:
   uint16_t romBanksCount = 0;

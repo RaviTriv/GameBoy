@@ -8,7 +8,7 @@ Cartridge::Cartridge(std::string_view romPath)
 
 void Cartridge::loadCartridge(std::string_view romPath)
 {
-  std::ifstream cartridge(romPath, std::ios::binary | std::ios::ate);
+  std::ifstream cartridge(std::string(romPath), std::ios::binary | std::ios::ate);
 
   if (!cartridge.is_open())
   {
