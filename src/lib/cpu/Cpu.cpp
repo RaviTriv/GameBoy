@@ -3,17 +3,12 @@
 #include "../../../include/Logger.h"
 
 RegisterType registerLookup[] = {
-    RegisterType::B,
-    RegisterType::C,
-    RegisterType::D,
-    RegisterType::E,
-    RegisterType::H,
-    RegisterType::L,
-    RegisterType::HL,
-    RegisterType::A};
+    RegisterType::B, RegisterType::C, RegisterType::D,  RegisterType::E,
+    RegisterType::H, RegisterType::L, RegisterType::HL, RegisterType::A};
 
-CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(cycleCallback), decoder(this), executer(this), interrupt(this), bus(bus)
-{
+CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus)
+    : cycleCallback(cycleCallback), decoder(this), executer(this),
+      interrupt(this), bus(bus) {
   state.registers.a = 0xB001;
   state.registers.f = 0xB0;
   state.registers.b = 0x1300;
@@ -30,54 +25,36 @@ CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus) : cycleCallback(
   state.ime = false;
 };
 
-void CPU::fetch()
-{
-  state.opcode = bus->read8(state.registers.pc++);
-}
+void CPU::fetch() { state.opcode = bus->read8(state.registers.pc++); }
 
-void CPU::decode()
-{
-  decoder.decode(state.opcode);
-}
+void CPU::decode() { decoder.decode(state.opcode); }
 
-void CPU::execute()
-{
-  executer.execute();
-}
+void CPU::execute() { executer.execute(); }
 
-void CPU::step()
-{
-  if (!state.halted)
-  {
+void CPU::step() {
+  if (!state.halted) {
     fetch();
     decode();
     execute();
-  }
-  else
-  {
+  } else {
     cycleCallback(1);
-    if (state.intf)
-    {
+    if (state.intf) {
       state.halted = false;
     }
   }
 
-  if (state.ime)
-  {
+  if (state.ime) {
     interrupt.handleInterrupts();
     state.imeScheduled = false;
   }
 
-  if (state.imeScheduled)
-  {
+  if (state.imeScheduled) {
     state.ime = true;
   }
 }
 
-uint8_t CPU::readRegister8(RegisterType reg) const
-{
-  switch (reg)
-  {
+uint8_t CPU::readRegister8(RegisterType reg) const {
+  switch (reg) {
   case RegisterType::A:
     return state.registers.a;
   case RegisterType::B:
@@ -103,10 +80,8 @@ uint8_t CPU::readRegister8(RegisterType reg) const
   }
 }
 
-uint16_t CPU::readRegister16(RegisterType reg) const
-{
-  switch (reg)
-  {
+uint16_t CPU::readRegister16(RegisterType reg) const {
+  switch (reg) {
   case RegisterType::A:
     return state.registers.a;
   case RegisterType::B:
@@ -142,10 +117,8 @@ uint16_t CPU::readRegister16(RegisterType reg) const
   }
 }
 
-void CPU::setRegister8(RegisterType reg, uint8_t value)
-{
-  switch (reg)
-  {
+void CPU::setRegister8(RegisterType reg, uint8_t value) {
+  switch (reg) {
   case RegisterType::A:
     state.registers.a = value & BYTE_MASK;
     break;
@@ -178,10 +151,8 @@ void CPU::setRegister8(RegisterType reg, uint8_t value)
   }
 }
 
-void CPU::setRegister16(RegisterType reg, uint16_t value)
-{
-  switch (reg)
-  {
+void CPU::setRegister16(RegisterType reg, uint16_t value) {
+  switch (reg) {
   case RegisterType::A:
     state.registers.a = value & BYTE_MASK;
     break;
@@ -235,94 +206,76 @@ void CPU::setRegister16(RegisterType reg, uint16_t value)
   }
 }
 
-void CPU::stackPush8(uint8_t value)
-{
+void CPU::stackPush8(uint8_t value) {
   uint16_t sp = state.registers.sp - 1;
   setRegister16(RegisterType::SP, sp);
   bus->write8(sp, value);
 }
 
-void CPU::stackPush16(uint16_t value)
-{
+void CPU::stackPush16(uint16_t value) {
   stackPush8((value >> 8) & 0xFF);
   stackPush8(value & 0xFF);
 }
 
-uint8_t CPU::stackPop8()
-{
+uint8_t CPU::stackPop8() {
   uint16_t sp = state.registers.sp;
   uint8_t value = bus->read8(sp);
   setRegister16(RegisterType::SP, sp + 1);
   return value;
 }
 
-uint16_t CPU::stackPop16()
-{
+uint16_t CPU::stackPop16() {
   uint16_t low = stackPop8();
   uint16_t high = stackPop8();
 
   return (high << 8) | low;
 }
 
-void CPU::setBit(uint8_t value, uint8_t bit)
-{
-  if (value)
-  {
+void CPU::setBit(uint8_t value, uint8_t bit) {
+  if (value) {
     state.registers.f |= (1 << bit);
-  }
-  else
-  {
+  } else {
     state.registers.f &= ~(1 << bit);
   }
 }
 
-void CPU::setFlags(int z, int n, int h, int c)
-{
-  if (z != -1)
-  {
+void CPU::setFlags(int z, int n, int h, int c) {
+  if (z != -1) {
     setBit(z, FLAG_Z_BIT);
   }
 
-  if (n != -1)
-  {
+  if (n != -1) {
     setBit(n, FLAG_N_BIT);
   }
 
-  if (h != -1)
-  {
+  if (h != -1) {
     setBit(h, FLAG_H_BIT);
   }
 
-  if (c != -1)
-  {
+  if (c != -1) {
     setBit(c, FLAG_C_BIT);
   }
 }
 
-bool CPU::is16Bit(RegisterType reg)
-{
-  return reg >= RegisterType::AF;
-}
+bool CPU::is16Bit(RegisterType reg) { return reg >= RegisterType::AF; }
 
-bool CPU::isFlagSet(uint8_t flags, uint8_t bit) const { return (flags & (1 << bit)) != 0; }
+bool CPU::isFlagSet(uint8_t flags, uint8_t bit) const {
+  return (flags & (1 << bit)) != 0;
+}
 int CPU::FLAG_Z() const { return isFlagSet(state.registers.f, FLAG_Z_BIT); }
 int CPU::FLAG_N() const { return isFlagSet(state.registers.f, FLAG_N_BIT); }
 int CPU::FLAG_H() const { return isFlagSet(state.registers.f, FLAG_H_BIT); }
 int CPU::FLAG_C() const { return isFlagSet(state.registers.f, FLAG_C_BIT); }
 
-RegisterType CPU::decodeRegister(uint8_t value)
-{
-  if (value > 0b111)
-  {
+RegisterType CPU::decodeRegister(uint8_t value) {
+  if (value > 0b111) {
     return RegisterType::NONE;
   }
   return registerLookup[value];
 }
 
-bool CPU::conditionCheck() const
-{
-  switch (state.instruction.condition)
-  {
+bool CPU::conditionCheck() const {
+  switch (state.instruction.condition) {
   case ConditionType::NONE:
     return true;
   case ConditionType::C:
@@ -340,15 +293,12 @@ bool CPU::conditionCheck() const
   return false;
 }
 
-void CPU::jumpToAddress(uint16_t addr, bool pushPC)
-{
-  if (!conditionCheck())
-  {
+void CPU::jumpToAddress(uint16_t addr, bool pushPC) {
+  if (!conditionCheck()) {
     return;
   }
 
-  if (pushPC)
-  {
+  if (pushPC) {
     cycleCallback(2);
     stackPush16(state.registers.pc);
   }
@@ -357,34 +307,24 @@ void CPU::jumpToAddress(uint16_t addr, bool pushPC)
   cycleCallback(1);
 }
 
-void CPU::requestInterrupt(InterruptType type)
-{
+void CPU::requestInterrupt(InterruptType type) {
   interrupt.requestInterrupt(type);
 }
 
-void CPU::setInterruptEnable(uint8_t value)
-{
+void CPU::setInterruptEnable(uint8_t value) {
   interrupt.setInterruptEnable(value);
 }
 
-uint8_t CPU::getInterruptEnable() const
-{
+uint8_t CPU::getInterruptEnable() const {
   return interrupt.getInterruptEnable();
 }
 
-void CPU::setInterruptFlags(uint8_t value)
-{
-  state.intf = value;
-}
+void CPU::setInterruptFlags(uint8_t value) { state.intf = value; }
 
-uint8_t CPU::getInterruptFlags() const
-{
-  return state.intf;
-}
+uint8_t CPU::getInterruptFlags() const { return state.intf; }
 
-CPU::State CPU::getState() const
-{
-  return state;
-}
+CPU::State CPU::getState() const { return state; }
 
 void CPU::setState(const State &state) { this->state = state; }
+
+InterruptRegs CPU::getInterruptRegs() { return {state.ie, state.intf}; }

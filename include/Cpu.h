@@ -3,10 +3,12 @@
 #include "./InstructionsDecoder.h"
 #include "./InstructionsExecuter.h"
 #include "./Interrupts.h"
+#include "InterruptRegs.h"
+#include "InterruptSink.h"
 
 #include <cstdint>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <string>
 
 constexpr uint8_t FLAG_Z_BIT = 7;
@@ -15,8 +17,7 @@ constexpr uint8_t FLAG_H_BIT = 5;
 constexpr uint8_t FLAG_C_BIT = 4;
 constexpr uint8_t NIBBLE_MASK = 0xF;
 
-struct Registers
-{
+struct Registers {
   uint8_t a;
   uint8_t f;
   uint8_t b;
@@ -30,11 +31,9 @@ struct Registers
 };
 
 class Bus;
-class CPU
-{
+class CPU : public InterruptSink {
 public:
-  struct State
-  {
+  struct State {
     struct Registers registers;
     Instruction instruction;
     uint8_t opcode;
@@ -53,10 +52,11 @@ public:
   CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus);
 
   void step();
-  void requestInterrupt(InterruptType type);
+  void requestInterrupt(InterruptType type) override;
   uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
   uint8_t getInterruptFlags() const;
+  InterruptRegs getInterruptRegs();
   void setInterruptFlags(uint8_t value);
   CPU::State getState() const;
   void setState(const State &state);
