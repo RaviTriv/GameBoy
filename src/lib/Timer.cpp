@@ -1,7 +1,7 @@
 #include "../../include/Timer.h"
-#include "../../include/Cpu.h"
+#include "../../include/InterruptSink.h"
 
-Timer::Timer(std::shared_ptr<CPU> cpu) : cpu(cpu)
+Timer::Timer(InterruptSink &interruptSink) : interruptSink(interruptSink)
 {
   state.div = INITIAL_DIV_VALUE;
 }
@@ -38,7 +38,7 @@ void Timer::tick()
     {
       state.tima = state.tma;
 
-      cpu->requestInterrupt(InterruptType::TIMER);
+      interruptSink.requestInterrupt(InterruptType::TIMER);
     }
   }
 }

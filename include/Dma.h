@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
+#include <functional>
 
-class Bus;
-class PPU;
+class IMemRead;
 class DMA
 {
   struct State
@@ -16,14 +15,13 @@ class DMA
   };
 
 public:
-  DMA(std::shared_ptr<Bus> bus, std::shared_ptr<PPU> ppu);
+  DMA(std::function<void(uint16_t, uint8_t)> oamWrite);
   void start(uint8_t start);
   void tick();
   bool isTransferring() const;
-  void setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
-  void setPpu(std::shared_ptr<PPU> ppu) { this->ppu = ppu; }
+  void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
 private:
   State state;
-  std::shared_ptr<Bus> bus;
-  std::shared_ptr<PPU> ppu;
+  IMemRead *memRead = nullptr;
+  std::function<void(uint16_t, uint8_t)> oamWrite;
 };

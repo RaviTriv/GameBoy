@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 
-class CPU;
+class InterruptSink;
 class Timer
 {
   struct State
@@ -15,14 +14,14 @@ class Timer
   };
 
 public:
-  Timer(std::shared_ptr<CPU> cpu);
+  Timer(InterruptSink &interruptSink);
   void tick();
   void write(uint16_t address, uint8_t value);
   uint8_t read(uint16_t address);
 
 private:
   State state;
-  std::shared_ptr<CPU> cpu;
+  InterruptSink &interruptSink;
   static constexpr uint16_t INITIAL_DIV_VALUE = 0xAC00;
   static constexpr uint16_t DIV_REGISTER = 0xFF04;
   static constexpr uint16_t TIMA_REGISTER = 0xFF05;

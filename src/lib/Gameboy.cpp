@@ -27,11 +27,15 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
-  dma = std::make_unique<DMA>(nullptr, nullptr);
+  dma = std::make_unique<DMA>(
+      [this](uint16_t addr, uint8_t val)
+      { ppu->oamWrite(addr, val); });
   ram = std::make_unique<RAM>();
   gamepad = std::make_unique<Gamepad>();
   io = std::make_unique<IO>(nullptr, nullptr, nullptr, gamepad, nullptr);
-  lcd = std::make_shared<LCD>(dma);
+  lcd = std::make_shared<LCD>(
+      [this](uint8_t value)
+      { dma->start(value); });
   ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
   ui = std::make_shared<UI>(
       [this]()
@@ -46,10 +50,9 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   cpu = std::make_shared<CPU>(
       [this](int cycles)
       { this->cycle(cycles); }, bus);
-  timer = std::make_shared<Timer>(cpu);
+  timer = std::make_shared<Timer>(*cpu);
   bus->setCpu(cpu);
-  dma->setBus(bus);
-  dma->setPpu(ppu);
+  dma->setMemRead(*bus);
   io->setTimer(timer);
   io->setCPU(cpu);
   io->setLCD(lcd);

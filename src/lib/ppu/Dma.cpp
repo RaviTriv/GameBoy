@@ -1,8 +1,7 @@
 #include "../../../include/Dma.h"
-#include "../../../include/Bus.h"
-#include "../../../include/PPU.h"
+#include "../../../include/IMemRead.h"
 
-DMA::DMA(std::shared_ptr<Bus> bus, std::shared_ptr<PPU> ppu) : bus(bus), ppu(ppu)
+DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite) : oamWrite(std::move(oamWrite))
 {
 }
 
@@ -27,7 +26,7 @@ void DMA::tick()
     return;
   }
 
-  ppu->oamWrite(state.byte, bus->read8((state.value * 0x100) + state.byte));
+  oamWrite(state.byte, memRead->read8((state.value * 0x100) + state.byte));
   state.byte++;
   state.isActive = state.byte < 0xA0;
 }

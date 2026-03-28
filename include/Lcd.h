@@ -2,9 +2,8 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
+#include <functional>
 
-class DMA;
 class LCD
 {
   friend class PPU;
@@ -72,7 +71,7 @@ public:
     std::array<uint32_t, 4> ob2Colors;
   };
 
-  LCD(std::shared_ptr<DMA> dma);
+  LCD(std::function<void(uint8_t)> onDmaStart);
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t value);
   bool isLcdStatIntEnabled(uint8_t source);
@@ -92,7 +91,7 @@ public:
 
 private:
   State state;
-  std::shared_ptr<DMA> dma;
+  std::function<void(uint8_t)> onDmaStart;
   static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
   bool getBit(uint8_t value, int bit) const;
