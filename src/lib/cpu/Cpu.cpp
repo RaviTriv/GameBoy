@@ -25,6 +25,8 @@ CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus)
   state.ime = false;
 };
 
+void CPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
+
 void CPU::fetch() { state.opcode = bus->read8(state.registers.pc++); }
 
 void CPU::decode() { decoder.decode(state.opcode); }

@@ -52,6 +52,7 @@ public:
   CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus);
 
   void step();
+  void setBus(std::shared_ptr<Bus> bus);
   void requestInterrupt(InterruptType type) override;
   uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
