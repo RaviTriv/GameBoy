@@ -18,7 +18,14 @@
 #include <iostream>
 
 GameBoy::GameBoy() = default;
-GameBoy::~GameBoy() = default;
+GameBoy::~GameBoy()
+{
+  state.isRunning.store(false);
+  if (cpuThread.joinable())
+  {
+    cpuThread.join();
+  }
+}
 
 void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForward)
 {
@@ -45,7 +52,7 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   ppu = std::make_unique<PPU>(*cpu);
   ui = std::make_unique<UI>(
       [this]()
-      { state.isRunning = false; },
+      { state.isRunning.store(false); },
       [this]()
       { this->saveState(); },
       *ppu,
@@ -67,7 +74,7 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   ppu->setDelay([this](uint32_t ms)
                 { ui->delay(ms); });
   stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
-  state.isRunning = true;
+  state.isRunning.store(true);
   this->trace = trace;
   this->loadSave = loadSave;
   this->fastForward = fastForward;
@@ -90,10 +97,9 @@ void GameBoy::run()
   }
 
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
-  cpuThread.detach();
 
   uint32_t prevFrame = 0;
-  while (state.isRunning)
+  while (state.isRunning.load())
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(UI_THREAD_SLEEP_MS));
     ui->handleEvents();
@@ -103,11 +109,13 @@ void GameBoy::run()
     }
     prevFrame = ppu->getCurrentFrame();
   }
+
+  cpuThread.join();
 }
 
 void GameBoy::cpuLoop()
 {
-  while (state.isRunning)
+  while (state.isRunning.load())
   {
     cpu->step();
   }

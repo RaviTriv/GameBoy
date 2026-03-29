@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -24,7 +25,7 @@ class GameBoy
 public:
   struct State
   {
-    bool isRunning;
+    std::atomic<bool> isRunning{false};
     bool isPaused;
     uint64_t ticks;
   };
