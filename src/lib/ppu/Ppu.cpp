@@ -14,7 +14,12 @@ void PPU::init()
 
 const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
 {
-  return state.videoBuffer;
+  return videoBuffers[readBufferIndex.load(std::memory_order_acquire)];
+}
+
+std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer()
+{
+  return videoBuffers[1 - readBufferIndex.load(std::memory_order_relaxed)];
 }
 
 void PPU::tick()
@@ -182,8 +187,11 @@ void PPU::hBlankMode()
         interruptSink.requestInterrupt(InterruptType::LCD_STAT);
       }
 
-      state.currentFrame++;
-      if (!fastForward)
+      currentFrame.fetch_add(1, std::memory_order_relaxed);
+      readBufferIndex.store(
+          1 - readBufferIndex.load(std::memory_order_relaxed),
+          std::memory_order_release);
+      if (!fastForward.load(std::memory_order_relaxed))
       {
         uint32_t end = getTicksFn();
         uint32_t frameTime = end - prevFrameTime;
@@ -232,7 +240,18 @@ void PPU::vBlankMode()
 
 uint32_t PPU::getCurrentFrame()
 {
-  return state.currentFrame;
+  return currentFrame.load(std::memory_order_relaxed);
+}
+
+void PPU::setCurrentFrame(uint32_t frame)
+{
+  currentFrame.store(frame, std::memory_order_relaxed);
+}
+
+void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer)
+{
+  videoBuffers[0] = buffer;
+  videoBuffers[1] = buffer;
 }
 
 PPU::State PPU::getState() const
@@ -255,12 +274,12 @@ void PPU::setPipelineState(const Pipeline::State &state)
   pipeline.state = state;
 };
 
-void PPU::setFastForward(bool fastForward)
+void PPU::setFastForward(bool ff)
 {
-  this->fastForward = fastForward;
+  fastForward.store(ff, std::memory_order_relaxed);
 }
 
 bool PPU::isFastForward() const
 {
-  return fastForward;
+  return fastForward.load(std::memory_order_relaxed);
 }

@@ -96,13 +96,15 @@ void StateSerializer::savePPUState(std::ofstream &file)
 
   const PPU::State &ppuState = ppu.getState();
 
-  file.write(reinterpret_cast<const char *>(&ppuState.currentFrame), sizeof(ppuState.currentFrame));
+  uint32_t frame = ppu.getCurrentFrame();
+  file.write(reinterpret_cast<const char *>(&frame), sizeof(frame));
   file.write(reinterpret_cast<const char *>(&ppuState.lineTicks), sizeof(ppuState.lineTicks));
   file.write(reinterpret_cast<const char *>(&ppuState.windowLine), sizeof(ppuState.windowLine));
   file.write(reinterpret_cast<const char *>(&ppuState.lineSpritesCount), sizeof(ppuState.lineSpritesCount));
   file.write(reinterpret_cast<const char *>(ppuState.vram.data()), ppuState.vram.size());
   file.write(reinterpret_cast<const char *>(ppuState.oamRam.data()), ppuState.oamRam.size() * sizeof(OAM_ENTRY));
-  file.write(reinterpret_cast<const char *>(ppuState.videoBuffer.data()), ppuState.videoBuffer.size() * sizeof(uint32_t));
+  const auto &videoBuffer = ppu.getVideoBuffer();
+  file.write(reinterpret_cast<const char *>(videoBuffer.data()), videoBuffer.size() * sizeof(uint32_t));
 
   const Pipeline::State &pipelineState = ppu.getPipelineState();
   const PixelFifo *pixelFifo = ppu.getPipeline()->getPixelFifo();
@@ -244,13 +246,15 @@ void StateSerializer::loadPPUState(std::ifstream &file)
 
   PPU::State state = ppu.getState();
 
-  file.read(reinterpret_cast<char *>(&state.currentFrame), sizeof(state.currentFrame));
+  uint32_t frame;
+  file.read(reinterpret_cast<char *>(&frame), sizeof(frame));
   file.read(reinterpret_cast<char *>(&state.lineTicks), sizeof(state.lineTicks));
   file.read(reinterpret_cast<char *>(&state.windowLine), sizeof(state.windowLine));
   file.read(reinterpret_cast<char *>(&state.lineSpritesCount), sizeof(state.lineSpritesCount));
   file.read(reinterpret_cast<char *>(state.vram.data()), state.vram.size());
   file.read(reinterpret_cast<char *>(state.oamRam.data()), state.oamRam.size() * sizeof(OAM_ENTRY));
-  file.read(reinterpret_cast<char *>(state.videoBuffer.data()), state.videoBuffer.size() * sizeof(uint32_t));
+  std::array<uint32_t, XRES * YRES> videoBuffer;
+  file.read(reinterpret_cast<char *>(videoBuffer.data()), videoBuffer.size() * sizeof(uint32_t));
 
   Pipeline::State pipelineState = ppu.getPipelineState();
 
@@ -278,6 +282,8 @@ void StateSerializer::loadPPUState(std::ifstream &file)
   file.read(reinterpret_cast<char *>(&pipelineState.entryCount), sizeof(pipelineState.entryCount));
 
   ppu.setState(state);
+  ppu.setCurrentFrame(frame);
+  ppu.setVideoBuffer(videoBuffer);
   ppu.setPipelineState(pipelineState);
   pixelFifo->setState(fifoBuffer, fifoHead, fifoTail, fifoCount);
 }

@@ -5,6 +5,7 @@
 #include "./Common.h"
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <list>
@@ -26,14 +27,13 @@ public:
     uint8_t windowLine;
     uint8_t lineSpritesCount;
     std::list<OAM_ENTRY> currentLineSprites;
-    std::array<uint32_t, BUFFER_SIZE> videoBuffer;
-
-    uint32_t currentFrame;
   };
   PPU(InterruptSink &interruptSink);
   void init();
   void tick();
   uint32_t getCurrentFrame();
+  void setCurrentFrame(uint32_t frame);
+  void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer);
 
   void oamWrite(uint16_t addr, uint8_t value);
   uint8_t oamRead(uint16_t addr);
@@ -62,7 +62,12 @@ private:
   LCD *lcd = nullptr;
   friend class Pipeline;
   Pipeline pipeline;
-  bool fastForward;
+  std::atomic<bool> fastForward{false};
+  std::atomic<uint32_t> currentFrame{0};
+
+  std::array<uint32_t, BUFFER_SIZE> videoBuffers[2]{};
+  std::atomic<int> readBufferIndex{0};
+  std::array<uint32_t, BUFFER_SIZE> &getWriteBuffer();
 
   std::function<uint32_t()> getTicksFn;
   std::function<void(uint32_t)> delayFn;
