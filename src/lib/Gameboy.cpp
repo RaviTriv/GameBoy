@@ -36,7 +36,10 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
       [this](uint8_t value)
       { dma->start(value); });
   apu = std::make_shared<APU>();
-  ppu = std::make_shared<PPU>(nullptr, nullptr, lcd, nullptr);
+  cpu = std::make_shared<CPU>(
+      [this](int cycles)
+      { this->cycle(cycles); }, nullptr);
+  ppu = std::make_shared<PPU>(*cpu);
   ui = std::make_shared<UI>(
       [this]()
       { state.isRunning = false; },
@@ -45,9 +48,6 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
       ppu,
       gamepad,
       nullptr);
-  cpu = std::make_shared<CPU>(
-      [this](int cycles)
-      { this->cycle(cycles); }, nullptr);
   timer = std::make_shared<Timer>(*cpu);
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad, *apu);
   bus = std::make_unique<Bus>(
@@ -57,10 +57,13 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
       *io, *ppu, *ram);
   cpu->setBus(bus.get());
   dma->setMemRead(*bus);
-  ppu->setCpu(cpu);
-  ppu->setBus(bus);
+  ppu->setMemRead(*bus);
+  ppu->setLcd(lcd.get());
+  ppu->setGetTicks([this]()
+                    { return ui->getTicks(); });
+  ppu->setDelay([this](uint32_t ms)
+                { ui->delay(ms); });
   ui->setPpu(ppu);
-  ppu->setUi(ui);
 
   ui->setApu(apu);
   stateSerializer = std::make_shared<StateSerializer>(cpu, ram, ppu, lcd);

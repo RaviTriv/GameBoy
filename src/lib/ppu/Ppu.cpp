@@ -1,18 +1,11 @@
 #include "../../../include/Ppu.h"
-#include "../../../include/Cpu.h"
+#include "../../../include/InterruptSink.h"
 #include "../../../include/Lcd.h"
-#include "../../../include/Ui.h"
 #include "../../../include/Logger.h"
 
-PPU::PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui) : bus(bus), cpu(cpu), lcd(lcd), pipeline(this), ui(ui)
+PPU::PPU(InterruptSink &interruptSink) : interruptSink(interruptSink), pipeline(this)
 {
 }
-
-void PPU::setCpu(std::shared_ptr<CPU> cpu) { this->cpu = cpu; }
-
-void PPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
-
-void PPU::setUi(std::shared_ptr<UI> ui) { this->ui = ui; }
 
 void PPU::init()
 {
@@ -96,7 +89,7 @@ void PPU::incrementLY()
 
     if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC)))
     {
-      cpu->requestInterrupt(InterruptType::LCD_STAT);
+      interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
   }
   else
@@ -167,7 +160,7 @@ void PPU::drawingMode()
 
     if (lcd->state.lcds & (static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
     {
-      cpu->requestInterrupt(InterruptType::LCD_STAT);
+      interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
   }
 }
@@ -182,21 +175,21 @@ void PPU::hBlankMode()
     {
       lcd->setLcdMode(LCD::MODE::VBLANK);
 
-      cpu->requestInterrupt(InterruptType::VBLANK);
+      interruptSink.requestInterrupt(InterruptType::VBLANK);
 
       if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK)))
       {
-        cpu->requestInterrupt(InterruptType::LCD_STAT);
+        interruptSink.requestInterrupt(InterruptType::LCD_STAT);
       }
 
       state.currentFrame++;
       if (!fastForward)
       {
-        uint32_t end = ui->getTicks();
+        uint32_t end = getTicksFn();
         uint32_t frameTime = end - prevFrameTime;
         if (frameTime < targetFrameTime)
         {
-          ui->delay((targetFrameTime - frameTime));
+          delayFn((targetFrameTime - frameTime));
         }
         if (end - startTimer >= 1000)
         {
@@ -205,7 +198,7 @@ void PPU::hBlankMode()
         }
 
         frameCount++;
-        prevFrameTime = ui->getTicks();
+        prevFrameTime = getTicksFn();
       }
     }
     else

@@ -1,5 +1,5 @@
 #include "../../../include/Pipeline.h"
-#include "../../../include/Bus.h"
+#include "../../../include/IMemRead.h"
 #include "../../../include/Common.h"
 #include "../../../include/Lcd.h"
 #include "../../../include/Ppu.h"
@@ -57,7 +57,7 @@ void Pipeline::fetchTile()
 
   if (ppu->lcd->isBgWindowEnabled())
   {
-    state.bgwBuffer[0] = ppu->bus->read8(bgw0ReadAddress());
+    state.bgwBuffer[0] = ppu->memRead->read8(bgw0ReadAddress());
 
     loadWindowTile();
 
@@ -78,14 +78,14 @@ void Pipeline::fetchTile()
 
 void Pipeline::fetchDataLow()
 {
-  state.bgwBuffer[1] = ppu->bus->read8(bgw1ReadAddress());
+  state.bgwBuffer[1] = ppu->memRead->read8(bgw1ReadAddress());
   loadSpriteData(0);
   state.fetchState = FETCH_STATE::DATA1;
 }
 
 void Pipeline::fetchDataHigh()
 {
-  state.bgwBuffer[2] = ppu->bus->read8(bgw1ReadAddress() + 1);
+  state.bgwBuffer[2] = ppu->memRead->read8(bgw1ReadAddress() + 1);
   loadSpriteData(1);
   state.fetchState = FETCH_STATE::IDLE;
 }
@@ -209,7 +209,7 @@ void Pipeline::loadWindowTile()
     {
       uint8_t wTileY = (ppu->state.windowLine / PIXEL_TILE_DIMENSION);
 
-      state.bgwBuffer[0] = ppu->bus->read8(windowTileReadAddress(wTileY));
+      state.bgwBuffer[0] = ppu->memRead->read8(windowTileReadAddress(wTileY));
     }
   }
 }
@@ -253,7 +253,7 @@ void Pipeline::loadSpriteData(uint8_t offset)
       tileIdx &= ~(1);
     }
 
-    state.objectBuffer[(i * 2) + offset] = ppu->bus->read8(0x8000 + (tileIdx * 16) + tileY + offset);
+    state.objectBuffer[(i * 2) + offset] = ppu->memRead->read8(0x8000 + (tileIdx * 16) + tileY + offset);
   }
 }
 

@@ -6,13 +6,12 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
+#include <functional>
 #include <list>
 
-class Bus;
-class CPU;
+class IMemRead;
+class InterruptSink;
 class LCD;
-class UI;
 class PPU
 {
   static constexpr int BUFFER_SIZE = XRES * YRES;
@@ -31,7 +30,7 @@ public:
 
     uint32_t currentFrame;
   };
-  PPU(std::shared_ptr<Bus> bus, std::shared_ptr<CPU> cpu, std::shared_ptr<LCD> lcd, std::shared_ptr<UI> ui);
+  PPU(InterruptSink &interruptSink);
   void init();
   void tick();
   uint32_t getCurrentFrame();
@@ -41,9 +40,10 @@ public:
   uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 
-  void setCpu(std::shared_ptr<CPU> cpu);
-  void setBus(std::shared_ptr<Bus> bus);
-  void setUi(std::shared_ptr<UI> ui);
+  void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
+  void setLcd(LCD *lcd) { this->lcd = lcd; }
+  void setGetTicks(std::function<uint32_t()> fn) { this->getTicksFn = std::move(fn); }
+  void setDelay(std::function<void(uint32_t)> fn) { this->delayFn = std::move(fn); }
   const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
 
   PPU::State getState() const;
@@ -57,13 +57,15 @@ public:
 
 private:
   State state;
-  std::shared_ptr<Bus> bus;
-  std::shared_ptr<CPU> cpu;
-  std::shared_ptr<LCD> lcd;
-  std::shared_ptr<UI> ui;
+  InterruptSink &interruptSink;
+  IMemRead *memRead = nullptr;
+  LCD *lcd = nullptr;
   friend class Pipeline;
   Pipeline pipeline;
   bool fastForward;
+
+  std::function<uint32_t()> getTicksFn;
+  std::function<void(uint32_t)> delayFn;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
