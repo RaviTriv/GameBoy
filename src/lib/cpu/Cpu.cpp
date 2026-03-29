@@ -6,7 +6,7 @@ RegisterType registerLookup[] = {
     RegisterType::B, RegisterType::C, RegisterType::D,  RegisterType::E,
     RegisterType::H, RegisterType::L, RegisterType::HL, RegisterType::A};
 
-CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus)
+CPU::CPU(CycleCallback cycleCallback, Bus *bus)
     : cycleCallback(cycleCallback), decoder(this), executer(this),
       interrupt(this), bus(bus) {
   state.registers.a = 0xB001;
@@ -25,7 +25,7 @@ CPU::CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus)
   state.ime = false;
 };
 
-void CPU::setBus(std::shared_ptr<Bus> bus) { this->bus = bus; }
+void CPU::setBus(Bus *bus) { this->bus = bus; }
 
 void CPU::fetch() { state.opcode = bus->read8(state.registers.pc++); }
 

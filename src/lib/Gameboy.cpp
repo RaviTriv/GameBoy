@@ -50,8 +50,12 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
       { this->cycle(cycles); }, nullptr);
   timer = std::make_shared<Timer>(*cpu);
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad, *apu);
-  bus = std::make_unique<Bus>(cartridge, cpu, dma, io, ppu, ram);
-  cpu->setBus(bus);
+  bus = std::make_unique<Bus>(
+      *cartridge, cpu->getInterruptRegs(),
+      [this]()
+      { return dma->isTransferring(); },
+      *io, *ppu, *ram);
+  cpu->setBus(bus.get());
   dma->setMemRead(*bus);
   ppu->setCpu(cpu);
   ppu->setBus(bus);

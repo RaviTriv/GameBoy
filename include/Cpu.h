@@ -8,7 +8,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <string>
 
 constexpr uint8_t FLAG_Z_BIT = 7;
@@ -49,10 +48,10 @@ public:
 
   using CycleCallback = std::function<void(int)>;
 
-  CPU(CycleCallback cycleCallback, std::shared_ptr<Bus> bus);
+  CPU(CycleCallback cycleCallback, Bus *bus);
 
   void step();
-  void setBus(std::shared_ptr<Bus> bus);
+  void setBus(Bus *bus);
   void requestInterrupt(InterruptType type) override;
   uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
@@ -70,7 +69,7 @@ private:
   InstructionsExecuter executer;
   friend class Interrupts;
   Interrupts interrupt;
-  std::shared_ptr<Bus> bus;
+  Bus *bus;
 
   State state;
   void fetch();
