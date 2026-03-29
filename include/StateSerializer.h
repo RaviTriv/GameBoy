@@ -2,7 +2,6 @@
 
 #include <string>
 #include <fstream>
-#include <memory>
 
 class RAM;
 class CPU;
@@ -11,15 +10,15 @@ class LCD;
 class StateSerializer
 {
 public:
-  StateSerializer(std::shared_ptr<CPU> cpu, std::shared_ptr<RAM> ram, std::shared_ptr<PPU> ppu, std::shared_ptr<LCD> lcd);
+  StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd);
   bool saveState(const std::string &title);
   bool loadState(const std::string &title);
 
 private:
-  std::shared_ptr<CPU> cpu;
-  std::shared_ptr<RAM> ram;
-  std::shared_ptr<PPU> ppu;
-  std::shared_ptr<LCD> lcd;
+  CPU &cpu;
+  RAM &ram;
+  PPU &ppu;
+  LCD &lcd;
 
   void saveCPUState(std::ofstream &file);
   void saveRAMState(std::ofstream &file);

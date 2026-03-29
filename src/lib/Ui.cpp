@@ -5,12 +5,9 @@
 #include "../../include/Gamepad.h"
 #include "../../include/Logger.h"
 
-UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamepad> gamepad, std::shared_ptr<APU> apu) : onClose(closeCallback), onSaveState(saveStateCallback), ppu(ppu), gamepad(gamepad), apu(apu)
+UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu, Gamepad &gamepad, APU &apu) : apu(apu), ppu(ppu), gamepad(gamepad), onClose(closeCallback), onSaveState(saveStateCallback)
 {
 }
-
-void UI::setPpu(std::shared_ptr<PPU> ppu) { this->ppu = ppu; }
-void UI::setApu(std::shared_ptr<APU> apu) { this->apu = apu; }
 
 void UI::init()
 {
@@ -25,7 +22,7 @@ void UI::init()
                                  SCREEN_WIDTH, SCREEN_HEIGHT);
 
   SDL_InitSubSystem(SDL_INIT_AUDIO);
-  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, apu->audioFreq};
+  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, apu.audioFreq};
   SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
 }
@@ -39,7 +36,7 @@ void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amoun
   uint8_t *data = SDL_stack_alloc(uint8_t, _length);
   for (int i = 0; i < _length; i += 2)
   {
-    uint8_t sample = ui->apu->getSample();
+    uint8_t sample = ui->apu.getSample();
     data[i] = sample;
     data[i + 1] = sample;
   }
@@ -55,7 +52,7 @@ void UI::update()
   rect.w = SCALE;
   rect.h = SCALE;
 
-  const auto &videoBuffer = ppu->getVideoBuffer();
+  const auto &videoBuffer = ppu.getVideoBuffer();
 
   for (int i = 0; i < YRES; i++)
   {
@@ -81,28 +78,28 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode)
   switch (keyCode)
   {
   case SDLK_Z:
-    gamepad->setBPressed(isDown);
+    gamepad.setBPressed(isDown);
     break;
   case SDLK_X:
-    gamepad->setAPressed(isDown);
+    gamepad.setAPressed(isDown);
     break;
   case SDLK_RETURN:
-    gamepad->setStartPressed(isDown);
+    gamepad.setStartPressed(isDown);
     break;
   case SDLK_TAB:
-    gamepad->setSelectPressed(isDown);
+    gamepad.setSelectPressed(isDown);
     break;
   case SDLK_UP:
-    gamepad->setUpPressed(isDown);
+    gamepad.setUpPressed(isDown);
     break;
   case SDLK_DOWN:
-    gamepad->setDownPressed(isDown);
+    gamepad.setDownPressed(isDown);
     break;
   case SDLK_LEFT:
-    gamepad->setLeftPressed(isDown);
+    gamepad.setLeftPressed(isDown);
     break;
   case SDLK_RIGHT:
-    gamepad->setRightPressed(isDown);
+    gamepad.setRightPressed(isDown);
     break;
   case SDLK_S:
     if (isDown)
@@ -113,7 +110,7 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode)
   case SDLK_F:
     if (isDown)
     {
-      ppu->setFastForward(!ppu->isFastForward());
+      ppu.setFastForward(!ppu.isFastForward());
     }
     break;
   }

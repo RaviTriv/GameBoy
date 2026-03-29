@@ -28,6 +28,8 @@ public:
     bool isPaused;
     uint64_t ticks;
   };
+  GameBoy();
+  ~GameBoy();
   void init(std::string romPath, bool trace, bool loadSave, bool fastForward);
   void run();
 
@@ -35,19 +37,19 @@ public:
 
 private:
   State state;
-  std::shared_ptr<APU> apu;
-  std::shared_ptr<Bus> bus;
-  std::shared_ptr<Cartridge> cartridge;
-  std::shared_ptr<CPU> cpu;
-  std::shared_ptr<DMA> dma;
-  std::shared_ptr<IO> io;
-  std::shared_ptr<LCD> lcd;
-  std::shared_ptr<PPU> ppu;
-  std::shared_ptr<RAM> ram;
-  std::shared_ptr<Timer> timer;
-  std::shared_ptr<Gamepad> gamepad;
-  std::shared_ptr<UI> ui;
-  std::shared_ptr<StateSerializer> stateSerializer;
+  std::unique_ptr<APU> apu;
+  std::unique_ptr<Bus> bus;
+  std::unique_ptr<Cartridge> cartridge;
+  std::unique_ptr<CPU> cpu;
+  std::unique_ptr<DMA> dma;
+  std::unique_ptr<IO> io;
+  std::unique_ptr<LCD> lcd;
+  std::unique_ptr<PPU> ppu;
+  std::unique_ptr<RAM> ram;
+  std::unique_ptr<Timer> timer;
+  std::unique_ptr<Gamepad> gamepad;
+  std::unique_ptr<UI> ui;
+  std::unique_ptr<StateSerializer> stateSerializer;
 
   std::thread cpuThread;
   void cpuLoop();
