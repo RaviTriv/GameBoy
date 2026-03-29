@@ -4,6 +4,7 @@
 
 uint8_t APU::read(uint16_t address)
 {
+  std::lock_guard<std::mutex> lock(mutex);
   switch (address)
   {
   case NR10_REGISTER:
@@ -87,6 +88,7 @@ uint8_t APU::read(uint16_t address)
 
 void APU::write(uint16_t address, uint8_t value)
 {
+  std::lock_guard<std::mutex> lock(mutex);
   switch (address)
   {
   case NR10_REGISTER:
@@ -344,6 +346,7 @@ uint8_t APU::getChannel4Sample()
 
 uint8_t APU::getSample()
 {
+  std::lock_guard<std::mutex> lock(mutex);
   uint8_t ch1Sample = 0;
   uint8_t ch2Sample = 0;
   uint8_t ch3Sample = 0;

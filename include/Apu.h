@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <mutex>
 
 class APU
 {
@@ -36,6 +37,7 @@ public:
 
 private:
   State state;
+  mutable std::mutex mutex;
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;
