@@ -123,6 +123,7 @@ int Cartridge::getRomBanksCount(uint8_t type) const
     break;
   default:
     Logger::GetLogger()->error("Unknown RAM size for cartridge type: {}", static_cast<int>(type));
+    return 0;
   }
 }
 

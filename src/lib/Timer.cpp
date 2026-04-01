@@ -77,5 +77,7 @@ uint8_t Timer::read(uint16_t address)
     return state.tma;
   case TAC_REGISTER:
     return state.tac;
+  default:
+    return 0;
   }
 }

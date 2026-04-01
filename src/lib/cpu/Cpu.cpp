@@ -9,13 +9,13 @@ RegisterType registerLookup[] = {
 CPU::CPU(CycleCallback cycleCallback, Bus *bus)
     : cycleCallback(cycleCallback), decoder(this), executer(this),
       interrupt(this), bus(bus) {
-  state.registers.a = 0xB001;
+  state.registers.a = 0x01;
   state.registers.f = 0xB0;
-  state.registers.b = 0x1300;
+  state.registers.b = 0x00;
   state.registers.c = 0x13;
-  state.registers.d = 0xD800;
+  state.registers.d = 0x00;
   state.registers.e = 0xD8;
-  state.registers.h = 0x4D01;
+  state.registers.h = 0x01;
   state.registers.l = 0x4D;
   state.registers.sp = 0xFFFE;
   state.registers.pc = 0x0100;
