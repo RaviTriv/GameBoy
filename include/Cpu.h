@@ -8,7 +8,6 @@
 #include "InterruptSink.h"
 
 #include <cstdint>
-#include <functional>
 #include <string>
 
 class Bus;
@@ -28,9 +27,9 @@ public:
     bool halted;
   };
 
-  using CycleCallback = std::function<void(int)>;
+  using CycleCallbackFn = void(*)(void*, int);
 
-  CPU(CycleCallback cycleCallback, Bus *bus);
+  CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus);
 
   void step();
   void setBus(Bus *bus);
@@ -44,7 +43,8 @@ public:
   void setState(const State &state);
 
 private:
-  CycleCallback cycleCallback;
+  CycleCallbackFn cycleCallback;
+  void *cycleCallbackCtx;
   Bus *bus;
 
   State state;

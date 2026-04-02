@@ -2,12 +2,12 @@
 #include "Bus.h"
 #include "Logger.h"
 
-CPU::CPU(CycleCallback cycleCallback, Bus *bus)
-    : cycleCallback(cycleCallback), bus(bus),
+CPU::CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus)
+    : cycleCallback(cycleCallback), cycleCallbackCtx(cycleCallbackCtx), bus(bus),
       context({state.registers, state.instruction, state.opcode, state.opValue,
                state.isMemoryOp, state.memoryAddress, state.ime,
                state.imeScheduled, state.ie, state.intf, state.halted},
-              this->cycleCallback, this->bus),
+              this->cycleCallback, this->cycleCallbackCtx, this->bus),
       decoder(&context), executer(&context), interrupt(&context) {
   state.registers.a = 0x01;
   state.registers.f = 0xB0;
@@ -39,7 +39,7 @@ void CPU::step() {
     decode();
     execute();
   } else {
-    cycleCallback(1);
+    cycleCallback(cycleCallbackCtx, 1);
     if (state.intf) {
       state.halted = false;
     }

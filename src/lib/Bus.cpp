@@ -1,12 +1,13 @@
 #include "Bus.h"
 #include "Cartridge.h"
+#include "Dma.h"
 #include "Io.h"
 #include "Common.h"
 #include "Ppu.h"
 #include "Ram.h"
 #include "Logger.h"
 
-Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, std::function<bool()> isDmaTransferring, IO &io, PPU &ppu, RAM &ram) : cartridge(cartridge), interruptRegs(interruptRegs), isDmaTransferring(std::move(isDmaTransferring)), io(io), ppu(ppu), ram(ram)
+Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io, PPU &ppu, RAM &ram) : cartridge(cartridge), interruptRegs(interruptRegs), dma(dma), io(io), ppu(ppu), ram(ram)
 {
 }
 
@@ -39,7 +40,7 @@ uint8_t Bus::read8(uint16_t address)
   else if (address <= OAM_END)
   {
     // Object Attribute Memory (OAM)
-    if (isDmaTransferring())
+    if (dma.isTransferring())
     {
       return 0xFF;
     }
@@ -97,7 +98,7 @@ void Bus::write8(uint16_t address, uint8_t value)
   else if (address <= OAM_END)
   {
     // Object Attribute Memory (OAM)
-    if (isDmaTransferring())
+    if (dma.isTransferring())
     {
       return;
     }

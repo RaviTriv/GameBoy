@@ -6,8 +6,8 @@ static RegisterType registerLookupTable[] = {
     RegisterType::B, RegisterType::C, RegisterType::D,  RegisterType::E,
     RegisterType::H, RegisterType::L, RegisterType::HL, RegisterType::A};
 
-CpuContext::CpuContext(CpuState state, CycleCallback &cycleCallback, Bus *&bus)
-    : state(state), cycleCallback(cycleCallback), bus(bus) {}
+CpuContext::CpuContext(CpuState state, CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *&bus)
+    : state(state), cycleCallback(cycleCallback), cycleCallbackCtx(cycleCallbackCtx), bus(bus) {}
 
 uint8_t CpuContext::readRegister8(RegisterType reg) const {
   switch (reg) {
@@ -263,9 +263,9 @@ void CpuContext::jumpToAddress(uint16_t addr, bool pushPC) {
     return;
   }
   if (pushPC) {
-    cycleCallback(2);
+    cycle(2);
     stackPush16(state.registers.pc);
   }
   state.registers.pc = addr;
-  cycleCallback(1);
+  cycle(1);
 }

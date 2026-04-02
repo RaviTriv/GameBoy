@@ -10,7 +10,7 @@ void InstructionsExecuter::execute()
   switch (ctx->state.instruction.type)
   {
   case InstructionType::NOP:
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
     break;
   case InstructionType::XOR:
     bitXor();
@@ -126,7 +126,7 @@ void InstructionsExecuter::add()
 
   if (is16BIT)
   {
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
   }
 
   if (ctx->state.instruction.reg1 == RegisterType::SP)
@@ -176,7 +176,7 @@ void InstructionsExecuter::dec()
 
   if (ctx->is16Bit(ctx->state.instruction.reg1))
   {
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
   }
 
   if (ctx->state.instruction.reg1 == RegisterType::HL && ctx->state.instruction.addressMode == AddressingMode::MR)
@@ -204,7 +204,7 @@ void InstructionsExecuter::inc()
 
   if (ctx->is16Bit(ctx->state.instruction.reg1))
   {
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
   }
 
   if (ctx->state.instruction.reg1 == RegisterType::HL && ctx->state.instruction.addressMode == AddressingMode::MR)
@@ -270,14 +270,14 @@ void InstructionsExecuter::ld()
   {
     if (ctx->is16Bit(ctx->state.instruction.reg2))
     {
-      ctx->cycleCallback(1);
+      ctx->cycle(1);
       ctx->bus->write16(ctx->state.memoryAddress, ctx->state.opValue);
     }
     else
     {
       ctx->bus->write8(ctx->state.memoryAddress, ctx->state.opValue);
     }
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
     return;
   }
 
@@ -305,7 +305,7 @@ void InstructionsExecuter::ldh()
   {
     ctx->bus->write8(ctx->state.memoryAddress, ctx->state.registers.a);
   }
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
 }
 
 /*
@@ -350,11 +350,11 @@ void InstructionsExecuter::bitCb()
   uint8_t bitOpcode = (opcode >> 6) & 0b11;
   uint8_t registerValue = ctx->readRegister8(reg);
 
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
 
   if (reg == RegisterType::HL)
   {
-    ctx->cycleCallback(2);
+    ctx->cycle(2);
   }
 
   switch (bitOpcode)
@@ -496,9 +496,9 @@ void InstructionsExecuter::call()
 void InstructionsExecuter::pop()
 {
   uint16_t low = ctx->stackPop8();
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
   uint16_t high = ctx->stackPop8();
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
 
   uint16_t n = (high << 8) | low;
 
@@ -513,12 +513,12 @@ void InstructionsExecuter::pop()
 void InstructionsExecuter::push()
 {
   uint16_t high = (ctx->readRegister16(ctx->state.instruction.reg1) >> 8) & BYTE_MASK;
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
   ctx->stackPush8(high);
   uint16_t low = ctx->readRegister16(ctx->state.instruction.reg1) & BYTE_MASK;
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
   ctx->stackPush8(low);
-  ctx->cycleCallback(1);
+  ctx->cycle(1);
 }
 
 /*
@@ -637,20 +637,20 @@ void InstructionsExecuter::ret()
 {
   if (ctx->state.instruction.condition != ConditionType::NONE)
   {
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
   }
 
   if (ctx->conditionCheck())
   {
     uint16_t low = ctx->stackPop8();
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
     uint16_t high = ctx->stackPop8();
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
 
     uint16_t res = (high << 8) | low;
     ctx->state.registers.pc = res;
 
-    ctx->cycleCallback(1);
+    ctx->cycle(1);
   }
 }
 

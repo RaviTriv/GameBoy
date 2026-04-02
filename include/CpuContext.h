@@ -5,7 +5,6 @@
 #include "Common.h"
 
 #include <cstdint>
-#include <functional>
 
 constexpr uint8_t CTX_FLAG_Z_BIT = 7;
 constexpr uint8_t CTX_FLAG_N_BIT = 6;
@@ -30,13 +29,16 @@ struct CpuState {
 
 class CpuContext {
 public:
-  using CycleCallback = std::function<void(int)>;
+  using CycleCallbackFn = void(*)(void*, int);
 
-  CpuContext(CpuState state, CycleCallback &cycleCallback, Bus *&bus);
+  CpuContext(CpuState state, CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *&bus);
 
   CpuState state;
-  CycleCallback &cycleCallback;
+  CycleCallbackFn cycleCallback;
+  void *cycleCallbackCtx;
   Bus *&bus;
+
+  void cycle(int cycles) { cycleCallback(cycleCallbackCtx, cycles); }
 
   uint8_t readRegister8(RegisterType reg) const;
   uint16_t readRegister16(RegisterType reg) const;

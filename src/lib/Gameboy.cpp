@@ -47,8 +47,8 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
       { dma->start(value); });
   apu = std::make_unique<APU>();
   cpu = std::make_unique<CPU>(
-      [this](int cycles)
-      { this->cycle(cycles); }, nullptr);
+      [](void *self, int cycles)
+      { static_cast<GameBoy *>(self)->cycle(cycles); }, this, nullptr);
   ppu = std::make_unique<PPU>(*cpu);
   ui = std::make_unique<UI>(
       [this]()
@@ -62,8 +62,7 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad, *apu);
   bus = std::make_unique<Bus>(
       *cartridge, cpu->getInterruptRegs(),
-      [this]()
-      { return dma->isTransferring(); },
+      *dma,
       *io, *ppu, *ram);
   cpu->setBus(bus.get());
   dma->setMemRead(*bus);

@@ -3,16 +3,16 @@
 #include "IMemAccess.h"
 #include "InterruptRegs.h"
 #include <cstdint>
-#include <functional>
 
 class Cartridge;
+class DMA;
 class IO;
 class PPU;
 class RAM;
 class Bus : public IMemAccess {
 public:
   Bus(Cartridge &cartridge, InterruptRegs interruptRegs,
-      std::function<bool()> isDmaTransferring, IO &io,
+      DMA &dma, IO &io,
       PPU &ppu, RAM &ram);
   uint8_t read8(uint16_t address) override;
   uint16_t read16(uint16_t address) override;
@@ -22,7 +22,7 @@ public:
 private:
   Cartridge &cartridge;
   InterruptRegs interruptRegs;
-  std::function<bool()> isDmaTransferring;
+  DMA &dma;
   IO &io;
   PPU &ppu;
   RAM &ram;
