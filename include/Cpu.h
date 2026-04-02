@@ -1,9 +1,8 @@
 #pragma once
 
-#include "./CpuContext.h"
-#include "./InstructionsDecoder.h"
-#include "./InstructionsExecuter.h"
-#include "./Interrupts.h"
+#include "./Instructions.h"
+#include "./Registers.h"
+#include "Common.h"
 #include "InterruptRegs.h"
 #include "InterruptSink.h"
 
@@ -48,12 +47,29 @@ private:
   Bus *bus;
 
   State state;
-  CpuContext context;
-  InstructionsDecoder decoder;
-  InstructionsExecuter executer;
-  Interrupts interrupt;
 
-  void fetch();
-  void decode();
-  void execute();
+  inline void cycle(int n) { cycleCallback(cycleCallbackCtx, n); }
+
+  inline int flagZ() const { return (state.registers.f >> 7) & 1; }
+  inline int flagN() const { return (state.registers.f >> 6) & 1; }
+  inline int flagH() const { return (state.registers.f >> 5) & 1; }
+  inline int flagC() const { return (state.registers.f >> 4) & 1; }
+
+  inline void setFlags(int z, int n, int h, int c) {
+    if (z != -1) { if (z) state.registers.f |= (1 << 7); else state.registers.f &= ~(1 << 7); }
+    if (n != -1) { if (n) state.registers.f |= (1 << 6); else state.registers.f &= ~(1 << 6); }
+    if (h != -1) { if (h) state.registers.f |= (1 << 5); else state.registers.f &= ~(1 << 5); }
+    if (c != -1) { if (c) state.registers.f |= (1 << 4); else state.registers.f &= ~(1 << 4); }
+  }
+
+  inline void stackPush8(uint8_t val);
+  inline void stackPush16(uint16_t val);
+  inline uint8_t stackPop8();
+  inline uint16_t stackPop16();
+
+  void handleInterrupts();
+  bool checkInterrupt(uint16_t address, InterruptType type);
+  void interruptHandle(uint16_t address);
+
+  void executeCB();
 };
