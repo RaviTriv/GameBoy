@@ -35,9 +35,10 @@ add_executable(gameboy
 )
 
 target_include_directories(gameboy PRIVATE
+    include
     src
     ${SDL3_INCLUDE_DIRS}
-    ${SDL3_TTF_INCLUDE_DIRS} 
+    ${SDL3_TTF_INCLUDE_DIRS}
 )
 
 target_link_libraries(gameboy PRIVATE

@@ -1,6 +1,6 @@
-#include "../../../include/Cpu.h"
-#include "../../../include/Bus.h"
-#include "../../../include/Logger.h"
+#include "Cpu.h"
+#include "Bus.h"
+#include "Logger.h"
 
 RegisterType registerLookup[] = {
     RegisterType::B, RegisterType::C, RegisterType::D,  RegisterType::E,

@@ -1,4 +1,4 @@
-#include "../../include/Gamepad.h"
+#include "Gamepad.h"
 
 bool Gamepad::isBPressed()
 {

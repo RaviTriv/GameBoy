@@ -1,12 +1,12 @@
-#include "../../include/StateSerializer.h"
-#include "../../include/Cpu.h"
-#include "../../include/Pipeline.h"
-#include "../../include/PixelFifo.h"
-#include "../../include/Ppu.h"
-#include "../../include/OamTypes.h"
-#include "../../include/Lcd.h"
-#include "../../include/Ram.h"
-#include "../../include/Logger.h"
+#include "StateSerializer.h"
+#include "Cpu.h"
+#include "Pipeline.h"
+#include "PixelFifo.h"
+#include "Ppu.h"
+#include "OamTypes.h"
+#include "Lcd.h"
+#include "Ram.h"
+#include "Logger.h"
 
 #include <ctime>
 #include <sstream>

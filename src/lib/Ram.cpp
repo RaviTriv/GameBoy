@@ -1,6 +1,6 @@
-#include "../../include/Ram.h"
-#include "../../include/Common.h"
-#include "../../include/Logger.h"
+#include "Ram.h"
+#include "Common.h"
+#include "Logger.h"
 
 uint8_t RAM::readWRAM(uint16_t address) const
 {

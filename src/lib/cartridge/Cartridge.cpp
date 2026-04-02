@@ -1,5 +1,5 @@
-#include "../../../include/Cartridge.h"
-#include "../../../include/Logger.h"
+#include "Cartridge.h"
+#include "Logger.h"
 
 Cartridge::Cartridge(std::string_view romPath)
 {

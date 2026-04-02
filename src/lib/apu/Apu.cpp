@@ -1,6 +1,6 @@
-#include "../../../include/Apu.h"
-#include "../../../include/Channel.h"
-#include "../../../include/Logger.h"
+#include "Apu.h"
+#include "Channel.h"
+#include "Logger.h"
 
 uint8_t APU::read(uint16_t address)
 {

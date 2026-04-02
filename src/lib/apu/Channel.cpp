@@ -1,5 +1,5 @@
-#include "../../../include/Channel.h"
-#include "../../../include/Logger.h"
+#include "Channel.h"
+#include "Logger.h"
 
 const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {{{0, 0, 0, 0, 0, 0, 0, 1},
                                                                       {1, 0, 0, 0, 0, 0, 0, 1},

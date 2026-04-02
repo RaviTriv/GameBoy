@@ -1,4 +1,4 @@
-#include "../../../include/PixelFifo.h"
+#include "PixelFifo.h"
 
 PixelFifo::PixelFifo() : head(0), tail(0), count(0)
 {

@@ -1,9 +1,9 @@
-#include "../../../include/Pipeline.h"
-#include "../../../include/IMemRead.h"
-#include "../../../include/Common.h"
-#include "../../../include/Lcd.h"
-#include "../../../include/Ppu.h"
-#include "../../../include/Logger.h"
+#include "Pipeline.h"
+#include "IMemRead.h"
+#include "Common.h"
+#include "Lcd.h"
+#include "Ppu.h"
+#include "Logger.h"
 
 Pipeline::Pipeline(PPU *ppu) : ppu(ppu)
 {

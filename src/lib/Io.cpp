@@ -1,10 +1,10 @@
-#include "../../include/Io.h"
-#include "../../include/Apu.h"
-#include "../../include/Common.h"
-#include "../../include/Lcd.h"
-#include "../../include/Timer.h"
-#include "../../include/Gamepad.h"
-#include "../../include/Logger.h"
+#include "Io.h"
+#include "Apu.h"
+#include "Common.h"
+#include "Lcd.h"
+#include "Timer.h"
+#include "Gamepad.h"
+#include "Logger.h"
 
 IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad, APU &apu) : interruptRegs(interruptRegs), apu(apu), timer(timer), lcd(lcd), gamepad(gamepad)
 {

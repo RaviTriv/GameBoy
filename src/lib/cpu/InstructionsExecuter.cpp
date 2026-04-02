@@ -1,7 +1,7 @@
-#include "../../../include/InstructionsExecuter.h"
-#include "../../../include/Bus.h"
-#include "../../../include/Cpu.h"
-#include "../../../include/Logger.h"
+#include "InstructionsExecuter.h"
+#include "Bus.h"
+#include "Cpu.h"
+#include "Logger.h"
 
 InstructionsExecuter::InstructionsExecuter(CPU *cpu) : cpu(cpu) {}
 

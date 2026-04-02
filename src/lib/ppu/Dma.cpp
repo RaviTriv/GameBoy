@@ -1,5 +1,5 @@
-#include "../../../include/Dma.h"
-#include "../../../include/IMemRead.h"
+#include "Dma.h"
+#include "IMemRead.h"
 
 DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite) : oamWrite(std::move(oamWrite))
 {

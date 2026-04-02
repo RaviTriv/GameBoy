@@ -1,5 +1,5 @@
-#include "../../include/Timer.h"
-#include "../../include/InterruptSink.h"
+#include "Timer.h"
+#include "InterruptSink.h"
 
 Timer::Timer(InterruptSink &interruptSink) : interruptSink(interruptSink)
 {

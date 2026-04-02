@@ -1,4 +1,4 @@
-#include "../include/Gameboy.h"
+#include "Gameboy.h"
 #include <string>
 #include <vector>
 #include <algorithm>

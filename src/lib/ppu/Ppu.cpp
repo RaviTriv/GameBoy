@@ -1,7 +1,7 @@
-#include "../../../include/Ppu.h"
-#include "../../../include/InterruptSink.h"
-#include "../../../include/Lcd.h"
-#include "../../../include/Logger.h"
+#include "Ppu.h"
+#include "InterruptSink.h"
+#include "Lcd.h"
+#include "Logger.h"
 
 PPU::PPU(InterruptSink &interruptSink) : interruptSink(interruptSink), pipeline(this)
 {

@@ -1,6 +1,6 @@
-#include "../../../include/Interrupts.h"
-#include "../../../include/Cpu.h"
-#include "../../../include/Logger.h"
+#include "Interrupts.h"
+#include "Cpu.h"
+#include "Logger.h"
 
 Interrupts::Interrupts(CPU *cpu) : cpu(cpu) {}
 

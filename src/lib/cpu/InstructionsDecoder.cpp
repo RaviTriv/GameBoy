@@ -1,7 +1,7 @@
-#include "../../../include/InstructionsDecoder.h"
-#include "../../../include/Bus.h"
-#include "../../../include/Cpu.h"
-#include "../../../include/Logger.h"
+#include "InstructionsDecoder.h"
+#include "Bus.h"
+#include "Cpu.h"
+#include "Logger.h"
 
 InstructionsDecoder::InstructionsDecoder(CPU *cpu) : cpu(cpu) {}
 

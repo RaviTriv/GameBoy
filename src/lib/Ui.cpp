@@ -1,9 +1,9 @@
-#include "../../include/Ui.h"
-#include "../../include/Apu.h"
-#include "../../include/Common.h"
-#include "../../include/Ppu.h"
-#include "../../include/Gamepad.h"
-#include "../../include/Logger.h"
+#include "Ui.h"
+#include "Apu.h"
+#include "Common.h"
+#include "Ppu.h"
+#include "Gamepad.h"
+#include "Logger.h"
 
 UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu, Gamepad &gamepad, APU &apu) : apu(apu), ppu(ppu), gamepad(gamepad), onClose(closeCallback), onSaveState(saveStateCallback)
 {

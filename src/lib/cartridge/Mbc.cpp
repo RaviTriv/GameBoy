@@ -1,5 +1,5 @@
-#include "../../../include/Mbc.h"
-#include "../../../include/Logger.h"
+#include "Mbc.h"
+#include "Logger.h"
 
 std::vector<uint8_t> MBC::empty;
 

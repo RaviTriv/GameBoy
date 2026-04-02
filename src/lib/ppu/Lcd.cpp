@@ -1,5 +1,5 @@
-#include "../../../include/Lcd.h"
-#include "../../../include/Logger.h"
+#include "Lcd.h"
+#include "Logger.h"
 
 LCD::LCD(std::function<void(uint8_t)> onDmaStart) : onDmaStart(std::move(onDmaStart))
 {

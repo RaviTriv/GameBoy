@@ -1,10 +1,10 @@
-#include "../../include/Bus.h"
-#include "../../include/Cartridge.h"
-#include "../../include/Io.h"
-#include "../../include/Common.h"
-#include "../../include/Ppu.h"
-#include "../../include/Ram.h"
-#include "../../include/Logger.h"
+#include "Bus.h"
+#include "Cartridge.h"
+#include "Io.h"
+#include "Common.h"
+#include "Ppu.h"
+#include "Ram.h"
+#include "Logger.h"
 
 Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, std::function<bool()> isDmaTransferring, IO &io, PPU &ppu, RAM &ram) : cartridge(cartridge), interruptRegs(interruptRegs), isDmaTransferring(std::move(isDmaTransferring)), io(io), ppu(ppu), ram(ram)
 {
