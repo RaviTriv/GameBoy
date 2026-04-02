@@ -113,11 +113,6 @@ void PPU::loadLineSprites()
   {
     OAM_ENTRY entry = state.oamRam[i];
 
-    if (!entry.x)
-    {
-      continue;
-    }
-
     if (state.lineSpritesCount >= 10)
     {
       break;
@@ -133,6 +128,7 @@ void PPU::loadLineSprites()
                               });
 
       state.currentLineSprites.insert(idx, entry);
+      state.lineSpritesCount++;
     }
   }
 }

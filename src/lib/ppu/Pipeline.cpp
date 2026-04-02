@@ -225,7 +225,7 @@ void Pipeline::loadSpriteTile()
       state.fetchedEntries[state.entryCount] = entry;
       state.entryCount++;
     }
-    if (state.entryCount >= 3)
+    if (state.entryCount >= 10)
     {
       break;
     }
