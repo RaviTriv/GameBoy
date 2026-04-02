@@ -1,9 +1,9 @@
 #include "InstructionsDecoder.h"
 #include "Bus.h"
-#include "Cpu.h"
+#include "CpuContext.h"
 #include "Logger.h"
 
-InstructionsDecoder::InstructionsDecoder(CPU *cpu) : cpu(cpu) {}
+InstructionsDecoder::InstructionsDecoder(CpuContext *ctx) : ctx(ctx) {}
 
 const Instruction &InstructionsDecoder::getInstruction(uint8_t opcode)
 {
@@ -38,12 +38,12 @@ InstructionsDecoder::AddressModeHandler InstructionsDecoder::addressModeHandlers
 void InstructionsDecoder::decode(uint8_t opcode)
 {
   const Instruction &instruction = getInstruction(opcode);
-  cpu->state.instruction = instruction;
+  ctx->state.instruction = instruction;
 
-  cpu->cycleCallback(1);
+  ctx->cycleCallback(1);
 
-  cpu->state.memoryAddress = 0;
-  cpu->state.isMemoryOp = false;
+  ctx->state.memoryAddress = 0;
+  ctx->state.isMemoryOp = false;
 
   (this->*addressModeHandlers[static_cast<int>(instruction.addressMode)])();
 }
@@ -58,153 +58,153 @@ void InstructionsDecoder::imp()
 
 void InstructionsDecoder::r()
 {
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg1);
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg1);
 }
 
 void InstructionsDecoder::r_r()
 {
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg2);
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg2);
 }
 
 void InstructionsDecoder::r_d8()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
+  ctx->state.opValue = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
 }
 void InstructionsDecoder::r_d16()
 {
-  uint16_t low = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  uint16_t high = cpu->bus->read8(cpu->state.registers.pc + 1);
-  cpu->cycleCallback(1);
-  cpu->state.opValue = low | (high << 8);
-  cpu->state.registers.pc += 2;
+  uint16_t low = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  uint16_t high = ctx->bus->read8(ctx->state.registers.pc + 1);
+  ctx->cycleCallback(1);
+  ctx->state.opValue = low | (high << 8);
+  ctx->state.registers.pc += 2;
 }
 
 void InstructionsDecoder::mr_r()
 {
-  cpu->state.memoryAddress = cpu->readRegister16(cpu->state.instruction.reg1);
-  cpu->state.isMemoryOp = true;
+  ctx->state.memoryAddress = ctx->readRegister16(ctx->state.instruction.reg1);
+  ctx->state.isMemoryOp = true;
 
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg2);
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg2);
 
-  if (cpu->state.instruction.reg1 == RegisterType::C)
+  if (ctx->state.instruction.reg1 == RegisterType::C)
   {
-    cpu->state.memoryAddress |= 0xFF00;
+    ctx->state.memoryAddress |= 0xFF00;
   }
 }
 
 void InstructionsDecoder::r_mr()
 {
-  uint16_t address = cpu->readRegister16(cpu->state.instruction.reg2);
+  uint16_t address = ctx->readRegister16(ctx->state.instruction.reg2);
 
-  if (cpu->state.instruction.reg2 == RegisterType::C)
+  if (ctx->state.instruction.reg2 == RegisterType::C)
   {
     address |= 0xFF00;
   }
 
-  cpu->state.opValue = cpu->bus->read8(address);
-  cpu->cycleCallback(1);
+  ctx->state.opValue = ctx->bus->read8(address);
+  ctx->cycleCallback(1);
 }
 
 void InstructionsDecoder::r_hli()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->readRegister16(cpu->state.instruction.reg2));
-  cpu->cycleCallback(1);
-  cpu->setRegister16(RegisterType::HL, cpu->readRegister16(RegisterType::HL) + 1);
+  ctx->state.opValue = ctx->bus->read8(ctx->readRegister16(ctx->state.instruction.reg2));
+  ctx->cycleCallback(1);
+  ctx->setRegister16(RegisterType::HL, ctx->readRegister16(RegisterType::HL) + 1);
 }
 
 void InstructionsDecoder::r_hld()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->readRegister16(cpu->state.instruction.reg2));
-  cpu->cycleCallback(1);
-  cpu->setRegister16(RegisterType::HL, cpu->readRegister16(RegisterType::HL) - 1);
+  ctx->state.opValue = ctx->bus->read8(ctx->readRegister16(ctx->state.instruction.reg2));
+  ctx->cycleCallback(1);
+  ctx->setRegister16(RegisterType::HL, ctx->readRegister16(RegisterType::HL) - 1);
 }
 
 void InstructionsDecoder::hli_r()
 {
-  cpu->state.memoryAddress = cpu->readRegister16(cpu->state.instruction.reg1);
-  cpu->state.isMemoryOp = true;
+  ctx->state.memoryAddress = ctx->readRegister16(ctx->state.instruction.reg1);
+  ctx->state.isMemoryOp = true;
 
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg2);
-  cpu->setRegister16(RegisterType::HL, cpu->readRegister16(RegisterType::HL) + 1);
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg2);
+  ctx->setRegister16(RegisterType::HL, ctx->readRegister16(RegisterType::HL) + 1);
 }
 
 void InstructionsDecoder::hld_r()
 {
-  cpu->state.memoryAddress = cpu->readRegister16(cpu->state.instruction.reg1);
-  cpu->state.isMemoryOp = true;
+  ctx->state.memoryAddress = ctx->readRegister16(ctx->state.instruction.reg1);
+  ctx->state.isMemoryOp = true;
 
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg2);
-  cpu->setRegister16(RegisterType::HL, cpu->readRegister16(RegisterType::HL) - 1);
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg2);
+  ctx->setRegister16(RegisterType::HL, ctx->readRegister16(RegisterType::HL) - 1);
 }
 
 void InstructionsDecoder::r_a8()
 {
-  cpu->state.opValue = cpu->bus->read8((cpu->state.registers.pc));
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
+  ctx->state.opValue = ctx->bus->read8((ctx->state.registers.pc));
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
 }
 
 void InstructionsDecoder::a8_r()
 {
-  cpu->state.memoryAddress = cpu->bus->read8(cpu->state.registers.pc) | 0xFF00;
-  cpu->state.isMemoryOp = true;
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
+  ctx->state.memoryAddress = ctx->bus->read8(ctx->state.registers.pc) | 0xFF00;
+  ctx->state.isMemoryOp = true;
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
 }
 
 void InstructionsDecoder::d8()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
+  ctx->state.opValue = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
 }
 
 void InstructionsDecoder::hl_spr()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
+  ctx->state.opValue = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
 }
 
 void InstructionsDecoder::a16_r()
 {
-  uint16_t low = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  uint16_t high = cpu->bus->read8(cpu->state.registers.pc + 1);
-  cpu->cycleCallback(1);
-  cpu->state.memoryAddress = low | (high << 8);
-  cpu->state.isMemoryOp = true;
-  cpu->state.registers.pc += 2;
-  cpu->state.opValue = cpu->readRegister16(cpu->state.instruction.reg2);
+  uint16_t low = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  uint16_t high = ctx->bus->read8(ctx->state.registers.pc + 1);
+  ctx->cycleCallback(1);
+  ctx->state.memoryAddress = low | (high << 8);
+  ctx->state.isMemoryOp = true;
+  ctx->state.registers.pc += 2;
+  ctx->state.opValue = ctx->readRegister16(ctx->state.instruction.reg2);
 }
 
 void InstructionsDecoder::mr_d8()
 {
-  cpu->state.opValue = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc++;
-  cpu->state.memoryAddress = cpu->readRegister16(cpu->state.instruction.reg1);
-  cpu->state.isMemoryOp = true;
+  ctx->state.opValue = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc++;
+  ctx->state.memoryAddress = ctx->readRegister16(ctx->state.instruction.reg1);
+  ctx->state.isMemoryOp = true;
 }
 
 void InstructionsDecoder::mr()
 {
-  cpu->state.memoryAddress = cpu->readRegister16(cpu->state.instruction.reg1);
-  cpu->state.isMemoryOp = true;
-  cpu->state.opValue = cpu->bus->read8(cpu->state.memoryAddress);
-  cpu->cycleCallback(1);
+  ctx->state.memoryAddress = ctx->readRegister16(ctx->state.instruction.reg1);
+  ctx->state.isMemoryOp = true;
+  ctx->state.opValue = ctx->bus->read8(ctx->state.memoryAddress);
+  ctx->cycleCallback(1);
 }
 
 void InstructionsDecoder::r_a16()
 {
-  uint16_t low = cpu->bus->read8(cpu->state.registers.pc);
-  cpu->cycleCallback(1);
-  uint16_t high = cpu->bus->read8(cpu->state.registers.pc + 1);
-  cpu->cycleCallback(1);
-  cpu->state.opValue = cpu->bus->read8(low | (high << 8));
-  cpu->cycleCallback(1);
-  cpu->state.registers.pc += 2;
+  uint16_t low = ctx->bus->read8(ctx->state.registers.pc);
+  ctx->cycleCallback(1);
+  uint16_t high = ctx->bus->read8(ctx->state.registers.pc + 1);
+  ctx->cycleCallback(1);
+  ctx->state.opValue = ctx->bus->read8(low | (high << 8));
+  ctx->cycleCallback(1);
+  ctx->state.registers.pc += 2;
 }

@@ -4,19 +4,19 @@
 
 #include <memory>
 
-class CPU;
+class CpuContext;
 class InstructionsDecoder
 {
 public:
-  InstructionsDecoder(CPU *cpu);
+  InstructionsDecoder(CpuContext *ctx);
 
   void decode(uint8_t opcode);
 
 private:
-  CPU *cpu;
+  CpuContext *ctx;
   using AddressModeHandler = void (InstructionsDecoder::*)();
   static AddressModeHandler addressModeHandlers[];
-  
+
   static const Instruction &getInstruction(uint8_t opcode);
   void imp();
   void r();

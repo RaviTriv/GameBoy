@@ -11,11 +11,11 @@ enum class InterruptType
   JOYPAD = 16
 };
 
-class CPU;
+class CpuContext;
 class Interrupts
 {
 public:
-  Interrupts(CPU *cpu);
+  Interrupts(CpuContext *ctx);
 
   void requestInterrupt(InterruptType type);
   void handleInterrupts();
@@ -23,7 +23,7 @@ public:
   uint8_t getInterruptEnable() const;
 
 private:
-  CPU *cpu;
+  CpuContext *ctx;
   void interruptHandle(uint16_t address);
   bool checkInterrupt(uint16_t address, InterruptType type);
 };

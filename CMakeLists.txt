@@ -16,6 +16,7 @@ add_executable(gameboy
     src/lib/cartridge/Cartridge.cpp
     src/lib/cartridge/Mbc.cpp
     src/lib/cpu/Cpu.cpp
+    src/lib/cpu/CpuContext.cpp
     src/lib/cpu/InstructionsDecoder.cpp
     src/lib/cpu/InstructionsExecuter.cpp
     src/lib/cpu/Interrupts.cpp

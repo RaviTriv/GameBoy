@@ -1,23 +1,23 @@
 #include "Interrupts.h"
-#include "Cpu.h"
+#include "CpuContext.h"
 #include "Logger.h"
 
-Interrupts::Interrupts(CPU *cpu) : cpu(cpu) {}
+Interrupts::Interrupts(CpuContext *ctx) : ctx(ctx) {}
 
 void Interrupts::interruptHandle(uint16_t address)
 {
-  cpu->stackPush16(cpu->state.registers.pc);
-  cpu->setRegister16(RegisterType::PC, address);
+  ctx->stackPush16(ctx->state.registers.pc);
+  ctx->setRegister16(RegisterType::PC, address);
 }
 
 bool Interrupts::checkInterrupt(uint16_t address, InterruptType type)
 {
-  if (cpu->state.intf & static_cast<int>(type) && cpu->state.ie & static_cast<int>(type))
+  if (ctx->state.intf & static_cast<int>(type) && ctx->state.ie & static_cast<int>(type))
   {
     interruptHandle(address);
-    cpu->state.intf &= ~static_cast<int>(type);
-    cpu->state.halted = false;
-    cpu->state.ime = false;
+    ctx->state.intf &= ~static_cast<int>(type);
+    ctx->state.halted = false;
+    ctx->state.ime = false;
 
     return true;
   }
@@ -46,15 +46,15 @@ void Interrupts::handleInterrupts()
 
 void Interrupts::requestInterrupt(InterruptType type)
 {
-  cpu->state.intf |= (uint8_t)type;
+  ctx->state.intf |= (uint8_t)type;
 }
 
 void Interrupts::setInterruptEnable(uint8_t value)
 {
-  cpu->state.ie = value;
+  ctx->state.ie = value;
 }
 
 uint8_t Interrupts::getInterruptEnable() const
 {
-  return cpu->state.ie;
+  return ctx->state.ie;
 }

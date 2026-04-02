@@ -4,15 +4,15 @@
 
 #include <memory>
 
-class CPU;
+class CpuContext;
 class InstructionsExecuter
 {
 public:
-  InstructionsExecuter(CPU *cpu);
+  InstructionsExecuter(CpuContext *ctx);
   void execute();
 
 private:
-  CPU *cpu;
+  CpuContext *ctx;
 
   // Arithmetic
   void add();

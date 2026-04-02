@@ -1,16 +1,16 @@
 #include "InstructionsExecuter.h"
 #include "Bus.h"
-#include "Cpu.h"
+#include "CpuContext.h"
 #include "Logger.h"
 
-InstructionsExecuter::InstructionsExecuter(CPU *cpu) : cpu(cpu) {}
+InstructionsExecuter::InstructionsExecuter(CpuContext *ctx) : ctx(ctx) {}
 
 void InstructionsExecuter::execute()
 {
-  switch (cpu->state.instruction.type)
+  switch (ctx->state.instruction.type)
   {
   case InstructionType::NOP:
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
     break;
   case InstructionType::XOR:
     bitXor();
@@ -121,140 +121,140 @@ void InstructionsExecuter::execute()
 */
 void InstructionsExecuter::add()
 {
-  uint32_t value = cpu->readRegister16(cpu->state.instruction.reg1) + cpu->state.opValue;
-  bool is16BIT = cpu->is16Bit(cpu->state.instruction.reg1);
+  uint32_t value = ctx->readRegister16(ctx->state.instruction.reg1) + ctx->state.opValue;
+  bool is16BIT = ctx->is16Bit(ctx->state.instruction.reg1);
 
   if (is16BIT)
   {
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
   }
 
-  if (cpu->state.instruction.reg1 == RegisterType::SP)
+  if (ctx->state.instruction.reg1 == RegisterType::SP)
   {
-    value = cpu->readRegister16(cpu->state.instruction.reg1) + (int8_t)cpu->state.opValue;
+    value = ctx->readRegister16(ctx->state.instruction.reg1) + (int8_t)ctx->state.opValue;
   }
 
   int z = (value & BYTE_MASK) == 0;
-  int h = (cpu->readRegister16(cpu->state.instruction.reg1) & NIBBLE_MASK) + (cpu->state.opValue & NIBBLE_MASK) >= 0x10;
-  int c = (int)(cpu->readRegister16(cpu->state.instruction.reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
+  int h = (ctx->readRegister16(ctx->state.instruction.reg1) & NIBBLE_MASK) + (ctx->state.opValue & NIBBLE_MASK) >= 0x10;
+  int c = (int)(ctx->readRegister16(ctx->state.instruction.reg1) & BYTE_MASK) + (int)(ctx->state.opValue & BYTE_MASK) >= 0x100;
 
   if (is16BIT)
   {
     z = -1;
-    h = (cpu->readRegister16(cpu->state.instruction.reg1) & 0xFFF) + (cpu->state.opValue & 0xFFF) >= 0x1000;
-    uint32_t n = ((uint32_t)cpu->readRegister16(cpu->state.instruction.reg1)) + ((uint32_t)cpu->state.opValue);
+    h = (ctx->readRegister16(ctx->state.instruction.reg1) & 0xFFF) + (ctx->state.opValue & 0xFFF) >= 0x1000;
+    uint32_t n = ((uint32_t)ctx->readRegister16(ctx->state.instruction.reg1)) + ((uint32_t)ctx->state.opValue);
     c = n >= 0x10000;
   }
 
-  if (cpu->state.instruction.reg1 == RegisterType::SP)
+  if (ctx->state.instruction.reg1 == RegisterType::SP)
   {
     z = 0;
-    h = (cpu->readRegister16(cpu->state.instruction.reg1) & NIBBLE_MASK) + (cpu->state.opValue & NIBBLE_MASK) >= 0x10;
-    c = (int)(cpu->readRegister16(cpu->state.instruction.reg1) & BYTE_MASK) + (int)(cpu->state.opValue & BYTE_MASK) >= 0x100;
+    h = (ctx->readRegister16(ctx->state.instruction.reg1) & NIBBLE_MASK) + (ctx->state.opValue & NIBBLE_MASK) >= 0x10;
+    c = (int)(ctx->readRegister16(ctx->state.instruction.reg1) & BYTE_MASK) + (int)(ctx->state.opValue & BYTE_MASK) >= 0x100;
   }
 
-  cpu->setRegister16(cpu->state.instruction.reg1, value & 0xFFFF);
-  cpu->setFlags(z, 0, h, c);
+  ctx->setRegister16(ctx->state.instruction.reg1, value & 0xFFFF);
+  ctx->setFlags(z, 0, h, c);
 }
 
 void InstructionsExecuter::adc()
 {
-  uint16_t val = cpu->state.opValue;
-  uint16_t a = cpu->state.registers.a;
-  uint16_t c = cpu->FLAG_C();
+  uint16_t val = ctx->state.opValue;
+  uint16_t a = ctx->state.registers.a;
+  uint16_t c = ctx->FLAG_C();
 
-  cpu->state.registers.a = (a + val + c) & BYTE_MASK;
+  ctx->state.registers.a = (a + val + c) & BYTE_MASK;
 
-  cpu->setFlags(cpu->state.registers.a == 0, 0,
+  ctx->setFlags(ctx->state.registers.a == 0, 0,
                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                 a + val + c > BYTE_MASK);
 }
 
 void InstructionsExecuter::dec()
 {
-  uint16_t value = cpu->readRegister16(cpu->state.instruction.reg1) - 1;
+  uint16_t value = ctx->readRegister16(ctx->state.instruction.reg1) - 1;
 
-  if (cpu->is16Bit(cpu->state.instruction.reg1))
+  if (ctx->is16Bit(ctx->state.instruction.reg1))
   {
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
   }
 
-  if (cpu->state.instruction.reg1 == RegisterType::HL && cpu->state.instruction.addressMode == AddressingMode::MR)
+  if (ctx->state.instruction.reg1 == RegisterType::HL && ctx->state.instruction.addressMode == AddressingMode::MR)
   {
-    value = cpu->bus->read8(cpu->readRegister16(RegisterType::HL)) - 1;
-    cpu->bus->write8(cpu->readRegister16(RegisterType::HL), value);
+    value = ctx->bus->read8(ctx->readRegister16(RegisterType::HL)) - 1;
+    ctx->bus->write8(ctx->readRegister16(RegisterType::HL), value);
   }
   else
   {
-    cpu->setRegister16(cpu->state.instruction.reg1, value);
-    value = cpu->readRegister16(cpu->state.instruction.reg1);
+    ctx->setRegister16(ctx->state.instruction.reg1, value);
+    value = ctx->readRegister16(ctx->state.instruction.reg1);
   }
 
-  if ((cpu->state.opcode & 0x0B) == 0x0B)
+  if ((ctx->state.opcode & 0x0B) == 0x0B)
   {
     return;
   }
 
-  cpu->setFlags(value == 0, 1, (value & 0x0F) == 0x0F, -1);
+  ctx->setFlags(value == 0, 1, (value & 0x0F) == 0x0F, -1);
 }
 
 void InstructionsExecuter::inc()
 {
-  uint16_t value = cpu->readRegister16(cpu->state.instruction.reg1) + 1;
+  uint16_t value = ctx->readRegister16(ctx->state.instruction.reg1) + 1;
 
-  if (cpu->is16Bit(cpu->state.instruction.reg1))
+  if (ctx->is16Bit(ctx->state.instruction.reg1))
   {
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
   }
 
-  if (cpu->state.instruction.reg1 == RegisterType::HL && cpu->state.instruction.addressMode == AddressingMode::MR)
+  if (ctx->state.instruction.reg1 == RegisterType::HL && ctx->state.instruction.addressMode == AddressingMode::MR)
   {
-    value = cpu->bus->read8(cpu->readRegister16(RegisterType::HL)) + 1;
+    value = ctx->bus->read8(ctx->readRegister16(RegisterType::HL)) + 1;
     value &= BYTE_MASK;
-    cpu->bus->write8(cpu->readRegister16(RegisterType::HL), value);
+    ctx->bus->write8(ctx->readRegister16(RegisterType::HL), value);
   }
   else
   {
-    cpu->setRegister16(cpu->state.instruction.reg1, value);
-    value = cpu->readRegister16(cpu->state.instruction.reg1);
+    ctx->setRegister16(ctx->state.instruction.reg1, value);
+    value = ctx->readRegister16(ctx->state.instruction.reg1);
   }
 
-  if ((cpu->state.opcode & 0x03) == 0x03)
+  if ((ctx->state.opcode & 0x03) == 0x03)
   {
     return;
   }
 
-  cpu->setFlags(value == 0, 0, (value & 0x0F) == 0, -1);
+  ctx->setFlags(value == 0, 0, (value & 0x0F) == 0, -1);
 }
 
 void InstructionsExecuter::sub()
 {
-  uint16_t value = cpu->readRegister16(cpu->state.instruction.reg1) - cpu->state.opValue;
+  uint16_t value = ctx->readRegister16(ctx->state.instruction.reg1) - ctx->state.opValue;
 
   int z = value == 0;
-  int h = ((int)cpu->readRegister16(cpu->state.instruction.reg1) & NIBBLE_MASK) - ((int)cpu->state.opValue & NIBBLE_MASK) < 0;
-  int c = ((int)cpu->readRegister16(cpu->state.instruction.reg1)) - ((int)cpu->state.opValue) < 0;
+  int h = ((int)ctx->readRegister16(ctx->state.instruction.reg1) & NIBBLE_MASK) - ((int)ctx->state.opValue & NIBBLE_MASK) < 0;
+  int c = ((int)ctx->readRegister16(ctx->state.instruction.reg1)) - ((int)ctx->state.opValue) < 0;
 
-  cpu->setRegister16(cpu->state.instruction.reg1, value);
-  cpu->setFlags(z, 1, h, c);
+  ctx->setRegister16(ctx->state.instruction.reg1, value);
+  ctx->setFlags(z, 1, h, c);
 }
 
 void InstructionsExecuter::sbc()
 {
-  uint8_t value = cpu->state.opValue + cpu->FLAG_C();
+  uint8_t value = ctx->state.opValue + ctx->FLAG_C();
 
-  int z = cpu->readRegister16(cpu->state.instruction.reg1) - value == 0;
-  int h = ((int)cpu->readRegister16(cpu->state.instruction.reg1) & NIBBLE_MASK) - ((int)cpu->state.opValue & NIBBLE_MASK) - ((int)cpu->FLAG_C()) < 0;
-  int c = ((int)cpu->readRegister16(cpu->state.instruction.reg1)) - ((int)cpu->state.opValue) - ((int)cpu->FLAG_C()) < 0;
+  int z = ctx->readRegister16(ctx->state.instruction.reg1) - value == 0;
+  int h = ((int)ctx->readRegister16(ctx->state.instruction.reg1) & NIBBLE_MASK) - ((int)ctx->state.opValue & NIBBLE_MASK) - ((int)ctx->FLAG_C()) < 0;
+  int c = ((int)ctx->readRegister16(ctx->state.instruction.reg1)) - ((int)ctx->state.opValue) - ((int)ctx->FLAG_C()) < 0;
 
-  cpu->setRegister16(cpu->state.instruction.reg1, cpu->readRegister16(cpu->state.instruction.reg1) - value);
-  cpu->setFlags(z, 1, h, c);
+  ctx->setRegister16(ctx->state.instruction.reg1, ctx->readRegister16(ctx->state.instruction.reg1) - value);
+  ctx->setFlags(z, 1, h, c);
 }
 
 void InstructionsExecuter::cp()
 {
-  int tmp = (int)cpu->state.registers.a - (int)cpu->state.opValue;
-  cpu->setFlags(tmp == 0, 1, ((int)cpu->state.registers.a & 0x0F) - ((int)cpu->state.opValue & 0x0F) < 0, tmp < 0);
+  int tmp = (int)ctx->state.registers.a - (int)ctx->state.opValue;
+  ctx->setFlags(tmp == 0, 1, ((int)ctx->state.registers.a & 0x0F) - ((int)ctx->state.opValue & 0x0F) < 0, tmp < 0);
 }
 /*
 <---ARITHMETIC-END--->
@@ -266,46 +266,46 @@ void InstructionsExecuter::cp()
 
 void InstructionsExecuter::ld()
 {
-  if (cpu->state.isMemoryOp)
+  if (ctx->state.isMemoryOp)
   {
-    if (cpu->is16Bit(cpu->state.instruction.reg2))
+    if (ctx->is16Bit(ctx->state.instruction.reg2))
     {
-      cpu->cycleCallback(1);
-      cpu->bus->write16(cpu->state.memoryAddress, cpu->state.opValue);
+      ctx->cycleCallback(1);
+      ctx->bus->write16(ctx->state.memoryAddress, ctx->state.opValue);
     }
     else
     {
-      cpu->bus->write8(cpu->state.memoryAddress, cpu->state.opValue);
+      ctx->bus->write8(ctx->state.memoryAddress, ctx->state.opValue);
     }
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
     return;
   }
 
-  if (cpu->state.instruction.addressMode == AddressingMode::HL_SPR)
+  if (ctx->state.instruction.addressMode == AddressingMode::HL_SPR)
   {
     uint8_t H =
-        (cpu->readRegister16(cpu->state.instruction.reg2) & 0xF) + (cpu->state.opValue & 0xF) >= 0x10;
-    uint8_t C = (cpu->readRegister16(cpu->state.instruction.reg2) & BYTE_MASK) +
-                    (cpu->state.opValue & BYTE_MASK) >=
+        (ctx->readRegister16(ctx->state.instruction.reg2) & 0xF) + (ctx->state.opValue & 0xF) >= 0x10;
+    uint8_t C = (ctx->readRegister16(ctx->state.instruction.reg2) & BYTE_MASK) +
+                    (ctx->state.opValue & BYTE_MASK) >=
                 0x100;
-    cpu->setFlags(0, 0, H, C);
-    cpu->setRegister16(cpu->state.instruction.reg1, cpu->readRegister16(cpu->state.instruction.reg2) + (char)cpu->state.opValue);
+    ctx->setFlags(0, 0, H, C);
+    ctx->setRegister16(ctx->state.instruction.reg1, ctx->readRegister16(ctx->state.instruction.reg2) + (char)ctx->state.opValue);
     return;
   }
-  cpu->setRegister16(cpu->state.instruction.reg1, cpu->state.opValue);
+  ctx->setRegister16(ctx->state.instruction.reg1, ctx->state.opValue);
 }
 
 void InstructionsExecuter::ldh()
 {
-  if (cpu->state.instruction.reg1 == RegisterType::A)
+  if (ctx->state.instruction.reg1 == RegisterType::A)
   {
-    cpu->setRegister16(RegisterType::A, cpu->bus->read8(0xFF00 | cpu->state.opValue));
+    ctx->setRegister16(RegisterType::A, ctx->bus->read8(0xFF00 | ctx->state.opValue));
   }
   else
   {
-    cpu->bus->write8(cpu->state.memoryAddress, cpu->state.registers.a);
+    ctx->bus->write8(ctx->state.memoryAddress, ctx->state.registers.a);
   }
-  cpu->cycleCallback(1);
+  ctx->cycleCallback(1);
 }
 
 /*
@@ -318,61 +318,61 @@ void InstructionsExecuter::ldh()
 
 void InstructionsExecuter::bitAnd()
 {
-  cpu->state.registers.a &= cpu->state.opValue;
+  ctx->state.registers.a &= ctx->state.opValue;
 
-  cpu->setFlags(cpu->state.registers.a == 0, 0, 1, 0);
+  ctx->setFlags(ctx->state.registers.a == 0, 0, 1, 0);
 }
 
 void InstructionsExecuter::bitOr()
 {
-  cpu->state.registers.a |= cpu->state.opValue & BYTE_MASK;
+  ctx->state.registers.a |= ctx->state.opValue & BYTE_MASK;
 
-  cpu->setFlags(cpu->state.registers.a == 0, 0, 0, 0);
+  ctx->setFlags(ctx->state.registers.a == 0, 0, 0, 0);
 }
 
 void InstructionsExecuter::bitXor()
 {
-  cpu->state.registers.a ^= cpu->state.opValue & BYTE_MASK;
-  cpu->setFlags(cpu->state.registers.a == 0, 0, 0, 0);
+  ctx->state.registers.a ^= ctx->state.opValue & BYTE_MASK;
+  ctx->setFlags(ctx->state.registers.a == 0, 0, 0, 0);
 }
 
 void InstructionsExecuter::bitCpl()
 {
-  cpu->state.registers.a = ~cpu->state.registers.a;
-  cpu->setFlags(-1, 1, 1, -1);
+  ctx->state.registers.a = ~ctx->state.registers.a;
+  ctx->setFlags(-1, 1, 1, -1);
 }
 
 void InstructionsExecuter::bitCb()
 {
-  uint8_t opcode = cpu->state.opValue;
-  RegisterType reg = cpu->decodeRegister(opcode & 0b111);
+  uint8_t opcode = ctx->state.opValue;
+  RegisterType reg = ctx->decodeRegister(opcode & 0b111);
   uint8_t bit = (opcode >> 3) & 0b111;
   uint8_t bitOpcode = (opcode >> 6) & 0b11;
-  uint8_t registerValue = cpu->readRegister8(reg);
+  uint8_t registerValue = ctx->readRegister8(reg);
 
-  cpu->cycleCallback(1);
+  ctx->cycleCallback(1);
 
   if (reg == RegisterType::HL)
   {
-    cpu->cycleCallback(2);
+    ctx->cycleCallback(2);
   }
 
   switch (bitOpcode)
   {
   case 1:
-    cpu->setFlags(!(registerValue & (1 << bit)), 0, 1, -1);
+    ctx->setFlags(!(registerValue & (1 << bit)), 0, 1, -1);
     return;
   case 2:
     registerValue &= ~(1 << bit);
-    cpu->setRegister8(reg, registerValue);
+    ctx->setRegister8(reg, registerValue);
     return;
   case 3:
     registerValue |= (1 << bit);
-    cpu->setRegister8(reg, registerValue);
+    ctx->setRegister8(reg, registerValue);
     return;
   }
 
-  bool flagc = cpu->FLAG_C();
+  bool flagc = ctx->FLAG_C();
 
   switch (bit)
   {
@@ -387,8 +387,8 @@ void InstructionsExecuter::bitCb()
       setC = true;
     }
 
-    cpu->setRegister8(reg, result);
-    cpu->setFlags(result == 0, false, false, setC);
+    ctx->setRegister8(reg, result);
+    ctx->setFlags(result == 0, false, false, setC);
   }
     return;
 
@@ -397,8 +397,9 @@ void InstructionsExecuter::bitCb()
     uint8_t old = registerValue;
     registerValue >>= 1;
     registerValue |= (old << 7);
-    cpu->setRegister8(reg, registerValue);
-    cpu->setFlags(!registerValue, false, false, old & 1);
+
+    ctx->setRegister8(reg, registerValue);
+    ctx->setFlags(!registerValue, false, false, old & 1);
   }
     return;
 
@@ -408,8 +409,8 @@ void InstructionsExecuter::bitCb()
     registerValue <<= 1;
     registerValue |= flagc;
 
-    cpu->setRegister8(reg, registerValue);
-    cpu->setFlags(!registerValue, false, false, !!(old & 0x80));
+    ctx->setRegister8(reg, registerValue);
+    ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
   }
     return;
 
@@ -418,8 +419,8 @@ void InstructionsExecuter::bitCb()
     uint8_t old = registerValue;
     registerValue >>= 1;
     registerValue |= (flagc << 7);
-    cpu->setRegister8(reg, registerValue);
-    cpu->setFlags(!registerValue, false, false, old & 1);
+    ctx->setRegister8(reg, registerValue);
+    ctx->setFlags(!registerValue, false, false, old & 1);
   }
     return;
 
@@ -428,32 +429,32 @@ void InstructionsExecuter::bitCb()
     uint8_t old = registerValue;
     registerValue <<= 1;
 
-    cpu->setRegister8(reg, registerValue);
-    cpu->setFlags(!registerValue, false, false, !!(old & 0x80));
+    ctx->setRegister8(reg, registerValue);
+    ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
   }
     return;
 
   case 5:
   {
     uint8_t u = (int8_t)registerValue >> 1;
-    cpu->setRegister8(reg, u);
-    cpu->setFlags(!u, 0, 0, registerValue & 1);
+    ctx->setRegister8(reg, u);
+    ctx->setFlags(!u, 0, 0, registerValue & 1);
   }
     return;
 
   case 6:
   {
     registerValue = ((registerValue & 0xF0) >> 4) | ((registerValue & 0xF) << 4);
-    cpu->setRegister8(reg, registerValue);
-    cpu->setFlags(registerValue == 0, false, false, false);
+    ctx->setRegister8(reg, registerValue);
+    ctx->setFlags(registerValue == 0, false, false, false);
   }
     return;
 
   case 7:
   {
     uint8_t u = registerValue >> 1;
-    cpu->setRegister8(reg, u);
-    cpu->setFlags(!u, 0, 0, registerValue & 1);
+    ctx->setRegister8(reg, u);
+    ctx->setFlags(!u, 0, 0, registerValue & 1);
   }
     return;
   }
@@ -469,19 +470,19 @@ void InstructionsExecuter::bitCb()
 
 void InstructionsExecuter::jp()
 {
-  cpu->jumpToAddress(cpu->state.opValue, false);
+  ctx->jumpToAddress(ctx->state.opValue, false);
 }
 
 void InstructionsExecuter::jr()
 {
-  int8_t rel = (int8_t)(cpu->state.opValue & BYTE_MASK);
-  uint16_t updatedPC = cpu->state.registers.pc + rel;
-  cpu->jumpToAddress(updatedPC, false);
+  int8_t rel = (int8_t)(ctx->state.opValue & BYTE_MASK);
+  uint16_t updatedPC = ctx->state.registers.pc + rel;
+  ctx->jumpToAddress(updatedPC, false);
 }
 
 void InstructionsExecuter::call()
 {
-  cpu->jumpToAddress(cpu->state.opValue, true);
+  ctx->jumpToAddress(ctx->state.opValue, true);
 }
 
 /*
@@ -494,30 +495,30 @@ void InstructionsExecuter::call()
 
 void InstructionsExecuter::pop()
 {
-  uint16_t low = cpu->stackPop8();
-  cpu->cycleCallback(1);
-  uint16_t high = cpu->stackPop8();
-  cpu->cycleCallback(1);
+  uint16_t low = ctx->stackPop8();
+  ctx->cycleCallback(1);
+  uint16_t high = ctx->stackPop8();
+  ctx->cycleCallback(1);
 
   uint16_t n = (high << 8) | low;
 
-  cpu->setRegister16(cpu->state.instruction.reg1, n);
+  ctx->setRegister16(ctx->state.instruction.reg1, n);
 
-  if (cpu->state.instruction.reg1 == RegisterType::AF)
+  if (ctx->state.instruction.reg1 == RegisterType::AF)
   {
-    cpu->setRegister16(cpu->state.instruction.reg1, n & 0xFFF0);
+    ctx->setRegister16(ctx->state.instruction.reg1, n & 0xFFF0);
   }
 }
 
 void InstructionsExecuter::push()
 {
-  uint16_t high = (cpu->readRegister16(cpu->state.instruction.reg1) >> 8) & BYTE_MASK;
-  cpu->cycleCallback(1);
-  cpu->stackPush8(high);
-  uint16_t low = cpu->readRegister16(cpu->state.instruction.reg1) & BYTE_MASK;
-  cpu->cycleCallback(1);
-  cpu->stackPush8(low);
-  cpu->cycleCallback(1);
+  uint16_t high = (ctx->readRegister16(ctx->state.instruction.reg1) >> 8) & BYTE_MASK;
+  ctx->cycleCallback(1);
+  ctx->stackPush8(high);
+  uint16_t low = ctx->readRegister16(ctx->state.instruction.reg1) & BYTE_MASK;
+  ctx->cycleCallback(1);
+  ctx->stackPush8(low);
+  ctx->cycleCallback(1);
 }
 
 /*
@@ -529,42 +530,42 @@ void InstructionsExecuter::push()
 
 void InstructionsExecuter::rlca()
 {
-  uint8_t u = cpu->state.registers.a;
+  uint8_t u = ctx->state.registers.a;
   bool c = (u >> 7) & 1;
   u = (u << 1) | c;
-  cpu->state.registers.a = u;
+  ctx->state.registers.a = u;
 
-  cpu->setFlags(0, 0, 0, c);
+  ctx->setFlags(0, 0, 0, c);
 }
 
 void InstructionsExecuter::rrca()
 {
-  uint8_t b = cpu->state.registers.a & 1;
-  cpu->state.registers.a >>= 1;
-  cpu->state.registers.a |= (b << 7);
+  uint8_t b = ctx->state.registers.a & 1;
+  ctx->state.registers.a >>= 1;
+  ctx->state.registers.a |= (b << 7);
 
-  cpu->setFlags(0, 0, 0, b);
+  ctx->setFlags(0, 0, 0, b);
 }
 
 void InstructionsExecuter::rla()
 {
-  uint8_t u = cpu->state.registers.a;
-  uint8_t cf = cpu->FLAG_C();
+  uint8_t u = ctx->state.registers.a;
+  uint8_t cf = ctx->FLAG_C();
   uint8_t c = (u >> 7) & 1;
 
-  cpu->state.registers.a = (u << 1) | cf;
-  cpu->setFlags(0, 0, 0, c);
+  ctx->state.registers.a = (u << 1) | cf;
+  ctx->setFlags(0, 0, 0, c);
 }
 
 void InstructionsExecuter::rra()
 {
-  uint8_t carry = cpu->FLAG_C();
-  uint8_t new_c = cpu->state.registers.a & 1;
+  uint8_t carry = ctx->FLAG_C();
+  uint8_t new_c = ctx->state.registers.a & 1;
 
-  cpu->state.registers.a >>= 1;
-  cpu->state.registers.a |= (carry << 7);
+  ctx->state.registers.a >>= 1;
+  ctx->state.registers.a |= (carry << 7);
 
-  cpu->setFlags(0, 0, 0, new_c);
+  ctx->setFlags(0, 0, 0, new_c);
 }
 
 void InstructionsExecuter::daa()
@@ -572,20 +573,20 @@ void InstructionsExecuter::daa()
   uint8_t u = 0;
   int c = 0;
 
-  if (cpu->FLAG_H() || (!cpu->FLAG_N() && (cpu->state.registers.a & 0xF) > 9))
+  if (ctx->FLAG_H() || (!ctx->FLAG_N() && (ctx->state.registers.a & 0xF) > 9))
   {
     u = 6;
   }
 
-  if (cpu->FLAG_C() || (!cpu->FLAG_N() && cpu->state.registers.a > 0x99))
+  if (ctx->FLAG_C() || (!ctx->FLAG_N() && ctx->state.registers.a > 0x99))
   {
     u |= 0x60;
     c = 1;
   }
 
-  cpu->state.registers.a += cpu->FLAG_N() ? -u : u;
+  ctx->state.registers.a += ctx->FLAG_N() ? -u : u;
 
-  cpu->setFlags(cpu->state.registers.a == 0, -1, 0, c);
+  ctx->setFlags(ctx->state.registers.a == 0, -1, 0, c);
 }
 
 /*
@@ -598,12 +599,12 @@ void InstructionsExecuter::daa()
 
 void InstructionsExecuter::scf()
 {
-  cpu->setFlags(-1, 0, 0, 1);
+  ctx->setFlags(-1, 0, 0, 1);
 }
 
 void InstructionsExecuter::ccf()
 {
-  cpu->setFlags(-1, 0, 0, cpu->FLAG_C() ^ 1);
+  ctx->setFlags(-1, 0, 0, ctx->FLAG_C() ^ 1);
 }
 
 /*
@@ -616,12 +617,12 @@ void InstructionsExecuter::ccf()
 
 void InstructionsExecuter::di()
 {
-  cpu->state.ime = false;
+  ctx->state.ime = false;
 }
 
 void InstructionsExecuter::ei()
 {
-  cpu->state.imeScheduled = true;
+  ctx->state.imeScheduled = true;
 }
 
 /*
@@ -634,39 +635,39 @@ void InstructionsExecuter::ei()
 
 void InstructionsExecuter::ret()
 {
-  if (cpu->state.instruction.condition != ConditionType::NONE)
+  if (ctx->state.instruction.condition != ConditionType::NONE)
   {
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
   }
 
-  if (cpu->conditionCheck())
+  if (ctx->conditionCheck())
   {
-    uint16_t low = cpu->stackPop8();
-    cpu->cycleCallback(1);
-    uint16_t high = cpu->stackPop8();
-    cpu->cycleCallback(1);
+    uint16_t low = ctx->stackPop8();
+    ctx->cycleCallback(1);
+    uint16_t high = ctx->stackPop8();
+    ctx->cycleCallback(1);
 
     uint16_t res = (high << 8) | low;
-    cpu->state.registers.pc = res;
+    ctx->state.registers.pc = res;
 
-    cpu->cycleCallback(1);
+    ctx->cycleCallback(1);
   }
 }
 
 void InstructionsExecuter::reti()
 {
-  cpu->state.ime = true;
+  ctx->state.ime = true;
   ret();
 }
 
 void InstructionsExecuter::rst()
 {
-  cpu->jumpToAddress(cpu->state.instruction.parameter, true);
+  ctx->jumpToAddress(ctx->state.instruction.parameter, true);
 }
 
 void InstructionsExecuter::halt()
 {
-  cpu->state.halted = true;
+  ctx->state.halted = true;
 }
 
 /*

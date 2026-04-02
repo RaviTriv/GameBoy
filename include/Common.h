@@ -30,6 +30,7 @@ constexpr uint16_t HRAM_END = 0xFFFE;
 
 constexpr uint16_t IE_REGISTER = 0xFFFF;
 
+constexpr uint8_t NIBBLE_MASK = 0xF;
 constexpr uint8_t BYTE_MASK = 0xFF;
 constexpr uint8_t BYTE_BITS = 8;
 
