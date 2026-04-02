@@ -6,7 +6,7 @@ This application emulates the orginal Game Boy hardware allowing users to  play 
 ## Building
 ```console
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 

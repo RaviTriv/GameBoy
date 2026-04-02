@@ -47,6 +47,10 @@ SDL3_ttf::SDL3_ttf
 PRIVATE spdlog::spdlog_header_only
 )
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(gameboy PRIVATE -Wall -Wextra -Wpedantic -DSDLTTF_SAMPLES=ON -g)
+    target_compile_options(gameboy PRIVATE -Wall -Wextra -Wpedantic -DSDLTTF_SAMPLES=ON)
 endif()
