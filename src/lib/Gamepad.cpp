@@ -1,34 +1,34 @@
 #include "Gamepad.h"
 
-bool Gamepad::isBPressed()
+bool Gamepad::isBPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_B;
 }
-bool Gamepad::isAPressed()
+bool Gamepad::isAPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_A;
 }
-bool Gamepad::isStartPressed()
+bool Gamepad::isStartPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_START;
 }
-bool Gamepad::isSelectPressed()
+bool Gamepad::isSelectPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_SELECT;
 }
-bool Gamepad::isUpPressed()
+bool Gamepad::isUpPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_UP;
 }
-bool Gamepad::isDownPressed()
+bool Gamepad::isDownPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_DOWN;
 }
-bool Gamepad::isLeftPressed()
+bool Gamepad::isLeftPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_LEFT;
 }
-bool Gamepad::isRightPressed()
+bool Gamepad::isRightPressed() const
 {
   return buttons.load(std::memory_order_relaxed) & BTN_RIGHT;
 }
@@ -90,12 +90,12 @@ void Gamepad::setRightPressed(bool pressed)
     buttons.fetch_and(static_cast<uint8_t>(~BTN_RIGHT), std::memory_order_relaxed);
 }
 
-bool Gamepad::actionSel()
+bool Gamepad::actionSel() const
 {
   return actionSelected;
 }
 
-bool Gamepad::directionSel()
+bool Gamepad::directionSel() const
 {
   return directionSelected;
 }
@@ -106,7 +106,7 @@ void Gamepad::setSel(uint8_t value)
   directionSelected = value & DIRECTION_SELECT_BIT;
 }
 
-uint8_t Gamepad::getOutput()
+uint8_t Gamepad::getOutput() const
 {
   uint8_t output = DEFAULT_OUTPUT;
   uint8_t btns = buttons.load(std::memory_order_relaxed);

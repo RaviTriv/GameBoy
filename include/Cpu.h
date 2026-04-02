@@ -88,7 +88,7 @@ private:
 
   void setBit(uint8_t value, uint8_t bit);
   void setFlags(int z, int n, int h, int c);
-  bool is16Bit(RegisterType reg);
+  bool is16Bit(RegisterType reg) const;
   bool isFlagSet(uint8_t x, uint8_t y) const;
   int FLAG_Z() const;
   int FLAG_N() const;

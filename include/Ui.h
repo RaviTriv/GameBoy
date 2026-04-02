@@ -22,7 +22,7 @@ public:
   void init();
   void handleEvents();
   void update();
-  uint32_t getTicks();
+  uint32_t getTicks() const;
   void delay(uint32_t ms);
   ~UI();
   APU &apu;

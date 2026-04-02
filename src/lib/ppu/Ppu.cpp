@@ -55,13 +55,13 @@ void PPU::oamWrite(uint16_t address, uint8_t value)
   p[address] = value;
 }
 
-uint8_t PPU::oamRead(uint16_t address)
+uint8_t PPU::oamRead(uint16_t address) const
 {
   if (address >= OAM_START_ADDR)
   {
     address -= OAM_START_ADDR;
   }
-  uint8_t *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
+  const uint8_t *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
   return p[address];
 }
 
@@ -238,7 +238,7 @@ void PPU::vBlankMode()
 <-----PPU-SM-END----->
 */
 
-uint32_t PPU::getCurrentFrame()
+uint32_t PPU::getCurrentFrame() const
 {
   return currentFrame.load(std::memory_order_relaxed);
 }

@@ -30,5 +30,5 @@ private:
   void loadPPUState(std::ifstream &file);
   void loadLCDState(std::ifstream &file);
 
-  std::string removeSpaces(const std::string &str);
+  std::string removeSpaces(const std::string &str) const;
 };

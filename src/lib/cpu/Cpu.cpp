@@ -259,7 +259,7 @@ void CPU::setFlags(int z, int n, int h, int c) {
   }
 }
 
-bool CPU::is16Bit(RegisterType reg) { return reg >= RegisterType::AF; }
+bool CPU::is16Bit(RegisterType reg) const { return reg >= RegisterType::AF; }
 
 bool CPU::isFlagSet(uint8_t flags, uint8_t bit) const {
   return (flags & (1 << bit)) != 0;

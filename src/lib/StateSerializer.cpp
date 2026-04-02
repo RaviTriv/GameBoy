@@ -26,7 +26,7 @@ StateSerializer::StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd) : cpu(c
   }
 }
 
-std::string StateSerializer::removeSpaces(const std::string &str)
+std::string StateSerializer::removeSpaces(const std::string &str) const
 {
   std::string result = str;
   result.erase(std::remove(result.begin(), result.end(), ' '), result.end());

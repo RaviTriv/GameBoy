@@ -143,7 +143,7 @@ void UI::delay(uint32_t ms)
   SDL_Delay(ms);
 }
 
-uint32_t UI::getTicks()
+uint32_t UI::getTicks() const
 {
   return SDL_GetTicks();
 }

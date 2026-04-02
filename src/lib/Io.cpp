@@ -10,7 +10,7 @@ IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad, AP
 {
 }
 
-uint8_t IO::read(uint16_t address)
+uint8_t IO::read(uint16_t address) const
 {
   if (address == JOYPAD_REGISTER)
   {

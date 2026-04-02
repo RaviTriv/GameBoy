@@ -72,19 +72,19 @@ public:
   };
 
   LCD(std::function<void(uint8_t)> onDmaStart);
-  uint8_t read(uint16_t address);
+  uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
-  bool isLcdStatIntEnabled(uint8_t source);
+  bool isLcdStatIntEnabled(uint8_t source) const;
   uint16_t getBgMapArea() const;
   uint16_t getBgWindowDataArea() const;
   uint16_t getWindowMapArea() const;
-  uint8_t getObjHeight();
-  bool isWindowEnabled();
-  bool isBgWindowEnabled();
-  bool isObjEnabled();
+  uint8_t getObjHeight() const;
+  bool isWindowEnabled() const;
+  bool isBgWindowEnabled() const;
+  bool isObjEnabled() const;
   int getLcdMode() const;
   void setLcdMode(MODE mode);
-  bool isLycFlag();
+  bool isLycFlag() const;
   void setLycFlag(bool value);
   LCD::State getState() const;
   void setState(const State &state);

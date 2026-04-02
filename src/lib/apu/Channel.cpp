@@ -54,7 +54,7 @@ bool SquareChannel::lengthTimerAction()
   return true;
 }
 
-uint8_t SquareChannel::getSample()
+uint8_t SquareChannel::getSample() const
 {
   uint8_t sample = duties[((nrx1 & DUTY_MASK) >> DUTY_SHIFT)][duty];
   return sample * envelopeVolume * enabled;
@@ -127,12 +127,12 @@ bool WaveChannel::lengthTimerAction()
   return true;
 }
 
-uint8_t WaveChannel::getSample()
+uint8_t WaveChannel::getSample() const
 {
   return 0;
 }
 
-uint8_t WaveChannel::getSample(uint8_t s)
+uint8_t WaveChannel::getSample(uint8_t s) const
 {
   return s * enabled * (nrx0 >>DAC_ENABLE_SHIFT);
 }
@@ -187,7 +187,7 @@ void NoiseChannel::envelopeAction()
   }
 }
 
-uint8_t NoiseChannel::getSample()
+uint8_t NoiseChannel::getSample() const
 {
   return (~lfsr & LFSR_BIT0_MASK) * envelopeVolume * enabled;
 }

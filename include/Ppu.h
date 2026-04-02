@@ -31,12 +31,12 @@ public:
   PPU(InterruptSink &interruptSink);
   void init();
   void tick();
-  uint32_t getCurrentFrame();
+  uint32_t getCurrentFrame() const;
   void setCurrentFrame(uint32_t frame);
   void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer);
 
   void oamWrite(uint16_t addr, uint8_t value);
-  uint8_t oamRead(uint16_t addr);
+  uint8_t oamRead(uint16_t addr) const;
   uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 

@@ -2,7 +2,7 @@
 #include "Channel.h"
 #include "Logger.h"
 
-uint8_t APU::read(uint16_t address)
+uint8_t APU::read(uint16_t address) const
 {
   std::lock_guard<std::mutex> lock(mutex);
   switch (address)

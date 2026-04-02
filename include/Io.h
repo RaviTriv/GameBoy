@@ -13,7 +13,7 @@ class IO
 public:
   IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad, APU &apu);
   void write(uint16_t address, uint8_t value);
-  uint8_t read(uint16_t address);
+  uint8_t read(uint16_t address) const;
 
 private:
   std::array<char, 2> serialData{};

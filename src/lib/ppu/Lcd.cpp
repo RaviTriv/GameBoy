@@ -21,7 +21,7 @@ LCD::LCD(std::function<void(uint8_t)> onDmaStart) : onDmaStart(std::move(onDmaSt
   }
 }
 
-uint8_t LCD::read(uint16_t address)
+uint8_t LCD::read(uint16_t address) const
 {
   switch (address)
   {
@@ -128,7 +128,7 @@ void LCD::updatePalettes(PaletteType type, uint8_t value)
   }
 }
 
-bool LCD::isLcdStatIntEnabled(uint8_t source)
+bool LCD::isLcdStatIntEnabled(uint8_t source) const
 {
   return (state.lcds & source) != 0;
 }
@@ -150,17 +150,17 @@ void LCD::setBit(uint8_t &value, int bit, bool set)
   }
 }
 
-bool LCD::isBgWindowEnabled()
+bool LCD::isBgWindowEnabled() const
 {
   return getBit(state.lcdc, 0);
 }
 
-bool LCD::isObjEnabled()
+bool LCD::isObjEnabled() const
 {
   return getBit(state.lcdc, 1);
 }
 
-uint8_t LCD::getObjHeight()
+uint8_t LCD::getObjHeight() const
 {
   return getBit(state.lcdc, 2) ? 16 : 8;
 }
@@ -175,7 +175,7 @@ uint16_t LCD::getBgWindowDataArea() const
   return getBit(state.lcdc, 4) ? 0x8000 : 0x8800;
 }
 
-bool LCD::isWindowEnabled()
+bool LCD::isWindowEnabled() const
 {
   return getBit(state.lcdc, 5);
 }
@@ -196,7 +196,7 @@ void LCD::setLcdMode(MODE mode)
   state.lcds |= static_cast<uint8_t>(mode);
 }
 
-bool LCD::isLycFlag()
+bool LCD::isLycFlag() const
 {
   return getBit(state.lcds, 2);
 }
