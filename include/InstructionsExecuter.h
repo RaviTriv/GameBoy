@@ -32,7 +32,19 @@ private:
   void bitOr();
   void bitXor();
   void bitCpl();
-  void bitCb();
+
+  // CB-prefixed instructions
+  void cbRlc();
+  void cbRrc();
+  void cbRl();
+  void cbRr();
+  void cbSla();
+  void cbSra();
+  void cbSwap();
+  void cbSrl();
+  void cbBit();
+  void cbRes();
+  void cbSet();
 
   // Jump / Call
   void jp();

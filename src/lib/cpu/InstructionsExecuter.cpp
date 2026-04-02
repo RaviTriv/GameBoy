@@ -75,8 +75,38 @@ void InstructionsExecuter::execute()
   case InstructionType::CP:
     cp();
     break;
-  case InstructionType::CB:
-    bitCb();
+  case InstructionType::RLC:
+    cbRlc();
+    break;
+  case InstructionType::RRC:
+    cbRrc();
+    break;
+  case InstructionType::RL:
+    cbRl();
+    break;
+  case InstructionType::RR:
+    cbRr();
+    break;
+  case InstructionType::SLA:
+    cbSla();
+    break;
+  case InstructionType::SRA:
+    cbSra();
+    break;
+  case InstructionType::SWAP:
+    cbSwap();
+    break;
+  case InstructionType::SRL:
+    cbSrl();
+    break;
+  case InstructionType::BIT:
+    cbBit();
+    break;
+  case InstructionType::RES:
+    cbRes();
+    break;
+  case InstructionType::SET:
+    cbSet();
     break;
   case InstructionType::RLCA:
     rlca();
@@ -342,122 +372,160 @@ void InstructionsExecuter::bitCpl()
   ctx->setFlags(-1, 1, 1, -1);
 }
 
-void InstructionsExecuter::bitCb()
+void InstructionsExecuter::cbRlc()
 {
-  uint8_t opcode = ctx->state.opValue;
-  RegisterType reg = ctx->decodeRegister(opcode & 0b111);
-  uint8_t bit = (opcode >> 3) & 0b111;
-  uint8_t bitOpcode = (opcode >> 6) & 0b11;
+  RegisterType reg = ctx->state.instruction.reg1;
   uint8_t registerValue = ctx->readRegister8(reg);
 
   ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
 
-  if (reg == RegisterType::HL)
-  {
-    ctx->cycle(2);
-  }
+  bool setC = (registerValue & (1 << 7)) != 0;
+  uint8_t result = (registerValue << 1) & BYTE_MASK;
+  if (setC) result |= 1;
 
-  switch (bitOpcode)
-  {
-  case 1:
-    ctx->setFlags(!(registerValue & (1 << bit)), 0, 1, -1);
-    return;
-  case 2:
-    registerValue &= ~(1 << bit);
-    ctx->setRegister8(reg, registerValue);
-    return;
-  case 3:
-    registerValue |= (1 << bit);
-    ctx->setRegister8(reg, registerValue);
-    return;
-  }
+  ctx->setRegister8(reg, result);
+  ctx->setFlags(result == 0, false, false, setC);
+}
 
-  bool flagc = ctx->FLAG_C();
+void InstructionsExecuter::cbRrc()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
 
-  switch (bit)
-  {
-  case 0:
-  {
-    bool setC = false;
-    uint8_t result = (registerValue << 1) & BYTE_MASK;
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
 
-    if ((registerValue & (1 << 7)) != 0)
-    {
-      result |= 1;
-      setC = true;
-    }
+  uint8_t old = registerValue;
+  registerValue >>= 1;
+  registerValue |= (old << 7);
 
-    ctx->setRegister8(reg, result);
-    ctx->setFlags(result == 0, false, false, setC);
-  }
-    return;
+  ctx->setRegister8(reg, registerValue);
+  ctx->setFlags(!registerValue, false, false, old & 1);
+}
 
-  case 1:
-  {
-    uint8_t old = registerValue;
-    registerValue >>= 1;
-    registerValue |= (old << 7);
+void InstructionsExecuter::cbRl()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
 
-    ctx->setRegister8(reg, registerValue);
-    ctx->setFlags(!registerValue, false, false, old & 1);
-  }
-    return;
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
 
-  case 2:
-  {
-    uint8_t old = registerValue;
-    registerValue <<= 1;
-    registerValue |= flagc;
+  uint8_t old = registerValue;
+  registerValue <<= 1;
+  registerValue |= ctx->FLAG_C();
 
-    ctx->setRegister8(reg, registerValue);
-    ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
-  }
-    return;
+  ctx->setRegister8(reg, registerValue);
+  ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
+}
 
-  case 3:
-  {
-    uint8_t old = registerValue;
-    registerValue >>= 1;
-    registerValue |= (flagc << 7);
-    ctx->setRegister8(reg, registerValue);
-    ctx->setFlags(!registerValue, false, false, old & 1);
-  }
-    return;
+void InstructionsExecuter::cbRr()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
 
-  case 4:
-  {
-    uint8_t old = registerValue;
-    registerValue <<= 1;
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
 
-    ctx->setRegister8(reg, registerValue);
-    ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
-  }
-    return;
+  uint8_t old = registerValue;
+  registerValue >>= 1;
+  registerValue |= (ctx->FLAG_C() << 7);
 
-  case 5:
-  {
-    uint8_t u = (int8_t)registerValue >> 1;
-    ctx->setRegister8(reg, u);
-    ctx->setFlags(!u, 0, 0, registerValue & 1);
-  }
-    return;
+  ctx->setRegister8(reg, registerValue);
+  ctx->setFlags(!registerValue, false, false, old & 1);
+}
 
-  case 6:
-  {
-    registerValue = ((registerValue & 0xF0) >> 4) | ((registerValue & 0xF) << 4);
-    ctx->setRegister8(reg, registerValue);
-    ctx->setFlags(registerValue == 0, false, false, false);
-  }
-    return;
+void InstructionsExecuter::cbSla()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
 
-  case 7:
-  {
-    uint8_t u = registerValue >> 1;
-    ctx->setRegister8(reg, u);
-    ctx->setFlags(!u, 0, 0, registerValue & 1);
-  }
-    return;
-  }
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  uint8_t old = registerValue;
+  registerValue <<= 1;
+
+  ctx->setRegister8(reg, registerValue);
+  ctx->setFlags(!registerValue, false, false, !!(old & 0x80));
+}
+
+void InstructionsExecuter::cbSra()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  uint8_t u = (int8_t)registerValue >> 1;
+  ctx->setRegister8(reg, u);
+  ctx->setFlags(!u, 0, 0, registerValue & 1);
+}
+
+void InstructionsExecuter::cbSwap()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  registerValue = ((registerValue & 0xF0) >> 4) | ((registerValue & 0xF) << 4);
+  ctx->setRegister8(reg, registerValue);
+  ctx->setFlags(registerValue == 0, false, false, false);
+}
+
+void InstructionsExecuter::cbSrl()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  uint8_t u = registerValue >> 1;
+  ctx->setRegister8(reg, u);
+  ctx->setFlags(!u, 0, 0, registerValue & 1);
+}
+
+void InstructionsExecuter::cbBit()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+  uint8_t bit = ctx->state.instruction.parameter;
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  ctx->setFlags(!(registerValue & (1 << bit)), 0, 1, -1);
+}
+
+void InstructionsExecuter::cbRes()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+  uint8_t bit = ctx->state.instruction.parameter;
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  registerValue &= ~(1 << bit);
+  ctx->setRegister8(reg, registerValue);
+}
+
+void InstructionsExecuter::cbSet()
+{
+  RegisterType reg = ctx->state.instruction.reg1;
+  uint8_t registerValue = ctx->readRegister8(reg);
+  uint8_t bit = ctx->state.instruction.parameter;
+
+  ctx->cycle(1);
+  if (reg == RegisterType::HL) ctx->cycle(2);
+
+  registerValue |= (1 << bit);
+  ctx->setRegister8(reg, registerValue);
 }
 
 /*

@@ -7,7 +7,12 @@ InstructionsDecoder::InstructionsDecoder(CpuContext *ctx) : ctx(ctx) {}
 
 const Instruction &InstructionsDecoder::getInstruction(uint8_t opcode)
 {
-  return INSTRUCTIONS[opcode];
+  return OPCODE_TABLE[opcode];
+}
+
+const Instruction &InstructionsDecoder::getCBInstruction(uint8_t opcode)
+{
+  return CB_OPCODE_TABLE[opcode];
 }
 
 InstructionsDecoder::AddressModeHandler InstructionsDecoder::addressModeHandlers[] = {
@@ -46,6 +51,13 @@ void InstructionsDecoder::decode(uint8_t opcode)
   ctx->state.isMemoryOp = false;
 
   (this->*addressModeHandlers[static_cast<int>(instruction.addressMode)])();
+
+  if (instruction.type == InstructionType::CB)
+  {
+    const Instruction &cbInstruction = getCBInstruction(
+        static_cast<uint8_t>(ctx->state.opValue));
+    ctx->state.instruction = cbInstruction;
+  }
 }
 
 void InstructionsDecoder::none()

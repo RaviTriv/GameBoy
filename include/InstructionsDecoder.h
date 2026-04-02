@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Instructions.h"
+#include "./OpcodeTable.h"
 
 #include <memory>
 
@@ -18,6 +18,7 @@ private:
   static AddressModeHandler addressModeHandlers[];
 
   [[nodiscard]] static const Instruction &getInstruction(uint8_t opcode);
+  [[nodiscard]] static const Instruction &getCBInstruction(uint8_t opcode);
   void imp();
   void r();
   void r_r();
