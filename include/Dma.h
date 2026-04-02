@@ -18,7 +18,7 @@ public:
   DMA(std::function<void(uint16_t, uint8_t)> oamWrite);
   void start(uint8_t start);
   void tick();
-  bool isTransferring() const;
+  [[nodiscard]] bool isTransferring() const;
   void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
 private:
   State state;

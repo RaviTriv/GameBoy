@@ -19,18 +19,18 @@ public:
   ~PixelFifo() = default;
 
   void push(uint32_t pixel);
-  uint32_t pop();
+  [[nodiscard]] uint32_t pop();
 
-  bool isEmpty() const;
-  bool isFull() const;
-  size_t size() const;
+  [[nodiscard]] bool isEmpty() const;
+  [[nodiscard]] bool isFull() const;
+  [[nodiscard]] size_t size() const;
 
   void reset();
 
-  const std::array<uint32_t, FIFO_CAPACITY> &getBuffer() const;
-  size_t getHead() const;
-  size_t getTail() const;
-  size_t getCount() const;
+  [[nodiscard]] const std::array<uint32_t, FIFO_CAPACITY> &getBuffer() const;
+  [[nodiscard]] size_t getHead() const;
+  [[nodiscard]] size_t getTail() const;
+  [[nodiscard]] size_t getCount() const;
   void setState(const std::array<uint32_t, FIFO_CAPACITY> &newBuffer,
                 size_t newHead, size_t newTail, size_t newCount);
 };

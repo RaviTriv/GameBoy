@@ -37,7 +37,7 @@ public:
   virtual void reset() = 0;
   virtual bool timerAction() = 0;
   virtual bool lengthTimerAction() = 0;
-  virtual uint8_t getSample() const = 0;
+  [[nodiscard]] virtual uint8_t getSample() const = 0;
 };
 
 class SquareChannel : public Channel
@@ -61,7 +61,7 @@ public:
   bool lengthTimerAction() override;
   void envelopeAction();
   void dutyAction();
-  uint8_t getSample() const override;
+  [[nodiscard]] uint8_t getSample() const override;
 };
 
 class WaveChannel : public Channel
@@ -69,16 +69,16 @@ class WaveChannel : public Channel
 private:
   friend class APU;
   uint8_t sample = 0;
-  static constexpr uint16_t MAX_LENGTH = 256;     
-  static constexpr uint8_t DAC_ENABLE_BIT = 0x80; 
-  static constexpr uint8_t DAC_ENABLE_SHIFT = 7;  
-  static constexpr uint8_t WAVE_SAMPLE_COUNT = 32; 
+  static constexpr uint16_t MAX_LENGTH = 256;
+  static constexpr uint8_t DAC_ENABLE_BIT = 0x80;
+  static constexpr uint8_t DAC_ENABLE_SHIFT = 7;
+  static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
 public:
   void reset() override;
   bool timerAction() override;
   bool lengthTimerAction() override;
-  uint8_t getSample() const override;
-  uint8_t getSample(uint8_t s) const;
+  [[nodiscard]] uint8_t getSample() const override;
+  [[nodiscard]] uint8_t getSample(uint8_t s) const;
 };
 
 class NoiseChannel : public Channel
@@ -109,5 +109,5 @@ public:
   bool timerAction() override;
   bool lengthTimerAction() override;
   void envelopeAction();
-  uint8_t getSample() const override;
+  [[nodiscard]] uint8_t getSample() const override;
 };

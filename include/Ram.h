@@ -12,11 +12,11 @@ public:
     std::array<uint8_t, 0x80> hram = {};
   };
 
-  uint8_t readWRAM(uint16_t address) const;
+  [[nodiscard]] uint8_t readWRAM(uint16_t address) const;
   void writeWRAM(uint16_t address, uint8_t value);
-  uint8_t readHRAM(uint16_t address) const;
+  [[nodiscard]] uint8_t readHRAM(uint16_t address) const;
   void writeHRAM(uint16_t address, uint8_t value);
-  RAM::State getState() const;
+  [[nodiscard]] RAM::State getState() const;
   void setState(const State &state);
 
 private:

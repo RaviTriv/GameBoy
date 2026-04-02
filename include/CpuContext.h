@@ -40,25 +40,25 @@ public:
 
   void cycle(int cycles) { cycleCallback(cycleCallbackCtx, cycles); }
 
-  uint8_t readRegister8(RegisterType reg) const;
-  uint16_t readRegister16(RegisterType reg) const;
+  [[nodiscard]] uint8_t readRegister8(RegisterType reg) const;
+  [[nodiscard]] uint16_t readRegister16(RegisterType reg) const;
   void setRegister8(RegisterType reg, uint8_t value);
   void setRegister16(RegisterType reg, uint16_t value);
 
   void stackPush8(uint8_t value);
   void stackPush16(uint16_t value);
-  uint8_t stackPop8();
-  uint16_t stackPop16();
+  [[nodiscard]] uint8_t stackPop8();
+  [[nodiscard]] uint16_t stackPop16();
 
   void setFlags(int z, int n, int h, int c);
-  bool is16Bit(RegisterType reg) const;
-  int FLAG_Z() const;
-  int FLAG_N() const;
-  int FLAG_H() const;
-  int FLAG_C() const;
+  [[nodiscard]] bool is16Bit(RegisterType reg) const;
+  [[nodiscard]] int FLAG_Z() const;
+  [[nodiscard]] int FLAG_N() const;
+  [[nodiscard]] int FLAG_H() const;
+  [[nodiscard]] int FLAG_C() const;
 
-  RegisterType decodeRegister(uint8_t value);
-  bool conditionCheck() const;
+  [[nodiscard]] RegisterType decodeRegister(uint8_t value);
+  [[nodiscard]] bool conditionCheck() const;
   void jumpToAddress(uint16_t addr, bool pushPC);
 
 private:

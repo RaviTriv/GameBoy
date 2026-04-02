@@ -56,9 +56,9 @@ public:
     std::unique_ptr<RomHeader> header;
   };
   Cartridge(std::string_view romPath);
-  uint8_t read(uint16_t address) const;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
-  std::string getTitle() const;
+  [[nodiscard]] std::string getTitle() const;
 
 private:
   State state;
@@ -67,8 +67,8 @@ private:
 
   void loadCartridge(std::string_view romPath);
 
-  int getRomBanksCount(uint8_t type) const;
-  static std::string cartridgeType(CartridgeType type);
+  [[nodiscard]] int getRomBanksCount(uint8_t type) const;
+  [[nodiscard]] static std::string cartridgeType(CartridgeType type);
 
   void outputCartridgeInfo();
 };

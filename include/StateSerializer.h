@@ -11,8 +11,8 @@ class StateSerializer
 {
 public:
   StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd);
-  bool saveState(const std::string &title);
-  bool loadState(const std::string &title);
+  [[nodiscard]] bool saveState(const std::string &title);
+  [[nodiscard]] bool loadState(const std::string &title);
 
 private:
   CPU &cpu;

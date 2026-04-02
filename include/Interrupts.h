@@ -20,7 +20,7 @@ public:
   void requestInterrupt(InterruptType type);
   void handleInterrupts();
   void setInterruptEnable(uint8_t value);
-  uint8_t getInterruptEnable() const;
+  [[nodiscard]] uint8_t getInterruptEnable() const;
 
 private:
   CpuContext *ctx;

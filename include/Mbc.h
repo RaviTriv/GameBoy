@@ -7,7 +7,7 @@ class MBC
 {
 public:
   virtual ~MBC() = default;
-  virtual uint8_t read(uint16_t address) const = 0;
+  [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
   MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {};
   MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
@@ -31,7 +31,7 @@ class MBC0 : public MBC
 public:
   MBC0(std::vector<uint8_t> &rom)
       : MBC(rom) {}
-  uint8_t read(uint16_t address) const override;
+  [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
@@ -48,7 +48,7 @@ public:
        uint16_t romBanks, uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
-  uint8_t read(uint16_t address) const override;
+  [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
@@ -65,7 +65,7 @@ public:
        uint16_t romBanks, uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
-  uint8_t read(uint16_t address) const override;
+  [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
@@ -82,6 +82,6 @@ public:
        uint16_t romBanks, uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
-  uint8_t read(uint16_t address) const override;
+  [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };

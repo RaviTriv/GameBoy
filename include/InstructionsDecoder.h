@@ -17,7 +17,7 @@ private:
   using AddressModeHandler = void (InstructionsDecoder::*)();
   static AddressModeHandler addressModeHandlers[];
 
-  static const Instruction &getInstruction(uint8_t opcode);
+  [[nodiscard]] static const Instruction &getInstruction(uint8_t opcode);
   void imp();
   void r();
   void r_r();

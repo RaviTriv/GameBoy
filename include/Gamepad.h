@@ -6,14 +6,14 @@
 class Gamepad
 {
 public:
-  bool isBPressed() const;
-  bool isAPressed() const;
-  bool isStartPressed() const;
-  bool isSelectPressed() const;
-  bool isUpPressed() const;
-  bool isDownPressed() const;
-  bool isLeftPressed() const;
-  bool isRightPressed() const;
+  [[nodiscard]] bool isBPressed() const;
+  [[nodiscard]] bool isAPressed() const;
+  [[nodiscard]] bool isStartPressed() const;
+  [[nodiscard]] bool isSelectPressed() const;
+  [[nodiscard]] bool isUpPressed() const;
+  [[nodiscard]] bool isDownPressed() const;
+  [[nodiscard]] bool isLeftPressed() const;
+  [[nodiscard]] bool isRightPressed() const;
 
   void setBPressed(bool pressed);
   void setAPressed(bool pressed);
@@ -24,10 +24,10 @@ public:
   void setLeftPressed(bool pressed);
   void setRightPressed(bool pressed);
 
-  bool actionSel() const;
-  bool directionSel() const;
+  [[nodiscard]] bool actionSel() const;
+  [[nodiscard]] bool directionSel() const;
   void setSel(uint8_t value);
-  uint8_t getOutput() const;
+  [[nodiscard]] uint8_t getOutput() const;
 
 private:
   std::atomic<uint8_t> buttons{0};

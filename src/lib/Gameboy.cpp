@@ -82,7 +82,10 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
 
 void GameBoy::saveState()
 {
-  stateSerializer->saveState(cartridge->getTitle());
+  if (!stateSerializer->saveState(cartridge->getTitle()))
+  {
+    Logger::GetLogger()->error("Failed to save state for: {}", cartridge->getTitle());
+  }
 }
 
 void GameBoy::run()
@@ -92,7 +95,10 @@ void GameBoy::run()
 
   if (loadSave)
   {
-    stateSerializer->loadState(cartridge->getTitle());
+    if (!stateSerializer->loadState(cartridge->getTitle()))
+    {
+      Logger::GetLogger()->error("Failed to load save state for: {}", cartridge->getTitle());
+    }
   }
 
   cpuThread = std::thread(&GameBoy::cpuLoop, this);

@@ -34,12 +34,12 @@ public:
   void step();
   void setBus(Bus *bus);
   void requestInterrupt(InterruptType type) override;
-  uint8_t getInterruptEnable() const;
+  [[nodiscard]] uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
-  uint8_t getInterruptFlags() const;
-  InterruptRegs getInterruptRegs();
+  [[nodiscard]] uint8_t getInterruptFlags() const;
+  [[nodiscard]] InterruptRegs getInterruptRegs();
   void setInterruptFlags(uint8_t value);
-  CPU::State getState() const;
+  [[nodiscard]] CPU::State getState() const;
   void setState(const State &state);
 
 private:

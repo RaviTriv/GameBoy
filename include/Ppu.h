@@ -31,29 +31,29 @@ public:
   PPU(InterruptSink &interruptSink);
   void init();
   void tick();
-  uint32_t getCurrentFrame() const;
+  [[nodiscard]] uint32_t getCurrentFrame() const;
   void setCurrentFrame(uint32_t frame);
   void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer);
 
   void oamWrite(uint16_t addr, uint8_t value);
-  uint8_t oamRead(uint16_t addr) const;
-  uint8_t vramRead(uint16_t address) const;
+  [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
+  [[nodiscard]] uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 
   void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
   void setLcd(LCD *lcd) { this->lcd = lcd; }
   void setGetTicks(std::function<uint32_t()> fn) { this->getTicksFn = std::move(fn); }
   void setDelay(std::function<void(uint32_t)> fn) { this->delayFn = std::move(fn); }
-  const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
+  [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
 
-  PPU::State getState() const;
+  [[nodiscard]] PPU::State getState() const;
   void setState(const State &state);
 
-  Pipeline::State getPipelineState() const;
-  Pipeline* getPipeline() { return &pipeline; }
+  [[nodiscard]] Pipeline::State getPipelineState() const;
+  [[nodiscard]] Pipeline* getPipeline() { return &pipeline; }
   void setPipelineState(const Pipeline::State &state);
   void setFastForward(bool fastForward);
-  bool isFastForward() const;
+  [[nodiscard]] bool isFastForward() const;
 
 private:
   State state;

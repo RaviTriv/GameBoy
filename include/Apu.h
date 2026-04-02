@@ -30,8 +30,8 @@ class APU
 
 public:
   void write(uint16_t address, uint8_t value);
-  uint8_t read(uint16_t address) const;
-  uint8_t getSample();
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  [[nodiscard]] uint8_t getSample();
 
   static constexpr int audioFreq = 44100;
 
@@ -47,10 +47,10 @@ private:
 
   void frameSequencerAction();
 
-  uint8_t getChannel1Sample();
-  uint8_t getChannel2Sample();
-  uint8_t getChannel3Sample();
-  uint8_t getChannel4Sample();
+  [[nodiscard]] uint8_t getChannel1Sample();
+  [[nodiscard]] uint8_t getChannel2Sample();
+  [[nodiscard]] uint8_t getChannel3Sample();
+  [[nodiscard]] uint8_t getChannel4Sample();
 
   static constexpr uint16_t NR10_REGISTER = 0xFF10;
   static constexpr uint16_t NR11_REGISTER = 0xFF11;
