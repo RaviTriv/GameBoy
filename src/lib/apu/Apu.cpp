@@ -4,7 +4,6 @@
 
 uint8_t APU::read(uint16_t address) const
 {
-  std::lock_guard<std::mutex> lock(mutex);
   switch (address)
   {
   case NR10_REGISTER:
@@ -88,7 +87,6 @@ uint8_t APU::read(uint16_t address) const
 
 void APU::write(uint16_t address, uint8_t value)
 {
-  std::lock_guard<std::mutex> lock(mutex);
   switch (address)
   {
   case NR10_REGISTER:
@@ -344,9 +342,8 @@ uint8_t APU::getChannel4Sample()
   return state.channel4.getSample();
 }
 
-uint8_t APU::getSample()
+uint8_t APU::mixSample()
 {
-  std::lock_guard<std::mutex> lock(mutex);
   uint8_t ch1Sample = 0;
   uint8_t ch2Sample = 0;
   uint8_t ch3Sample = 0;
@@ -362,4 +359,20 @@ uint8_t APU::getSample()
   }
 
   return ch1Sample + ch2Sample + ch3Sample + ch4Sample;
+}
+
+void APU::tick()
+{
+  sampleTimer++;
+  if (sampleTimer >= CPU_CYCLES_PER_SAMPLE)
+  {
+    sampleTimer = 0;
+    uint8_t sample = mixSample();
+    sampleQueue.push(sample);
+  }
+}
+
+std::size_t APU::popSamples(uint8_t *out, std::size_t count)
+{
+  return sampleQueue.pop_n(out, count);
 }

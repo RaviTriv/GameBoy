@@ -135,6 +135,7 @@ void GameBoy::cycle(int cycles)
       state.ticks++;
       timer->tick();
       ppu->tick();
+      apu->tick();
     }
     dma->tick();
   }

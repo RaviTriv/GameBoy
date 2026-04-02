@@ -1,10 +1,10 @@
 #pragma once
 
 #include "./Channel.h"
+#include "spsc_queue.hpp"
 
 #include <array>
 #include <cstdint>
-#include <mutex>
 
 class APU
 {
@@ -31,21 +31,28 @@ class APU
 public:
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
-  [[nodiscard]] uint8_t getSample();
+
+  void tick();
+
+  std::size_t popSamples(uint8_t *out, std::size_t count);
 
   static constexpr int audioFreq = 44100;
 
 private:
   State state;
-  mutable std::mutex mutex;
+  spsc::Queue<uint8_t, 8192> sampleQueue;
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;
   bool triggerLength = false;
   bool triggerEnvelope = false;
   bool triggerSweep = false;
+  uint32_t sampleTimer = 0;
+  static constexpr uint32_t CPU_CLOCK_HZ = 4194304;
+  static constexpr uint32_t CPU_CYCLES_PER_SAMPLE = CPU_CLOCK_HZ / audioFreq;
 
   void frameSequencerAction();
+  [[nodiscard]] uint8_t mixSample();
 
   [[nodiscard]] uint8_t getChannel1Sample();
   [[nodiscard]] uint8_t getChannel2Sample();

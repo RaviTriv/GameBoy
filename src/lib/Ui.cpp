@@ -29,19 +29,30 @@ void UI::init()
 
 void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amount, int _length)
 {
-  uint8_t *stream = (uint8_t *)_stream;
   UI *ui = (UI *)_sound;
-  int length = _length / sizeof(stream[0]);
+
+  std::size_t monoSamples = _length / 2;
+
+  uint8_t *monoBuffer = SDL_stack_alloc(uint8_t, monoSamples);
+  std::size_t popped = ui->apu.popSamples(monoBuffer, monoSamples);
 
   uint8_t *data = SDL_stack_alloc(uint8_t, _length);
-  for (int i = 0; i < _length; i += 2)
+  std::size_t i = 0;
+  for (; i < popped; i++)
   {
-    uint8_t sample = ui->apu.getSample();
-    data[i] = sample;
-    data[i + 1] = sample;
+    data[i * 2] = monoBuffer[i];
+    data[i * 2 + 1] = monoBuffer[i];
   }
+
+  for (; i < monoSamples; i++)
+  {
+    data[i * 2] = 0;
+    data[i * 2 + 1] = 0;
+  }
+
   SDL_PutAudioStreamData(_stream, data, _length);
   SDL_stack_free(data);
+  SDL_stack_free(monoBuffer);
 }
 
 void UI::update()
