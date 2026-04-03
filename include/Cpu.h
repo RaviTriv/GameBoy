@@ -7,7 +7,7 @@
 #include "InterruptSink.h"
 
 #include <cstdint>
-#include <string>
+#include <stdexcept>
 
 class Bus;
 class CPU : public InterruptSink {

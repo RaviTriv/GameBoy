@@ -31,8 +31,15 @@ constexpr uint16_t HRAM_END = 0xFFFE;
 constexpr uint16_t IE_REGISTER = 0xFFFF;
 
 constexpr uint8_t NIBBLE_MASK = 0xF;
+constexpr uint8_t HIGH_NIBBLE_MASK = 0xF0;
 constexpr uint8_t BYTE_MASK = 0xFF;
 constexpr uint8_t BYTE_BITS = 8;
+constexpr uint8_t BIT7_MASK = 0x80;
+constexpr uint8_t BIT0_MASK = 0x01;
+constexpr uint16_t WORD_MASK = 0xFFFF;
+constexpr uint32_t HALF_CARRY_16_MASK = 0xFFF;
+constexpr uint32_t HALF_CARRY_16_THRESHOLD = 0x1000;
+constexpr uint32_t CARRY_16_THRESHOLD = 0x10000;
 
 constexpr uint16_t JOYPAD_REGISTER = 0xFF00;
 
