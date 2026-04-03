@@ -54,10 +54,6 @@ private:
   void frameSequencerAction();
   [[nodiscard]] uint8_t mixSample();
 
-  void tickChannel1();
-  void tickChannel2();
-  void tickChannel3();
-  void tickChannel4();
   [[nodiscard]] uint8_t getChannel3CurrentSample();
 
   static constexpr uint16_t NR10_REGISTER = 0xFF10;
