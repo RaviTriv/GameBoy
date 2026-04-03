@@ -46,37 +46,10 @@ uint8_t APU::read(uint16_t address) const {
     return state.registers.NR51;
   case NR52_REGISTER:
     return state.registers.NR52 | (state.enabled ? ENABLE_BIT : 0x00);
-  case WAVE_RAM_START + 1:
-    return state.wavePattern[1];
-  case WAVE_RAM_START + 2:
-    return state.wavePattern[2];
-  case WAVE_RAM_START + 3:
-    return state.wavePattern[3];
-  case WAVE_RAM_START + 4:
-    return state.wavePattern[4];
-  case WAVE_RAM_START + 5:
-    return state.wavePattern[5];
-  case WAVE_RAM_START + 6:
-    return state.wavePattern[6];
-  case WAVE_RAM_START + 7:
-    return state.wavePattern[7];
-  case WAVE_RAM_START + 8:
-    return state.wavePattern[8];
-  case WAVE_RAM_START + 9:
-    return state.wavePattern[9];
-  case WAVE_RAM_START + 10:
-    return state.wavePattern[10];
-  case WAVE_RAM_START + 11:
-    return state.wavePattern[11];
-  case WAVE_RAM_START + 12:
-    return state.wavePattern[12];
-  case WAVE_RAM_START + 13:
-    return state.wavePattern[13];
-  case WAVE_RAM_START + 14:
-    return state.wavePattern[14];
-  case WAVE_RAM_START + 15:
-    return state.wavePattern[15];
   default:
+    if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
+      return state.wavePattern[address - WAVE_RAM_START];
+    }
     throw std::runtime_error("Invalid APU read");
     break;
   }
@@ -153,58 +126,13 @@ void APU::write(uint16_t address, uint8_t value) {
       state.channel2 = {};
       state.channel3 = {};
       state.channel4 = {};
-      state.wavePattern.fill(0);
     }
     break;
-  case WAVE_RAM_START:
-    state.wavePattern[0] = value;
-    break;
-  case WAVE_RAM_START + 1:
-    state.wavePattern[1] = value;
-    break;
-  case WAVE_RAM_START + 2:
-    state.wavePattern[2] = value;
-    break;
-  case WAVE_RAM_START + 3:
-    state.wavePattern[3] = value;
-    break;
-  case WAVE_RAM_START + 4:
-    state.wavePattern[4] = value;
-    break;
-  case WAVE_RAM_START + 5:
-    state.wavePattern[5] = value;
-    break;
-  case WAVE_RAM_START + 6:
-    state.wavePattern[6] = value;
-    break;
-  case WAVE_RAM_START + 7:
-    state.wavePattern[7] = value;
-    break;
-  case WAVE_RAM_START + 8:
-    state.wavePattern[8] = value;
-    break;
-  case WAVE_RAM_START + 9:
-    state.wavePattern[9] = value;
-    break;
-  case WAVE_RAM_START + 10:
-    state.wavePattern[10] = value;
-    break;
-  case WAVE_RAM_START + 11:
-    state.wavePattern[11] = value;
-    break;
-  case WAVE_RAM_START + 12:
-    state.wavePattern[12] = value;
-    break;
-  case WAVE_RAM_START + 13:
-    state.wavePattern[13] = value;
-    break;
-  case WAVE_RAM_START + 14:
-    state.wavePattern[14] = value;
-    break;
-  case WAVE_RAM_START + 15:
-    state.wavePattern[15] = value;
-    break;
   default:
+    if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
+      state.wavePattern[address - WAVE_RAM_START] = value;
+      break;
+    }
     throw std::runtime_error("Invalid APU write");
     break;
   };

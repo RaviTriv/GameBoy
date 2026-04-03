@@ -60,9 +60,9 @@ uint8_t SquareChannel::getSample() const
   return sample * envelopeVolume * enabled;
 }
 
-void SquareChannel::envelopeAction()
+void Channel::envelopeAction()
 {
-  if (triggerEnvelope && envelopeEnabled && nrx2 & ENVELOPE_PERIOD_MASK)
+  if (triggerEnvelope && envelopeEnabled && (nrx2 & ENVELOPE_PERIOD_MASK))
   {
     envelopeTimer--;
     if (envelopeTimer <= 0)
@@ -238,7 +238,7 @@ void NoiseChannel::reset()
 
 bool NoiseChannel::lengthTimerAction()
 {
-  if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && triggerLength)
+  if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer)
   {
     lengthTimer--;
     if (lengthTimer <= 0)
@@ -247,28 +247,6 @@ bool NoiseChannel::lengthTimerAction()
     }
   }
   return true;
-}
-
-void NoiseChannel::envelopeAction()
-{
-  if (triggerEnvelope && envelopeEnabled && nrx2 & ENVELOPE_PERIOD_MASK)
-  {
-    envelopeTimer--;
-    if (envelopeTimer <= 0)
-    {
-      envelopeTimer = nrx2 & ENVELOPE_PERIOD_MASK;
-      int direction = (nrx2 & ENVELOPE_DIRECTION_BIT) ? 1 : -1;
-      int new_volume = envelopeVolume + direction;
-      if (new_volume >= 0 && new_volume <= MAX_VOLUME)
-      {
-        envelopeVolume = new_volume;
-      }
-      else
-      {
-        envelopeEnabled = false;
-      }
-    }
-  }
 }
 
 uint8_t NoiseChannel::getSample() const
