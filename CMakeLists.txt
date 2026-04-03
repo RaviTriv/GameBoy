@@ -17,6 +17,7 @@ add_executable(gameboy
     src/lib/cartridge/Mbc.cpp
     src/lib/cpu/Cpu.cpp
     src/lib/Gameboy.cpp
+    src/lib/FramePacer.cpp
     src/lib/Gamepad.cpp
     src/lib/Io.cpp
     src/lib/ppu/Dma.cpp

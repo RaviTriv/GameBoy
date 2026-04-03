@@ -86,14 +86,14 @@ uint8_t PPU::vramRead(uint16_t address) const
 
 void PPU::incrementLY()
 {
-  if (pipeline.isWindowVisible() && lcd->state.ly >= lcd->state.windowY && lcd->state.ly < lcd->state.windowY + YRES)
+  if (pipeline.isWindowVisible() && lcd->getLy() >= lcd->getWindowY() && lcd->getLy() < lcd->getWindowY() + YRES)
   {
     state.windowLine++;
   }
 
-  lcd->state.ly++;
+  lcd->incrementLy();
 
-  if (lcd->state.ly == lcd->state.lyCompare)
+  if (lcd->getLy() == lcd->getLyCompare())
   {
     lcd->setLycFlag(1);
 
@@ -110,7 +110,7 @@ void PPU::incrementLY()
 
 void PPU::loadLineSprites()
 {
-  int curY = lcd->state.ly;
+  int curY = lcd->getLy();
 
   uint8_t spriteHeight = lcd->getObjHeight();
 
@@ -145,11 +145,11 @@ void PPU::loadLineSprites()
 
 void PPU::buildScanlineContext()
 {
-  state.scanlineCtx.scrollX = lcd->state.scrollX;
-  state.scanlineCtx.scrollY = lcd->state.scrollY;
-  state.scanlineCtx.ly = lcd->state.ly;
-  state.scanlineCtx.windowX = lcd->state.windowX;
-  state.scanlineCtx.windowY = lcd->state.windowY;
+  state.scanlineCtx.scrollX = lcd->getScrollX();
+  state.scanlineCtx.scrollY = lcd->getScrollY();
+  state.scanlineCtx.ly = lcd->getLy();
+  state.scanlineCtx.windowX = lcd->getWindowX();
+  state.scanlineCtx.windowY = lcd->getWindowY();
   state.scanlineCtx.windowLine = state.windowLine;
   state.scanlineCtx.bgWindowEnabled = lcd->isBgWindowEnabled();
   state.scanlineCtx.objEnabled = lcd->isObjEnabled();
@@ -158,9 +158,9 @@ void PPU::buildScanlineContext()
   state.scanlineCtx.bgMapArea = lcd->getBgMapArea();
   state.scanlineCtx.bgWinDataArea = lcd->getBgWindowDataArea();
   state.scanlineCtx.winMapArea = lcd->getWindowMapArea();
-  state.scanlineCtx.bgColors = lcd->state.bgColors;
-  state.scanlineCtx.ob1Colors = lcd->state.ob1Colors;
-  state.scanlineCtx.ob2Colors = lcd->state.ob2Colors;
+  state.scanlineCtx.bgColors = lcd->getBgColors();
+  state.scanlineCtx.ob1Colors = lcd->getOb1Colors();
+  state.scanlineCtx.ob2Colors = lcd->getOb2Colors();
   state.scanlineCtx.sprites = state.currentLineSprites.data();
   state.scanlineCtx.spriteCount = state.lineSpritesCount;
   state.scanlineCtx.lineTicks = &state.lineTicks;
@@ -193,7 +193,7 @@ void PPU::drawingMode()
     pipeline.reset();
     lcd->setLcdMode(LCD::MODE::HBLANK);
 
-    if (lcd->state.lcds & (static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
+    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
     {
       interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
@@ -206,7 +206,7 @@ void PPU::hBlankMode()
   {
     incrementLY();
 
-    if (lcd->state.ly >= YRES)
+    if (lcd->getLy() >= YRES)
     {
       lcd->setLcdMode(LCD::MODE::VBLANK);
 
@@ -221,23 +221,6 @@ void PPU::hBlankMode()
       readBufferIndex.store(
           1 - readBufferIndex.load(std::memory_order_relaxed),
           std::memory_order_release);
-      if (!fastForward.load(std::memory_order_relaxed))
-      {
-        uint32_t end = getTicksFn();
-        uint32_t frameTime = end - prevFrameTime;
-        if (frameTime < targetFrameTime)
-        {
-          delayFn((targetFrameTime - frameTime));
-        }
-        if (end - startTimer >= 1000)
-        {
-          startTimer = end;
-          frameCount = 0;
-        }
-
-        frameCount++;
-        prevFrameTime = getTicksFn();
-      }
     }
     else
     {
@@ -254,10 +237,10 @@ void PPU::vBlankMode()
   {
     incrementLY();
 
-    if (lcd->state.ly >= LINES_PER_FRAME)
+    if (lcd->getLy() >= LINES_PER_FRAME)
     {
       lcd->setLcdMode(LCD::MODE::OAM);
-      lcd->state.ly = 0;
+      lcd->setLy(0);
       state.windowLine = 0;
     }
     state.lineTicks = 0;
@@ -296,20 +279,10 @@ void PPU::setState(const State &state)
 
 Pipeline::State PPU::getPipelineState() const
 {
-  return pipeline.state;
+  return pipeline.getState();
 }
 
 void PPU::setPipelineState(const Pipeline::State &state)
 {
-  pipeline.state = state;
+  pipeline.setState(state);
 };
-
-void PPU::setFastForward(bool ff)
-{
-  fastForward.store(ff, std::memory_order_relaxed);
-}
-
-bool PPU::isFastForward() const
-{
-  return fastForward.load(std::memory_order_relaxed);
-}

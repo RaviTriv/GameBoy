@@ -18,12 +18,14 @@ class UI
 public:
   using CloseCallback = std::function<void()>;
   using SaveStateCallback = std::function<void()>;
+  using ToggleFastForwardCallback = std::function<void()>;
   UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu, Gamepad &gamepad, APU &apu);
   void init();
   void handleEvents();
   void update();
   uint32_t getTicks() const;
   void delay(uint32_t ms);
+  void setToggleFastForward(ToggleFastForwardCallback fn);
   ~UI();
   APU &apu;
 
@@ -39,6 +41,7 @@ private:
   SDL_Texture *sdlTexture;
   CloseCallback onClose;
   SaveStateCallback onSaveState;
+  ToggleFastForwardCallback onToggleFastForward;
 
   void onKey(bool isDown, SDL_Keycode keyCode);
 };

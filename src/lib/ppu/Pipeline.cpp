@@ -332,10 +332,7 @@ bool Pipeline::isWindowVisible() const
 
 void Pipeline::reset()
 {
-  while (!pixelFifo.isEmpty())
-  {
-    pixelFifo.pop();
-  }
+  pixelFifo.reset();
 }
 
 void Pipeline::oamReset()

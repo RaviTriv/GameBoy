@@ -119,9 +119,9 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode)
     }
     break;
   case SDLK_F:
-    if (isDown)
+    if (isDown && onToggleFastForward)
     {
-      ppu.setFastForward(!ppu.isFastForward());
+      onToggleFastForward();
     }
     break;
   }
@@ -152,6 +152,11 @@ void UI::handleEvents()
 void UI::delay(uint32_t ms)
 {
   SDL_Delay(ms);
+}
+
+void UI::setToggleFastForward(ToggleFastForwardCallback fn)
+{
+  onToggleFastForward = std::move(fn);
 }
 
 uint32_t UI::getTicks() const

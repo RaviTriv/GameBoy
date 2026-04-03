@@ -12,6 +12,7 @@ class Bus;
 class Cartridge;
 class CPU;
 class DMA;
+class FramePacer;
 class IO;
 class LCD;
 class PPU;
@@ -51,6 +52,7 @@ private:
   std::unique_ptr<Gamepad> gamepad;
   std::unique_ptr<UI> ui;
   std::unique_ptr<StateSerializer> stateSerializer;
+  std::unique_ptr<FramePacer> framePacer;
 
   std::thread cpuThread;
   void cpuLoop();

@@ -6,8 +6,7 @@
 
 class LCD
 {
-  friend class PPU;
-  friend class Pipeline;
+public:
   enum PaletteType
   {
     BGP = 0,
@@ -15,7 +14,7 @@ class LCD
     OBP1 = 2
   };
 
-   enum MODE
+  enum MODE
   {
     HBLANK,
     VBLANK,
@@ -31,7 +30,6 @@ class LCD
     S_LYC = (1 << 6),
   };
 
-public:
   union PaletteRegister
   {
     struct
@@ -88,6 +86,19 @@ public:
   void setLycFlag(bool value);
   [[nodiscard]] LCD::State getState() const;
   void setState(const State &state);
+
+  [[nodiscard]] uint8_t getLy() const;
+  void setLy(uint8_t value);
+  void incrementLy();
+  [[nodiscard]] uint8_t getLyCompare() const;
+  [[nodiscard]] uint8_t getScrollX() const;
+  [[nodiscard]] uint8_t getScrollY() const;
+  [[nodiscard]] uint8_t getWindowX() const;
+  [[nodiscard]] uint8_t getWindowY() const;
+  [[nodiscard]] const std::array<uint32_t, 4> &getBgColors() const;
+  [[nodiscard]] const std::array<uint32_t, 4> &getOb1Colors() const;
+  [[nodiscard]] const std::array<uint32_t, 4> &getOb2Colors() const;
+  [[nodiscard]] uint8_t getLcds() const;
 
 private:
   State state;

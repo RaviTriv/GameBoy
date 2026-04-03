@@ -48,12 +48,14 @@ public:
   void reset();
   void oamReset();
   [[nodiscard]] bool isWindowVisible() const;
-  State state;
+  [[nodiscard]] const State &getState() const { return state; }
+  void setState(const State &s) { state = s; }
   [[nodiscard]] const PixelFifo *getPixelFifo() const { return &pixelFifo; }
   [[nodiscard]] PixelFifo *getPixelFifo() { return &pixelFifo; }
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
 private:
+  State state;
   ReadFn readFn;
   WritePixelFn writePixelFn;
   const ScanlineContext *ctx = nullptr;

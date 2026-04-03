@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "Cpu.h"
 #include "Dma.h"
+#include "FramePacer.h"
 #include "Io.h"
 #include "Lcd.h"
 #include "Ppu.h"
@@ -68,16 +69,17 @@ void GameBoy::init(std::string romPath, bool trace, bool loadSave, bool fastForw
   dma->setMemRead(*bus);
   ppu->setMemRead(*bus);
   ppu->setLcd(lcd.get());
-  ppu->setGetTicks([this]()
-                    { return ui->getTicks(); });
-  ppu->setDelay([this](uint32_t ms)
-                { ui->delay(ms); });
+  framePacer = std::make_unique<FramePacer>(
+      [this]() { return ui->getTicks(); },
+      [this](uint32_t ms) { ui->delay(ms); });
+  framePacer->setFastForward(fastForward);
+  ui->setToggleFastForward([this]()
+                           { framePacer->setFastForward(!framePacer->isFastForward()); });
   stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
   state.isRunning.store(true);
   this->trace = trace;
   this->loadSave = loadSave;
   this->fastForward = fastForward;
-  ppu->setFastForward(fastForward);
 }
 
 void GameBoy::saveState()
@@ -134,7 +136,12 @@ void GameBoy::cycle(int cycles)
     {
       state.ticks++;
       timer->tick();
+      uint32_t prevFrame = ppu->getCurrentFrame();
       ppu->tick();
+      if (prevFrame != ppu->getCurrentFrame())
+      {
+        framePacer->onFrameComplete();
+      }
       apu->tick();
     }
     dma->tick();
@@ -143,13 +150,13 @@ void GameBoy::cycle(int cycles)
 
 void GameBoy::displayBootArt()
 {
-  std::cout << R"(              
-    __ _  __ _ _ __ ___   ___| |__   ___  _   _ 
+  std::cout << R"(
+    __ _  __ _ _ __ ___   ___| |__   ___  _   _
   / _` |/ _` | '_ ` _ \ / _ \ '_ \ / _ \| | | |
   | (_| | (_| | | | | | |  __/ |_) | (_) | |_| |
   \__, |\__,_|_| |_| |_|\___|_.__/ \___/ \__, |
     __/ |                                  __/ |
-  |___/                                  |___/ 
+  |___/                                  |___/
   ⠀⠀⠀⠀⠀⠀⠀⢠⣤⣀⠀⠀⠀⠀⢀⣀⣤⣤⠀⠀⠀⠀⠀⠀⠀           ⢀⣠⣤⣤⣤⣤⣀⠀
   ⠀⠀⢀⢀⠀⠀⠀⢸⡿⠛⠛⠛⠛⠛⠉⠛⢿⣿⠀⠀⠀⠀⠀⠀⠀         ⣠⠞⠉⡟⡱⠔⠝⡆⠈⠳⣄
   ⠀⠠⣿⣿⣿⣄⠀⣼⠀⠀⠀⢂⣀⣀⡀⠀⠀⢹⡀⠀⠀⠀⠀⠀⠀ ⣀⣀⢰⠛⢦⠀⣰⠏⢀⡤⣓⣫⠭⣭⣗⠦⣄⢹⣆⠀⠀

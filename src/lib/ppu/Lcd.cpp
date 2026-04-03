@@ -215,3 +215,63 @@ void LCD::setState(const State &state)
 {
   this->state = state;
 }
+
+uint8_t LCD::getLy() const
+{
+  return state.ly;
+}
+
+void LCD::setLy(uint8_t value)
+{
+  state.ly = value;
+}
+
+void LCD::incrementLy()
+{
+  state.ly++;
+}
+
+uint8_t LCD::getLyCompare() const
+{
+  return state.lyCompare;
+}
+
+uint8_t LCD::getScrollX() const
+{
+  return state.scrollX;
+}
+
+uint8_t LCD::getScrollY() const
+{
+  return state.scrollY;
+}
+
+uint8_t LCD::getWindowX() const
+{
+  return state.windowX;
+}
+
+uint8_t LCD::getWindowY() const
+{
+  return state.windowY;
+}
+
+const std::array<uint32_t, 4> &LCD::getBgColors() const
+{
+  return state.bgColors;
+}
+
+const std::array<uint32_t, 4> &LCD::getOb1Colors() const
+{
+  return state.ob1Colors;
+}
+
+const std::array<uint32_t, 4> &LCD::getOb2Colors() const
+{
+  return state.ob2Colors;
+}
+
+uint8_t LCD::getLcds() const
+{
+  return state.lcds;
+}

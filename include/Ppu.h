@@ -8,7 +8,6 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
-#include <functional>
 
 class IMemRead;
 class InterruptSink;
@@ -43,8 +42,6 @@ public:
 
   void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
   void setLcd(LCD *lcd) { this->lcd = lcd; }
-  void setGetTicks(std::function<uint32_t()> fn) { this->getTicksFn = std::move(fn); }
-  void setDelay(std::function<void(uint32_t)> fn) { this->delayFn = std::move(fn); }
   [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
 
   [[nodiscard]] PPU::State getState() const;
@@ -53,8 +50,6 @@ public:
   [[nodiscard]] Pipeline::State getPipelineState() const;
   [[nodiscard]] Pipeline* getPipeline() { return &pipeline; }
   void setPipelineState(const Pipeline::State &state);
-  void setFastForward(bool fastForward);
-  [[nodiscard]] bool isFastForward() const;
 
 private:
   State state;
@@ -62,25 +57,16 @@ private:
   IMemRead *memRead = nullptr;
   LCD *lcd = nullptr;
   Pipeline pipeline;
-  std::atomic<bool> fastForward{false};
   std::atomic<uint32_t> currentFrame{0};
 
   std::array<uint32_t, BUFFER_SIZE> videoBuffers[2]{};
   std::atomic<int> readBufferIndex{0};
   std::array<uint32_t, BUFFER_SIZE> &getWriteBuffer();
 
-  std::function<uint32_t()> getTicksFn;
-  std::function<void(uint32_t)> delayFn;
-
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
-
-  uint32_t targetFrameTime = 1000 / 60;
-  long prevFrameTime = 0;
-  long startTimer = 0;
-  long frameCount = 0;
 
   void incrementLY();
   void loadLineSprites();
