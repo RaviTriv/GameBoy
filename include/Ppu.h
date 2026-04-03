@@ -9,7 +9,6 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <list>
 
 class IMemRead;
 class InterruptSink;
@@ -27,7 +26,7 @@ public:
     uint32_t lineTicks;
     uint8_t windowLine;
     uint8_t lineSpritesCount;
-    std::list<OAM_ENTRY> currentLineSprites;
+    std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };
   PPU(InterruptSink &interruptSink);

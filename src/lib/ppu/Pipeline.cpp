@@ -67,7 +67,7 @@ void Pipeline::fetchTile()
     }
   }
 
-  if (ppu->lcd->isObjEnabled() && !ppu->state.currentLineSprites.empty())
+  if (ppu->lcd->isObjEnabled() && ppu->state.lineSpritesCount > 0)
   {
     loadSpriteTile();
   }
@@ -216,8 +216,9 @@ void Pipeline::loadWindowTile()
 
 void Pipeline::loadSpriteTile()
 {
-  for (const auto &entry : ppu->state.currentLineSprites)
+  for (uint8_t s = 0; s < ppu->state.lineSpritesCount; s++)
   {
+    const auto &entry = ppu->state.currentLineSprites[s];
     int spriteX = (entry.x - 8) + (ppu->lcd->state.scrollX % 8);
     if ((spriteX >= state.fetchX && spriteX < state.fetchX + 8) ||
         ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8))

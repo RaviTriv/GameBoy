@@ -120,14 +120,19 @@ void PPU::loadLineSprites()
 
     if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16)
     {
-      auto idx = std::find_if(state.currentLineSprites.begin(),
-                              state.currentLineSprites.end(),
-                              [&entry](const OAM_ENTRY &e)
-                              {
-                                return e.x > entry.x;
-                              });
+      uint8_t insertPos = 0;
+      while (insertPos < state.lineSpritesCount &&
+             state.currentLineSprites[insertPos].x <= entry.x)
+      {
+        insertPos++;
+      }
 
-      state.currentLineSprites.insert(idx, entry);
+      for (uint8_t j = state.lineSpritesCount; j > insertPos; j--)
+      {
+        state.currentLineSprites[j] = state.currentLineSprites[j - 1];
+      }
+
+      state.currentLineSprites[insertPos] = entry;
       state.lineSpritesCount++;
     }
   }
@@ -151,6 +156,8 @@ void PPU::buildScanlineContext()
   state.scanlineCtx.bgColors = lcd->state.bgColors;
   state.scanlineCtx.ob1Colors = lcd->state.ob1Colors;
   state.scanlineCtx.ob2Colors = lcd->state.ob2Colors;
+  state.scanlineCtx.sprites = state.currentLineSprites.data();
+  state.scanlineCtx.spriteCount = state.lineSpritesCount;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 }
 
@@ -158,7 +165,6 @@ void PPU::oamMode()
 {
   if (state.lineTicks == 1)
   {
-    state.currentLineSprites.clear();
     state.lineSpritesCount = 0;
     loadLineSprites();
   }
