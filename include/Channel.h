@@ -57,6 +57,7 @@ private:
 public:
   void reset() override;
   bool timerAction();
+  int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   void envelopeAction();
   void dutyAction();
@@ -75,6 +76,7 @@ private:
 public:
   void reset() override;
   bool timerAction();
+  int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
@@ -106,6 +108,7 @@ private:
 public:
   void reset() override;
   bool timerAction();
+  int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   void envelopeAction();
   [[nodiscard]] uint8_t getSample() const override;

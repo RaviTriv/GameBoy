@@ -48,10 +48,11 @@ private:
   bool triggerEnvelope = false;
   bool triggerSweep = false;
   uint32_t sampleTimer = 0;
+  uint32_t pendingTicks = 0;
   static constexpr uint32_t CPU_CLOCK_HZ = 4194304;
   static constexpr uint32_t CPU_CYCLES_PER_SAMPLE = CPU_CLOCK_HZ / audioFreq;
 
-  void frameSequencerAction();
+  void flushChannelTimers();
   [[nodiscard]] uint8_t mixSample();
 
   [[nodiscard]] uint8_t getChannel3CurrentSample();

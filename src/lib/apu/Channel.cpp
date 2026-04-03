@@ -88,6 +88,48 @@ void SquareChannel::dutyAction()
   duty %= DUTY_CYCLE_STEPS;
 }
 
+int SquareChannel::advanceTimer(int ticks)
+{
+  if (ticks <= 0) {
+    return 0;
+  }
+
+  uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  int period = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
+
+  int fires = 0;
+
+  // if timer already expired, first tick is a reload+fire
+  if (freqTimer <= 0) {
+    freqTimer = period;
+    fires++;
+    ticks--;
+  }
+
+  if (ticks <= 0) {
+    return fires;
+  }
+
+  // fast path: no fires in remaining ticks
+  if (ticks < freqTimer) {
+    freqTimer -= ticks;
+    return fires;
+  }
+
+  // consume current timer, then batch the rest
+  ticks -= freqTimer;
+  fires++;
+  if (period > 0) {
+    fires += ticks / period;
+    freqTimer = period - (ticks % period);
+  } else {
+    fires += ticks;
+    freqTimer = 0;
+  }
+
+  return fires;
+}
+
 void WaveChannel::reset()
 {
   nrx4 &= ~TRIGGER_BIT;
@@ -135,6 +177,48 @@ uint8_t WaveChannel::getSample() const
 uint8_t WaveChannel::getSample(uint8_t s) const
 {
   return s * enabled * (nrx0 >>DAC_ENABLE_SHIFT);
+}
+
+int WaveChannel::advanceTimer(int ticks)
+{
+  if (ticks <= 0) {
+    return 0;
+  }
+
+  uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  int period = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
+
+  int fires = 0;
+
+  // if timer already expired, first tick is a reload+fire
+  if (freqTimer <= 0) {
+    freqTimer = period;
+    fires++;
+    ticks--;
+  }
+
+  if (ticks <= 0) {
+    return fires;
+  }
+
+  // fast path: no fires in remaining ticks
+  if (ticks < freqTimer) {
+    freqTimer -= ticks;
+    return fires;
+  }
+
+  // consume current timer, then batch the rest
+  ticks -= freqTimer;
+  fires++;
+  if (period > 0) {
+    fires += ticks / period;
+    freqTimer = period - (ticks % period);
+  } else {
+    fires += ticks;
+    freqTimer = 0;
+  }
+
+  return fires;
 }
 
 const std::array<int, 8> NoiseChannel::divisor = {8, 16, 32, 48, 64, 80, 96, 112};
@@ -210,4 +294,56 @@ bool NoiseChannel::timerAction()
     return true;
   }
   return false;
+}
+
+int NoiseChannel::advanceTimer(int ticks)
+{
+  if (ticks <= 0) {
+    return 0;
+  }
+
+  int period = divisor[nrx3 & DIVISOR_INDEX_MASK] << (nrx3 >> SHIFT_AMOUNT_SHIFT);
+  int fires = 0;
+  bool narrow = ((nrx3 >> LFSR_WIDTH_SHIFT) & LFSR_BIT0_MASK) != 0;
+
+  // fast path: no fires in remaining ticks
+  if (freqTimer > ticks) {
+    freqTimer -= ticks;
+    return 0;
+  }
+
+  // consume current timer to first fire
+  ticks -= freqTimer;
+  freqTimer = 0;
+
+  // first fire
+  fires++;
+  {
+    uint8_t xorRes = (lfsr & LFSR_BIT0_MASK) ^ ((lfsr & LFSR_BIT1_MASK) >> LFSR_BIT1_SHIFT);
+    lfsr = (lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT);
+    if (narrow) {
+      lfsr &= ~(1 << LFSR_7BIT_TAP);
+      lfsr |= (xorRes << LFSR_7BIT_TAP);
+    }
+  }
+
+  // batch remaining fires
+  if (period > 0) {
+    int remainingFires = ticks / period;
+    freqTimer = period - (ticks % period);
+
+    for (int i = 0; i < remainingFires; i++) {
+      uint8_t xorRes = (lfsr & LFSR_BIT0_MASK) ^ ((lfsr & LFSR_BIT1_MASK) >> LFSR_BIT1_SHIFT);
+      lfsr = (lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT);
+      if (narrow) {
+        lfsr &= ~(1 << LFSR_7BIT_TAP);
+        lfsr |= (xorRes << LFSR_7BIT_TAP);
+      }
+    }
+    fires += remainingFires;
+  } else {
+    freqTimer = 0;
+  }
+
+  return fires;
 }
