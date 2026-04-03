@@ -2,10 +2,8 @@
 #include "Channel.h"
 #include "Logger.h"
 
-uint8_t APU::read(uint16_t address) const
-{
-  switch (address)
-  {
+uint8_t APU::read(uint16_t address) const {
+  switch (address) {
   case NR10_REGISTER:
     return state.channel1.nrx0;
   case NR11_REGISTER:
@@ -85,10 +83,8 @@ uint8_t APU::read(uint16_t address) const
   return 0;
 }
 
-void APU::write(uint16_t address, uint8_t value)
-{
-  switch (address)
-  {
+void APU::write(uint16_t address, uint8_t value) {
+  switch (address) {
   case NR10_REGISTER:
     state.channel1.nrx0 = value;
     break;
@@ -152,8 +148,7 @@ void APU::write(uint16_t address, uint8_t value)
   case NR52_REGISTER:
     state.registers.NR52 = value;
     state.enabled = (value & ENABLE_BIT) != 0;
-    if (!state.enabled)
-    {
+    if (!state.enabled) {
       state.channel1 = {};
       state.channel2 = {};
       state.channel3 = {};
@@ -215,11 +210,9 @@ void APU::write(uint16_t address, uint8_t value)
   };
 }
 
-void APU::frameSequencerAction()
-{
+void APU::frameSequencerAction() {
   frameTimer++;
-  if (frameTimer == FRAME_SEQUENCER_CLOCK)
-  {
+  if (frameTimer == FRAME_SEQUENCER_CLOCK) {
     frameTimer = 0;
     frameSequence++;
     frameSequence %= FRAME_SEQUENCER_STEPS;
@@ -227,26 +220,21 @@ void APU::frameSequencerAction()
     triggerLength = frameSequence % 2 == 0;
     triggerEnvelope = frameSequence == 7;
     triggerSweep = frameSequence == 2 || frameSequence == 6;
-  }
-  else
-  {
+  } else {
     triggerLength = false;
     triggerEnvelope = false;
     triggerSweep = false;
   }
 }
 
-uint8_t APU::getChannel1Sample()
-{
-  if ((state.channel1.nrx4 & TRIGGER_BIT) != 0)
-  {
+void APU::tickChannel1() {
+  if ((state.channel1.nrx4 & TRIGGER_BIT) != 0) {
     state.channel1.reset();
   }
 
   bool timerTriggered = state.channel1.timerAction();
 
-  if (timerTriggered)
-  {
+  if (timerTriggered) {
     state.channel1.dutyAction();
   }
 
@@ -254,25 +242,19 @@ uint8_t APU::getChannel1Sample()
 
   state.channel1.enabled &= state.channel1.lengthTimerAction();
 
-  if (state.channel1.envelopeEnabled)
-  {
+  if (state.channel1.envelopeEnabled) {
     state.channel1.envelopeAction();
   }
-
-  return state.channel1.getSample();
 }
 
-uint8_t APU::getChannel2Sample()
-{
-  if ((state.channel2.nrx4 & TRIGGER_BIT) != 0)
-  {
+void APU::tickChannel2() {
+  if ((state.channel2.nrx4 & TRIGGER_BIT) != 0) {
     state.channel2.reset();
   }
 
   bool timerTriggered = state.channel2.timerAction();
 
-  if (timerTriggered)
-  {
+  if (timerTriggered) {
     state.channel2.dutyAction();
   }
 
@@ -280,18 +262,13 @@ uint8_t APU::getChannel2Sample()
 
   state.channel2.enabled &= state.channel2.lengthTimerAction();
 
-  if (state.channel2.envelopeEnabled)
-  {
+  if (state.channel2.envelopeEnabled) {
     state.channel2.envelopeAction();
   }
-
-  return state.channel2.getSample();
 }
 
-uint8_t APU::getChannel3Sample()
-{
-  if ((state.channel3.nrx4 & TRIGGER_BIT) != 0)
-  {
+void APU::tickChannel3() {
+  if ((state.channel3.nrx4 & TRIGGER_BIT) != 0) {
     state.channel3.reset();
   }
 
@@ -299,35 +276,34 @@ uint8_t APU::getChannel3Sample()
 
   bool timerTriggered = state.channel3.timerAction();
 
-  if (timerTriggered)
-  {
+  if (timerTriggered) {
     ++state.channel3.sample %= WAVE_SAMPLE_COUNT;
   }
 
+  state.channel3.enabled &= state.channel3.lengthTimerAction();
+}
+
+uint8_t APU::getChannel3CurrentSample() {
   uint8_t sample = state.wavePattern[state.channel3.sample / 2];
 
-  if (state.channel3.sample % 2)
-  {
+  if (state.channel3.sample % 2) {
     sample = sample & WAVE_LOW_NIBBLE_MASK;
-  }
-  else
-  {
+  } else {
     sample = sample >> NIBBLE_SIZE;
   }
 
-  state.channel3.enabled &= state.channel3.lengthTimerAction();
-
-  int shiftVol = ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) ? ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) - 1 : 4;
+  int shiftVol =
+      ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03)
+          ? ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) - 1
+          : 4;
 
   sample >>= shiftVol;
 
   return state.channel3.getSample(sample);
 }
 
-uint8_t APU::getChannel4Sample()
-{
-  if ((state.channel4.nrx4 & TRIGGER_BIT) != 0)
-  {
+void APU::tickChannel4() {
+  if ((state.channel4.nrx4 & TRIGGER_BIT) != 0) {
     state.channel4.reset();
   }
 
@@ -338,41 +314,31 @@ uint8_t APU::getChannel4Sample()
   state.channel4.enabled &= state.channel4.lengthTimerAction();
 
   state.channel4.envelopeAction();
-
-  return state.channel4.getSample();
 }
 
-uint8_t APU::mixSample()
-{
-  uint8_t ch1Sample = 0;
-  uint8_t ch2Sample = 0;
-  uint8_t ch3Sample = 0;
-  uint8_t ch4Sample = 0;
-
-  for (int i = 0; i < SAMPLE_RATE; i++)
-  {
-    frameSequencerAction();
-    ch1Sample = getChannel1Sample();
-    ch2Sample = getChannel2Sample();
-    ch3Sample = getChannel3Sample();
-    ch4Sample = getChannel4Sample();
-  }
-
-  return ch1Sample + ch2Sample + ch3Sample + ch4Sample;
+uint8_t APU::mixSample() {
+  return state.channel1.getSample() +
+         state.channel2.getSample() +
+         getChannel3CurrentSample() +
+         state.channel4.getSample();
 }
 
-void APU::tick()
-{
+void APU::tick() {
+  frameSequencerAction();
+
+  tickChannel1();
+  tickChannel2();
+  tickChannel3();
+  tickChannel4();
+
   sampleTimer++;
-  if (sampleTimer >= CPU_CYCLES_PER_SAMPLE)
-  {
+  if (sampleTimer >= CPU_CYCLES_PER_SAMPLE) {
     sampleTimer = 0;
     uint8_t sample = mixSample();
     sampleQueue.push(sample);
   }
 }
 
-std::size_t APU::popSamples(uint8_t *out, std::size_t count)
-{
+std::size_t APU::popSamples(uint8_t *out, std::size_t count) {
   return sampleQueue.pop_n(out, count);
 }
