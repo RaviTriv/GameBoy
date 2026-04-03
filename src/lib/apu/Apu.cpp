@@ -230,10 +230,8 @@ uint8_t APU::getChannel3CurrentSample() {
 }
 
 uint8_t APU::mixSample() {
-  return state.channel1.getSample() +
-         state.channel2.getSample() +
-         getChannel3CurrentSample() +
-         state.channel4.getSample();
+  return state.channel1.getSample() + state.channel2.getSample() +
+         getChannel3CurrentSample() + state.channel4.getSample();
 }
 
 void APU::flushChannelTimers() {
@@ -244,38 +242,36 @@ void APU::flushChannelTimers() {
   int ticks = static_cast<int>(pendingTicks);
   pendingTicks = 0;
 
-  // channel 1
   if (state.channel1.enabled) {
     int fires = state.channel1.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel1.duty = (state.channel1.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
+      state.channel1.duty =
+          (state.channel1.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
     }
   }
 
-  // channel 2
   if (state.channel2.enabled) {
     int fires = state.channel2.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel2.duty = (state.channel2.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
+      state.channel2.duty =
+          (state.channel2.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
     }
   }
 
-  // channel 3
   if (state.channel3.enabled) {
     int fires = state.channel3.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel3.sample = (state.channel3.sample + fires) % WAVE_SAMPLE_COUNT;
+      state.channel3.sample =
+          (state.channel3.sample + fires) % WAVE_SAMPLE_COUNT;
     }
   }
 
-  // channel 4
   if (state.channel4.enabled) {
     state.channel4.advanceTimer(ticks);
   }
 }
 
 void APU::tick() {
-  // check triggers every tick — writes can happen at any time
   if ((state.channel1.nrx4 & TRIGGER_BIT) != 0) {
     flushChannelTimers();
     state.channel1.reset();
@@ -295,7 +291,6 @@ void APU::tick() {
 
   pendingTicks++;
 
-  // frame sequencer
   frameTimer++;
   if (frameTimer == FRAME_SEQUENCER_CLOCK) {
     frameTimer = 0;
@@ -306,34 +301,31 @@ void APU::tick() {
     triggerEnvelope = frameSequence == 7;
     triggerSweep = frameSequence == 2 || frameSequence == 6;
 
-    // flush timers before processing frame sequencer events
     flushChannelTimers();
 
-    // channel 1 frame events
     if (state.channel1.enabled) {
-      state.channel1.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
+      state.channel1.updateTriggers(triggerLength, triggerEnvelope,
+                                    triggerSweep);
       state.channel1.enabled &= state.channel1.lengthTimerAction();
       if (state.channel1.envelopeEnabled) {
         state.channel1.envelopeAction();
       }
     }
 
-    // channel 2 frame events
     if (state.channel2.enabled) {
-      state.channel2.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
+      state.channel2.updateTriggers(triggerLength, triggerEnvelope,
+                                    triggerSweep);
       state.channel2.enabled &= state.channel2.lengthTimerAction();
       if (state.channel2.envelopeEnabled) {
         state.channel2.envelopeAction();
       }
     }
 
-    // channel 3 frame events
     if (state.channel3.enabled) {
       state.channel3.updateTriggers(triggerLength, triggerEnvelope, false);
       state.channel3.enabled &= state.channel3.lengthTimerAction();
     }
 
-    // channel 4 frame events
     if (state.channel4.enabled) {
       state.channel4.updateTriggers(triggerLength, triggerEnvelope, false);
       state.channel4.enabled &= state.channel4.lengthTimerAction();
