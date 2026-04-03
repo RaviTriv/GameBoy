@@ -1,9 +1,14 @@
 #include "Ppu.h"
+#include "IMemRead.h"
 #include "InterruptSink.h"
 #include "Lcd.h"
 #include "Logger.h"
 
-PPU::PPU(InterruptSink &interruptSink) : interruptSink(interruptSink), pipeline(this)
+PPU::PPU(InterruptSink &interruptSink)
+    : interruptSink(interruptSink),
+      pipeline(
+          [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
+          [this](uint32_t idx, uint32_t color) { getWriteBuffer()[idx] = color; })
 {
 }
 
@@ -174,6 +179,7 @@ void PPU::oamMode()
     lcd->setLcdMode(LCD::MODE::DRAWING);
 
     buildScanlineContext();
+    pipeline.beginScanline(state.scanlineCtx);
     pipeline.oamReset();
   }
 }

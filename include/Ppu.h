@@ -61,7 +61,6 @@ private:
   InterruptSink &interruptSink;
   IMemRead *memRead = nullptr;
   LCD *lcd = nullptr;
-  friend class Pipeline;
   Pipeline pipeline;
   std::atomic<bool> fastForward{false};
   std::atomic<uint32_t> currentFrame{0};

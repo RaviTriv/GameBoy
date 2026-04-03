@@ -2,11 +2,15 @@
 
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
+#include "./ScanlineContext.h"
 
 #include <cstdint>
 #include <array>
+#include <functional>
 
-class PPU;
+using ReadFn = std::function<uint8_t(uint16_t)>;
+using WritePixelFn = std::function<void(uint32_t, uint32_t)>;
+
 class Pipeline
 {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
@@ -38,7 +42,8 @@ public:
     uint8_t tileY;
     uint8_t entryCount;
   };
-  Pipeline(PPU *ppu);
+  Pipeline(ReadFn readFn, WritePixelFn writePixelFn);
+  void beginScanline(const ScanlineContext &ctx);
   void process();
   void reset();
   void oamReset();
@@ -49,7 +54,9 @@ public:
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
 private:
-  PPU *ppu;
+  ReadFn readFn;
+  WritePixelFn writePixelFn;
+  const ScanlineContext *ctx = nullptr;
   PixelFifo pixelFifo;
   void fetch();
   void fetchTile();
