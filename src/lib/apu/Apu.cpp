@@ -262,18 +262,20 @@ void APU::tick() {
       state.channel1.reset();
     }
 
-    bool timerTriggered = state.channel1.timerAction();
+    if (state.channel1.enabled) {
+      bool timerTriggered = state.channel1.timerAction();
 
-    if (timerTriggered) {
-      state.channel1.dutyAction();
-    }
+      if (timerTriggered) {
+        state.channel1.dutyAction();
+      }
 
-    state.channel1.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
+      state.channel1.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
 
-    state.channel1.enabled &= state.channel1.lengthTimerAction();
+      state.channel1.enabled &= state.channel1.lengthTimerAction();
 
-    if (state.channel1.envelopeEnabled) {
-      state.channel1.envelopeAction();
+      if (state.channel1.envelopeEnabled) {
+        state.channel1.envelopeAction();
+      }
     }
   }
 
@@ -283,18 +285,20 @@ void APU::tick() {
       state.channel2.reset();
     }
 
-    bool timerTriggered = state.channel2.timerAction();
+    if (state.channel2.enabled) {
+      bool timerTriggered = state.channel2.timerAction();
 
-    if (timerTriggered) {
-      state.channel2.dutyAction();
-    }
+      if (timerTriggered) {
+        state.channel2.dutyAction();
+      }
 
-    state.channel2.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
+      state.channel2.updateTriggers(triggerLength, triggerEnvelope, triggerSweep);
 
-    state.channel2.enabled &= state.channel2.lengthTimerAction();
+      state.channel2.enabled &= state.channel2.lengthTimerAction();
 
-    if (state.channel2.envelopeEnabled) {
-      state.channel2.envelopeAction();
+      if (state.channel2.envelopeEnabled) {
+        state.channel2.envelopeAction();
+      }
     }
   }
 
@@ -304,15 +308,17 @@ void APU::tick() {
       state.channel3.reset();
     }
 
-    state.channel3.updateTriggers(triggerLength, triggerEnvelope, false);
+    if (state.channel3.enabled) {
+      state.channel3.updateTriggers(triggerLength, triggerEnvelope, false);
 
-    bool timerTriggered = state.channel3.timerAction();
+      bool timerTriggered = state.channel3.timerAction();
 
-    if (timerTriggered) {
-      ++state.channel3.sample %= WAVE_SAMPLE_COUNT;
+      if (timerTriggered) {
+        ++state.channel3.sample %= WAVE_SAMPLE_COUNT;
+      }
+
+      state.channel3.enabled &= state.channel3.lengthTimerAction();
     }
-
-    state.channel3.enabled &= state.channel3.lengthTimerAction();
   }
 
   // channel 4
@@ -321,13 +327,15 @@ void APU::tick() {
       state.channel4.reset();
     }
 
-    state.channel4.updateTriggers(triggerLength, triggerEnvelope, false);
+    if (state.channel4.enabled) {
+      state.channel4.updateTriggers(triggerLength, triggerEnvelope, false);
 
-    state.channel4.timerAction();
+      state.channel4.timerAction();
 
-    state.channel4.enabled &= state.channel4.lengthTimerAction();
+      state.channel4.enabled &= state.channel4.lengthTimerAction();
 
-    state.channel4.envelopeAction();
+      state.channel4.envelopeAction();
+    }
   }
 
   sampleTimer++;
