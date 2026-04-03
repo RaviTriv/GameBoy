@@ -1,130 +1,108 @@
 #include "Bus.h"
 #include "Cartridge.h"
+#include "Common.h"
 #include "Dma.h"
 #include "Io.h"
-#include "Common.h"
+#include "Logger.h"
 #include "Ppu.h"
 #include "Ram.h"
-#include "Logger.h"
 
-Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io, PPU &ppu, RAM &ram) : cartridge(cartridge), interruptRegs(interruptRegs), dma(dma), io(io), ppu(ppu), ram(ram)
-{
+Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
+         PPU &ppu, RAM &ram)
+    : cartridge(cartridge), interruptRegs(interruptRegs), dma(dma), io(io),
+      ppu(ppu), ram(ram) {}
+
+uint8_t Bus::read8(uint16_t address) {
+  switch (PAGE_TABLE[address >> 8]) {
+  case RegionType::CartROM:
+    return cartridge.read(address);
+  case RegionType::VRAM:
+    return ppu.vramRead(address);
+  case RegionType::CartRAM:
+    return cartridge.read(address);
+  case RegionType::WRAM:
+    return ram.readWRAM(address);
+  case RegionType::EchoRAM:
+    return 0;
+  case RegionType::MixedFE:
+    return readPageFE(address);
+  case RegionType::MixedFF:
+    return readPageFF(address);
+  }
+  return INVALID_READ_VALUE;
 }
 
-uint8_t Bus::read8(uint16_t address)
-{
-  if (address <= ROM_END)
-  {
-    // Cartridge
-    return cartridge.read(address);
-  }
-  else if (address <= VRAM_END)
-  {
-    // PPU VRAM
-    return ppu.vramRead(address);
-  }
-  else if (address <= CART_RAM_END)
-  {
-    // External RAM
-    return cartridge.read(address);
-  }
-  else if (address <= WRAM_END)
-  {
-    return ram.readWRAM(address);
-  }
-  else if (address <= ECHO_RAM_END)
-  {
-    // echo RAM
-    return 0;
-  }
-  else if (address <= OAM_END)
-  {
-    // Object Attribute Memory (OAM)
-    if (dma.isTransferring())
-    {
+uint8_t Bus::readPageFE(uint16_t address) {
+  if (address <= OAM_END) {
+    if (dma.isTransferring()) {
       return 0xFF;
     }
     return ppu.oamRead(address);
   }
-  else if (address <= UNUSED_END)
-  {
-    // Reserved
-    return 0;
-  }
-  else if (address <= IO_REGISTERS_END)
-  {
-    // I/O Registers
+  return 0;
+}
+
+uint8_t Bus::readPageFF(uint16_t address) {
+  if (address <= IO_REGISTERS_END) {
     return io.read(address);
   }
-  else if (address == IE_REGISTER)
-  {
-    // Interrupt Enable Register
+  if (address == IE_REGISTER) {
     return interruptRegs.ie;
   }
   return ram.readHRAM(address);
 }
 
-uint16_t Bus::read16(uint16_t address)
-{
+uint16_t Bus::read16(uint16_t address) {
   uint8_t low = read8(address);
   uint8_t high = read8(address + 1);
   return low | (high << BYTE_BITS);
 }
 
-void Bus::write8(uint16_t address, uint8_t value)
-{
-  if (address <= ROM_END)
-  {
-    // Cartridge
+void Bus::write8(uint16_t address, uint8_t value) {
+  switch (PAGE_TABLE[address >> 8]) {
+  case RegionType::CartROM:
     cartridge.write(address, value);
-  }
-  else if (address <= VRAM_END)
-  {
-    // PPU VRAM
+    return;
+  case RegionType::VRAM:
     ppu.vramWrite(address, value);
-  }
-  else if (address <= CART_RAM_END)
-  {
-    // External RAM
+    return;
+  case RegionType::CartRAM:
     cartridge.write(address, value);
-  }
-  else if (address <= WRAM_END)
-  {
+    return;
+  case RegionType::WRAM:
     ram.writeWRAM(address, value);
+    return;
+  case RegionType::EchoRAM:
+    return;
+  case RegionType::MixedFE:
+    writePageFE(address, value);
+    return;
+  case RegionType::MixedFF:
+    writePageFF(address, value);
+    return;
   }
-  else if (address <= ECHO_RAM_END)
-  {
-  }
-  else if (address <= OAM_END)
-  {
-    // Object Attribute Memory (OAM)
-    if (dma.isTransferring())
-    {
+}
+
+void Bus::writePageFE(uint16_t address, uint8_t value) {
+  if (address <= OAM_END) {
+    if (dma.isTransferring()) {
       return;
     }
     ppu.oamWrite(address, value);
   }
-  else if (address <= UNUSED_END)
-  {
-  }
-  else if (address <= IO_REGISTERS_END)
-  {
-    // I/O Registers
+}
+
+void Bus::writePageFF(uint16_t address, uint8_t value) {
+  if (address <= IO_REGISTERS_END) {
     io.write(address, value);
-  }
-  else if (address == IE_REGISTER)
-  {
-    // Interrupt Enable Register
+  } else if (address == IE_REGISTER) {
     interruptRegs.ie = value;
-  }
-  else
-  {
+  } else {
     ram.writeHRAM(address, value);
   }
 }
 
-void Bus::write16(uint16_t address, uint16_t value)
-{
+void Bus::write16(uint16_t address, uint16_t value) {
   write8(address + 1, (value >> BYTE_BITS) & BYTE_MASK);
   write8(address, value & BYTE_MASK);
 }
