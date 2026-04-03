@@ -35,7 +35,6 @@ public:
   virtual ~Channel() = default;
   void updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool sweepTrigger);
   virtual void reset() = 0;
-  virtual bool timerAction() = 0;
   virtual bool lengthTimerAction() = 0;
   [[nodiscard]] virtual uint8_t getSample() const = 0;
 };
@@ -57,7 +56,7 @@ private:
   static constexpr uint8_t DUTY_CYCLE_STEPS = 8; 
 public:
   void reset() override;
-  bool timerAction() override;
+  bool timerAction();
   bool lengthTimerAction() override;
   void envelopeAction();
   void dutyAction();
@@ -75,7 +74,7 @@ private:
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
 public:
   void reset() override;
-  bool timerAction() override;
+  bool timerAction();
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
@@ -106,7 +105,7 @@ private:
   static constexpr uint8_t LFSR_7BIT_TAP = 6;     
 public:
   void reset() override;
-  bool timerAction() override;
+  bool timerAction();
   bool lengthTimerAction() override;
   void envelopeAction();
   [[nodiscard]] uint8_t getSample() const override;
