@@ -3,6 +3,7 @@
 #include "./Pipeline.h"
 #include "./OamTypes.h"
 #include "./Common.h"
+#include "./ScanlineContext.h"
 
 #include <array>
 #include <atomic>
@@ -27,6 +28,7 @@ public:
     uint8_t windowLine;
     uint8_t lineSpritesCount;
     std::list<OAM_ENTRY> currentLineSprites;
+    ScanlineContext scanlineCtx{};
   };
   PPU(InterruptSink &interruptSink);
   void init();
@@ -84,6 +86,7 @@ private:
 
   void incrementLY();
   void loadLineSprites();
+  void buildScanlineContext();
 
   void oamMode();
   void drawingMode();

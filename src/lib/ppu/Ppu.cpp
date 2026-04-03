@@ -133,6 +133,27 @@ void PPU::loadLineSprites()
   }
 }
 
+void PPU::buildScanlineContext()
+{
+  state.scanlineCtx.scrollX = lcd->state.scrollX;
+  state.scanlineCtx.scrollY = lcd->state.scrollY;
+  state.scanlineCtx.ly = lcd->state.ly;
+  state.scanlineCtx.windowX = lcd->state.windowX;
+  state.scanlineCtx.windowY = lcd->state.windowY;
+  state.scanlineCtx.windowLine = state.windowLine;
+  state.scanlineCtx.bgWindowEnabled = lcd->isBgWindowEnabled();
+  state.scanlineCtx.objEnabled = lcd->isObjEnabled();
+  state.scanlineCtx.windowEnabled = lcd->isWindowEnabled();
+  state.scanlineCtx.objHeight = lcd->getObjHeight();
+  state.scanlineCtx.bgMapArea = lcd->getBgMapArea();
+  state.scanlineCtx.bgWinDataArea = lcd->getBgWindowDataArea();
+  state.scanlineCtx.winMapArea = lcd->getWindowMapArea();
+  state.scanlineCtx.bgColors = lcd->state.bgColors;
+  state.scanlineCtx.ob1Colors = lcd->state.ob1Colors;
+  state.scanlineCtx.ob2Colors = lcd->state.ob2Colors;
+  state.scanlineCtx.lineTicks = &state.lineTicks;
+}
+
 void PPU::oamMode()
 {
   if (state.lineTicks == 1)
@@ -146,6 +167,7 @@ void PPU::oamMode()
   {
     lcd->setLcdMode(LCD::MODE::DRAWING);
 
+    buildScanlineContext();
     pipeline.oamReset();
   }
 }
