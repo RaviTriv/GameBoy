@@ -7,10 +7,10 @@ class Timer
 {
   struct State
   {
-    uint16_t div;
-    uint8_t tima;
-    uint8_t tma;
-    uint8_t tac;
+    uint16_t div = 0;
+    uint8_t tima = 0;
+    uint8_t tma = 0;
+    uint8_t tac = 0;
   };
 
 public:

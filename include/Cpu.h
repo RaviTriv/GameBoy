@@ -14,16 +14,16 @@ class CPU : public InterruptSink {
 public:
   struct State {
     struct Registers registers;
-    Instruction instruction;
-    uint8_t opcode;
-    uint16_t opValue;
-    bool isMemoryOp;
-    uint16_t memoryAddress;
-    bool ime;
-    bool imeScheduled;
-    uint8_t ie;
-    uint8_t intf;
-    bool halted;
+    Instruction instruction{};
+    uint8_t opcode = 0;
+    uint16_t opValue = 0;
+    bool isMemoryOp = false;
+    uint16_t memoryAddress = 0;
+    bool ime = false;
+    bool imeScheduled = false;
+    uint8_t ie = 0;
+    uint8_t intf = 0;
+    bool halted = false;
   };
 
   using CycleCallbackFn = void(*)(void*, int);

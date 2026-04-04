@@ -6,6 +6,12 @@
 #include <array>
 #include <cstdint>
 
+struct StereoSample
+{
+  uint8_t left;
+  uint8_t right;
+};
+
 class APU
 {
   struct Registers
@@ -34,13 +40,13 @@ public:
 
   void tick();
 
-  std::size_t popSamples(uint8_t *out, std::size_t count);
+  std::size_t popSamples(StereoSample *out, std::size_t count);
 
   static constexpr int audioFreq = 44100;
 
 private:
   State state;
-  spsc::Queue<uint8_t, 8192> sampleQueue;
+  spsc::Queue<StereoSample, 8192> sampleQueue;
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;
@@ -53,7 +59,7 @@ private:
   static constexpr uint32_t CPU_CYCLES_PER_SAMPLE = CPU_CLOCK_HZ / audioFreq;
 
   void flushChannelTimers();
-  [[nodiscard]] uint8_t mixSample();
+  [[nodiscard]] StereoSample mixSample();
 
   [[nodiscard]] uint8_t getChannel3CurrentSample();
 
@@ -92,4 +98,16 @@ private:
   static constexpr uint16_t FRAME_SEQUENCER_CLOCK = 8192;
   static constexpr uint8_t FRAME_SEQUENCER_STEPS = 8;
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
+
+  static constexpr uint8_t NR51_CH1_RIGHT = 0x01;
+  static constexpr uint8_t NR51_CH2_RIGHT = 0x02;
+  static constexpr uint8_t NR51_CH3_RIGHT = 0x04;
+  static constexpr uint8_t NR51_CH4_RIGHT = 0x08;
+  static constexpr uint8_t NR51_CH1_LEFT = 0x10;
+  static constexpr uint8_t NR51_CH2_LEFT = 0x20;
+  static constexpr uint8_t NR51_CH3_LEFT = 0x40;
+  static constexpr uint8_t NR51_CH4_LEFT = 0x80;
+
+  static constexpr uint8_t NR50_VOLUME_MASK = 0x07;
+  static constexpr uint8_t NR50_LEFT_VOLUME_SHIFT = 4;
 };

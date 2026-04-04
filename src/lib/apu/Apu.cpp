@@ -50,10 +50,8 @@ uint8_t APU::read(uint16_t address) const {
     if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
       return state.wavePattern[address - WAVE_RAM_START];
     }
-    throw std::runtime_error("Invalid APU read");
-    break;
+    return 0xFF;
   }
-  return 0;
 }
 
 void APU::write(uint16_t address, uint8_t value) {
@@ -133,7 +131,6 @@ void APU::write(uint16_t address, uint8_t value) {
       state.wavePattern[address - WAVE_RAM_START] = value;
       break;
     }
-    throw std::runtime_error("Invalid APU write");
     break;
   };
 }
@@ -157,9 +154,34 @@ uint8_t APU::getChannel3CurrentSample() {
   return state.channel3.getSample(sample);
 }
 
-uint8_t APU::mixSample() {
-  return state.channel1.getSample() + state.channel2.getSample() +
-         getChannel3CurrentSample() + state.channel4.getSample();
+StereoSample APU::mixSample() {
+  uint8_t ch1 = state.channel1.getSample();
+  uint8_t ch2 = state.channel2.getSample();
+  uint8_t ch3 = getChannel3CurrentSample();
+  uint8_t ch4 = state.channel4.getSample();
+  uint8_t nr51 = state.registers.NR51;
+  uint8_t nr50 = state.registers.NR50;
+
+  uint8_t left = 0;
+  uint8_t right = 0;
+
+  if (nr51 & NR51_CH1_LEFT) { left += ch1; }
+  if (nr51 & NR51_CH2_LEFT) { left += ch2; }
+  if (nr51 & NR51_CH3_LEFT) { left += ch3; }
+  if (nr51 & NR51_CH4_LEFT) { left += ch4; }
+
+  if (nr51 & NR51_CH1_RIGHT) { right += ch1; }
+  if (nr51 & NR51_CH2_RIGHT) { right += ch2; }
+  if (nr51 & NR51_CH3_RIGHT) { right += ch3; }
+  if (nr51 & NR51_CH4_RIGHT) { right += ch4; }
+
+  uint8_t leftVol = (nr50 >> NR50_LEFT_VOLUME_SHIFT) & NR50_VOLUME_MASK;
+  uint8_t rightVol = nr50 & NR50_VOLUME_MASK;
+
+  left = left * (leftVol + 1) / 8;
+  right = right * (rightVol + 1) / 8;
+
+  return {left, right};
 }
 
 void APU::flushChannelTimers() {
@@ -238,6 +260,7 @@ void APU::tick() {
       if (state.channel1.envelopeEnabled) {
         state.channel1.envelopeAction();
       }
+      state.channel1.sweepAction();
     }
 
     if (state.channel2.enabled) {
@@ -265,11 +288,11 @@ void APU::tick() {
   if (sampleTimer >= CPU_CYCLES_PER_SAMPLE) {
     sampleTimer = 0;
     flushChannelTimers();
-    uint8_t sample = mixSample();
+    StereoSample sample = mixSample();
     sampleQueue.push(sample);
   }
 }
 
-std::size_t APU::popSamples(uint8_t *out, std::size_t count) {
+std::size_t APU::popSamples(StereoSample *out, std::size_t count) {
   return sampleQueue.pop_n(out, count);
 }

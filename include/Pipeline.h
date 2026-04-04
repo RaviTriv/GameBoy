@@ -28,19 +28,19 @@ class Pipeline
 public:
   struct State
   {
-    FETCH_STATE fetchState;
+    FETCH_STATE fetchState = FETCH_STATE::TILE;
     size_t fifoX = 0;
-    uint8_t lineX;
-    uint8_t pushedCount;
-    uint8_t fetchX;
-    std::array<uint8_t, 3> bgwBuffer;
-    std::array<uint8_t, 20> objectBuffer;
-    std::array<OAM_ENTRY, 10> fetchedEntries;
-    uint8_t mapX;
-    uint8_t mapY;
-    uint8_t tileX;
-    uint8_t tileY;
-    uint8_t entryCount;
+    uint8_t lineX = 0;
+    uint8_t pushedCount = 0;
+    uint8_t fetchX = 0;
+    std::array<uint8_t, 3> bgwBuffer{};
+    std::array<uint8_t, 20> objectBuffer{};
+    std::array<OAM_ENTRY, 10> fetchedEntries{};
+    uint8_t mapX = 0;
+    uint8_t mapY = 0;
+    uint8_t tileX = 0;
+    uint8_t tileY = 0;
+    uint8_t entryCount = 0;
   };
   Pipeline(ReadFn readFn, WritePixelFn writePixelFn);
   void beginScanline(const ScanlineContext &ctx);

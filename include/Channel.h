@@ -55,12 +55,26 @@ private:
   static constexpr uint8_t LENGTH_MASK = 0x3F;
   static constexpr uint8_t MAX_LENGTH = 64;
   static constexpr uint8_t DUTY_CYCLE_STEPS = 8;
+
+  static constexpr uint8_t SWEEP_PERIOD_MASK = 0x70;
+  static constexpr uint8_t SWEEP_PERIOD_SHIFT = 4;
+  static constexpr uint8_t SWEEP_NEGATE_BIT = 0x08;
+  static constexpr uint8_t SWEEP_SHIFT_MASK = 0x07;
+  static constexpr uint16_t SWEEP_OVERFLOW_THRESHOLD = 2048;
+
+  int sweepTimer = 0;
+  uint16_t sweepShadowFreq = 0;
+  bool sweepEnabled = false;
+
+  uint16_t sweepCalculation();
+
 public:
   void reset() override;
   bool timerAction();
   int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   void dutyAction();
+  void sweepAction();
   [[nodiscard]] uint8_t getSample() const override;
 };
 

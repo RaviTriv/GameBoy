@@ -177,6 +177,7 @@ void PPU::oamMode()
   if (state.lineTicks >= 80)
   {
     lcd->setLcdMode(LCD::MODE::DRAWING);
+    state.spritePenalty = state.lineSpritesCount * 6;
 
     buildScanlineContext();
     pipeline.beginScanline(state.scanlineCtx);
@@ -186,10 +187,19 @@ void PPU::oamMode()
 
 void PPU::drawingMode()
 {
-  pipeline.process();
+  if (pipeline.getPushedCount() < XRES)
+  {
+    pipeline.process();
+  }
 
   if (pipeline.getPushedCount() >= XRES)
   {
+    if (state.spritePenalty > 0)
+    {
+      state.spritePenalty--;
+      return;
+    }
+
     pipeline.reset();
     lcd->setLcdMode(LCD::MODE::HBLANK);
 

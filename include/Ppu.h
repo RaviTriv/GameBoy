@@ -19,12 +19,13 @@ class PPU
 public:
   struct State
   {
-    std::array<OAM_ENTRY, 40> oamRam;
-    std::array<uint8_t, 0x2000> vram;
+    std::array<OAM_ENTRY, 40> oamRam{};
+    std::array<uint8_t, 0x2000> vram{};
 
-    uint32_t lineTicks;
-    uint8_t windowLine;
-    uint8_t lineSpritesCount;
+    uint32_t lineTicks = 0;
+    uint8_t windowLine = 0;
+    uint8_t lineSpritesCount = 0;
+    uint32_t spritePenalty{0};
     std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };

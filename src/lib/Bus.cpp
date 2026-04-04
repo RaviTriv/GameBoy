@@ -23,7 +23,7 @@ uint8_t Bus::read8(uint16_t address) {
   case RegionType::WRAM:
     return ram.readWRAM(address);
   case RegionType::EchoRAM:
-    return 0;
+    return ram.readWRAM(address - 0x2000);
   case RegionType::MixedFE:
     return readPageFE(address);
   case RegionType::MixedFF:
@@ -73,6 +73,7 @@ void Bus::write8(uint16_t address, uint8_t value) {
     ram.writeWRAM(address, value);
     return;
   case RegionType::EchoRAM:
+    ram.writeWRAM(address - 0x2000, value);
     return;
   case RegionType::MixedFE:
     writePageFE(address, value);

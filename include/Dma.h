@@ -8,10 +8,10 @@ class DMA
 {
   struct State
   {
-    bool isActive;
-    uint8_t byte;
-    uint8_t value;
-    uint8_t startDelay;
+    bool isActive = false;
+    uint8_t byte = 0;
+    uint8_t value = 0;
+    uint8_t startDelay = 0;
   };
 
 public:

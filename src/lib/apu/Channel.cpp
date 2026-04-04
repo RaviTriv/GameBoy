@@ -24,6 +24,18 @@ void SquareChannel::reset()
     lengthTimer = MAX_LENGTH - (nrx1 & LENGTH_MASK);
   }
   envelopeEnabled = true;
+
+  sweepShadowFreq = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  uint8_t period = (nrx0 & SWEEP_PERIOD_MASK) >> SWEEP_PERIOD_SHIFT;
+  uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
+  sweepTimer = period ? period : 8;
+  sweepEnabled = (period != 0) || (shift != 0);
+  if (shift != 0) {
+    uint16_t overflowCheck = sweepCalculation();
+    if (overflowCheck >= SWEEP_OVERFLOW_THRESHOLD) {
+      enabled = false;
+    }
+  }
 }
 
 bool SquareChannel::timerAction()
@@ -86,6 +98,53 @@ void SquareChannel::dutyAction()
 {
   duty++;
   duty %= DUTY_CYCLE_STEPS;
+}
+
+uint16_t SquareChannel::sweepCalculation()
+{
+  uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
+  uint16_t delta = sweepShadowFreq >> shift;
+  if (nrx0 & SWEEP_NEGATE_BIT) {
+    return sweepShadowFreq - delta;
+  }
+  return sweepShadowFreq + delta;
+}
+
+void SquareChannel::sweepAction()
+{
+  if (!triggerSweep || !sweepEnabled) {
+    return;
+  }
+
+  uint8_t period = (nrx0 & SWEEP_PERIOD_MASK) >> SWEEP_PERIOD_SHIFT;
+  if (period == 0) {
+    return;
+  }
+
+  sweepTimer--;
+  if (sweepTimer > 0) {
+    return;
+  }
+
+  sweepTimer = period;
+
+  uint16_t newFreq = sweepCalculation();
+  if (newFreq >= SWEEP_OVERFLOW_THRESHOLD) {
+    enabled = false;
+    return;
+  }
+
+  uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
+  if (shift != 0) {
+    sweepShadowFreq = newFreq;
+    nrx3 = newFreq & 0xFF;
+    nrx4 = (nrx4 & ~FREQ_HIGH_MASK) | ((newFreq >> FREQ_HIGH_SHIFT) & FREQ_HIGH_MASK);
+
+    uint16_t overflowCheck = sweepCalculation();
+    if (overflowCheck >= SWEEP_OVERFLOW_THRESHOLD) {
+      enabled = false;
+    }
+  }
 }
 
 int SquareChannel::advanceTimer(int ticks)

@@ -29,30 +29,34 @@ void UI::init()
 
 void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amount, int _length)
 {
+  if (_additional_amount <= 0) {
+    return;
+  }
+
   UI *ui = (UI *)_sound;
 
-  std::size_t monoSamples = _length / 2;
+  std::size_t stereoSamples = _additional_amount / 2;
 
-  uint8_t *monoBuffer = SDL_stack_alloc(uint8_t, monoSamples);
-  std::size_t popped = ui->apu.popSamples(monoBuffer, monoSamples);
+  StereoSample *buffer = (StereoSample *)SDL_stack_alloc(uint8_t, stereoSamples * sizeof(StereoSample));
+  std::size_t popped = ui->apu.popSamples(buffer, stereoSamples);
 
-  uint8_t *data = SDL_stack_alloc(uint8_t, _length);
+  uint8_t *data = SDL_stack_alloc(uint8_t, _additional_amount);
   std::size_t i = 0;
   for (; i < popped; i++)
   {
-    data[i * 2] = monoBuffer[i];
-    data[i * 2 + 1] = monoBuffer[i];
+    data[i * 2] = buffer[i].left;
+    data[i * 2 + 1] = buffer[i].right;
   }
 
-  for (; i < monoSamples; i++)
+  for (; i < stereoSamples; i++)
   {
     data[i * 2] = 0;
     data[i * 2 + 1] = 0;
   }
 
-  SDL_PutAudioStreamData(_stream, data, _length);
+  SDL_PutAudioStreamData(_stream, data, _additional_amount);
   SDL_stack_free(data);
-  SDL_stack_free(monoBuffer);
+  SDL_stack_free(buffer);
 }
 
 void UI::update()
