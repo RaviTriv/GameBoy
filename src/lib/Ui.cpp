@@ -35,7 +35,7 @@ void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amoun
 
   UI *ui = (UI *)_sound;
 
-  std::size_t stereoSamples = _additional_amount / 2;
+  std::size_t stereoSamples = _length / 2;
 
   StereoSample *buffer = (StereoSample *)SDL_stack_alloc(uint8_t, stereoSamples * sizeof(StereoSample));
   std::size_t popped = ui->apu.popSamples(buffer, stereoSamples);
