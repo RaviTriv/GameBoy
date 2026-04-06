@@ -48,8 +48,8 @@ void PPU::oamWrite(uint16_t address, uint8_t value) {
     address -= OAM_START_ADDR;
   }
   if (address >= 0xA0) {
-    return
-  };
+    return;
+  }
   uint8_t *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
   p[address] = value;
 }
@@ -59,8 +59,8 @@ uint8_t PPU::oamRead(uint16_t address) const {
     address -= OAM_START_ADDR;
   }
   if (address >= 0xA0) {
-    return 0xFF
-  };
+    return 0xFF;
+  }
   const uint8_t *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
   return p[address];
 }
