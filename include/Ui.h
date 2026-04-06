@@ -35,10 +35,10 @@ private:
   static constexpr int SCREEN_WIDTH = 640;
   static constexpr int SCREEN_HEIGHT = 576;
   static constexpr int SCALE = 4;
-  SDL_Window *window;
-  SDL_Renderer *renderer;
-  SDL_Surface *screen;
-  SDL_Texture *sdlTexture;
+  SDL_Window *window = nullptr;
+  SDL_Renderer *renderer = nullptr;
+  SDL_Surface *screen = nullptr;
+  SDL_Texture *sdlTexture = nullptr;
   CloseCallback onClose;
   SaveStateCallback onSaveState;
   ToggleFastForwardCallback onToggleFastForward;

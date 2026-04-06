@@ -43,13 +43,13 @@ public:
   };
   struct State
   {
-    uint8_t lcdc;
-    uint8_t lcds;
-    uint8_t scrollX;
-    uint8_t scrollY;
-    uint8_t ly;
-    uint8_t lyCompare;
-    uint8_t dma;
+    uint8_t lcdc = 0;
+    uint8_t lcds = 0;
+    uint8_t scrollX = 0;
+    uint8_t scrollY = 0;
+    uint8_t ly = 0;
+    uint8_t lyCompare = 0;
+    uint8_t dma = 0;
     union
     {
       struct
@@ -59,14 +59,14 @@ public:
         uint8_t colorId2 : 2;
         uint8_t colorId3 : 2;
       };
-      uint8_t bgp;
+      uint8_t bgp = 0;
     };
-    std::array<PaletteRegister, 3> palettes;
-    uint8_t windowX;
-    uint8_t windowY;
-    std::array<uint32_t, 4> bgColors;
-    std::array<uint32_t, 4> ob1Colors;
-    std::array<uint32_t, 4> ob2Colors;
+    std::array<PaletteRegister, 3> palettes{};
+    uint8_t windowX = 0;
+    uint8_t windowY = 0;
+    std::array<uint32_t, 4> bgColors{};
+    std::array<uint32_t, 4> ob1Colors{};
+    std::array<uint32_t, 4> ob2Colors{};
   };
 
   LCD(std::function<void(uint8_t)> onDmaStart);

@@ -31,8 +31,8 @@ public:
 
 private:
   std::atomic<uint8_t> buttons{0};
-  bool directionSelected;
-  bool actionSelected;
+  bool directionSelected = false;
+  bool actionSelected = false;
 
   static constexpr uint8_t BTN_A = 1 << 0;
   static constexpr uint8_t BTN_B = 1 << 1;

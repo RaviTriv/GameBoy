@@ -7,30 +7,30 @@
 
 struct ScanlineContext
 {
-  uint8_t scrollX;
-  uint8_t scrollY;
+  uint8_t scrollX = 0;
+  uint8_t scrollY = 0;
 
-  uint8_t ly;
+  uint8_t ly = 0;
 
-  uint8_t windowX;
-  uint8_t windowY;
-  uint8_t windowLine;
+  uint8_t windowX = 0;
+  uint8_t windowY = 0;
+  uint8_t windowLine = 0;
 
-  bool bgWindowEnabled;
-  bool objEnabled;
-  bool windowEnabled;
-  uint8_t objHeight;
+  bool bgWindowEnabled = false;
+  bool objEnabled = false;
+  bool windowEnabled = false;
+  uint8_t objHeight = 0;
 
-  uint16_t bgMapArea;
-  uint16_t bgWinDataArea;
-  uint16_t winMapArea;
+  uint16_t bgMapArea = 0;
+  uint16_t bgWinDataArea = 0;
+  uint16_t winMapArea = 0;
 
-  std::array<uint32_t, 4> bgColors;
-  std::array<uint32_t, 4> ob1Colors;
-  std::array<uint32_t, 4> ob2Colors;
+  std::array<uint32_t, 4> bgColors{};
+  std::array<uint32_t, 4> ob1Colors{};
+  std::array<uint32_t, 4> ob2Colors{};
 
-  const OAM_ENTRY *sprites;
-  uint8_t spriteCount;
+  const OAM_ENTRY *sprites = nullptr;
+  uint8_t spriteCount = 0;
 
-  const uint32_t *lineTicks;
+  const uint32_t *lineTicks = nullptr;
 };

@@ -16,9 +16,9 @@ class APU
 {
   struct Registers
   {
-    uint8_t NR52;
-    uint8_t NR51;
-    uint8_t NR50;
+    uint8_t NR52 = 0;
+    uint8_t NR51 = 0;
+    uint8_t NR50 = 0;
   };
 
   struct State
@@ -28,10 +28,10 @@ class APU
     SquareChannel channel2;
     WaveChannel channel3;
     NoiseChannel channel4;
-    std::array<uint8_t, 16> wavePattern;
-    bool enabled;
-    uint32_t sampleRate;
-    uint32_t cycleCounter;
+    std::array<uint8_t, 16> wavePattern{};
+    bool enabled = false;
+    uint32_t sampleRate = 0;
+    uint32_t cycleCounter = 0;
   };
 
 public:

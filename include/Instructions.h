@@ -112,10 +112,10 @@ enum class ConditionType
 
 struct Instruction
 {
-  InstructionType type;
-  AddressingMode addressMode;
-  RegisterType reg1;
-  RegisterType reg2;
-  ConditionType condition;
-  uint8_t parameter;
+  InstructionType type = InstructionType::NONE;
+  AddressingMode addressMode = AddressingMode::NONE;
+  RegisterType reg1 = RegisterType::NONE;
+  RegisterType reg2 = RegisterType::NONE;
+  ConditionType condition = ConditionType::NONE;
+  uint8_t parameter = 0;
 };

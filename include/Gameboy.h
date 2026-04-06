@@ -27,8 +27,8 @@ public:
   struct State
   {
     std::atomic<bool> isRunning{false};
-    bool isPaused;
-    uint64_t ticks;
+    bool isPaused = false;
+    uint64_t ticks = 0;
   };
   GameBoy();
   ~GameBoy();
@@ -58,7 +58,7 @@ private:
   void cpuLoop();
   void displayBootArt();
   void saveState();
-  bool trace;
-  bool loadSave;
-  bool fastForward;
+  bool trace = false;
+  bool loadSave = false;
+  bool fastForward = false;
 };

@@ -9,7 +9,7 @@ class PixelFifo
 {
 
 private:
-  std::array<uint32_t, FIFO_CAPACITY> buffer;
+  std::array<uint32_t, FIFO_CAPACITY> buffer{};
   size_t head = 0;
   size_t tail = 0;
   size_t count = 0;

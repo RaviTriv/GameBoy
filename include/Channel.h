@@ -9,7 +9,7 @@ class Bus;
 class Channel
 {
 protected:
-  uint8_t nrx0, nrx1, nrx2, nrx3, nrx4;
+  uint8_t nrx0 = 0, nrx1 = 0, nrx2 = 0, nrx3 = 0, nrx4 = 0;
   bool enabled = false;
   bool triggerLength = false;
   bool triggerEnvelope = false;
