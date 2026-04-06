@@ -8,30 +8,23 @@ PPU::PPU(InterruptSink &interruptSink)
     : interruptSink(interruptSink),
       pipeline(
           [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
-          [this](uint32_t idx, uint32_t color) { getWriteBuffer()[idx] = color; })
-{
-}
+          [this](uint32_t idx, uint32_t color) {
+            getWriteBuffer()[idx] = color;
+          }) {}
 
-void PPU::init()
-{
-  lcd->setLcdMode(LCD::MODE::OAM);
-}
+void PPU::init() { lcd->setLcdMode(LCD::MODE::OAM); }
 
-const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const
-{
+const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const {
   return videoBuffers[readBufferIndex.load(std::memory_order_acquire)];
 }
 
-std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer()
-{
+std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer() {
   return videoBuffers[1 - readBufferIndex.load(std::memory_order_relaxed)];
 }
 
-void PPU::tick()
-{
+void PPU::tick() {
   state.lineTicks++;
-  switch (lcd->getLcdMode())
-  {
+  switch (lcd->getLcdMode()) {
   case LCD::MODE::OAM:
     oamMode();
     break;
@@ -50,33 +43,33 @@ void PPU::tick()
   }
 }
 
-void PPU::oamWrite(uint16_t address, uint8_t value)
-{
-  if (address >= OAM_START_ADDR)
-  {
+void PPU::oamWrite(uint16_t address, uint8_t value) {
+  if (address >= OAM_START_ADDR) {
     address -= OAM_START_ADDR;
   }
+  if (address >= 0xA0) {
+    return
+  };
   uint8_t *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
   p[address] = value;
 }
 
-uint8_t PPU::oamRead(uint16_t address) const
-{
-  if (address >= OAM_START_ADDR)
-  {
+uint8_t PPU::oamRead(uint16_t address) const {
+  if (address >= OAM_START_ADDR) {
     address -= OAM_START_ADDR;
   }
+  if (address >= 0xA0) {
+    return 0xFF
+  };
   const uint8_t *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
   return p[address];
 }
 
-void PPU::vramWrite(uint16_t address, uint8_t value)
-{
+void PPU::vramWrite(uint16_t address, uint8_t value) {
   state.vram[address - VRAM_START_ADDR] = value;
 }
 
-uint8_t PPU::vramRead(uint16_t address) const
-{
+uint8_t PPU::vramRead(uint16_t address) const {
   return state.vram[address - VRAM_START_ADDR];
 }
 
@@ -84,56 +77,45 @@ uint8_t PPU::vramRead(uint16_t address) const
 <-----PPU-SM-START----->
 */
 
-void PPU::incrementLY()
-{
-  if (pipeline.isWindowVisible() && lcd->getLy() >= lcd->getWindowY() && lcd->getLy() < lcd->getWindowY() + YRES)
-  {
+void PPU::incrementLY() {
+  if (pipeline.isWindowVisible() && lcd->getLy() >= lcd->getWindowY() &&
+      lcd->getLy() < lcd->getWindowY() + YRES) {
     state.windowLine++;
   }
 
   lcd->incrementLy();
 
-  if (lcd->getLy() == lcd->getLyCompare())
-  {
+  if (lcd->getLy() == lcd->getLyCompare()) {
     lcd->setLycFlag(1);
 
-    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC)))
-    {
+    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
       interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
-  }
-  else
-  {
+  } else {
     lcd->setLycFlag(0);
   }
 }
 
-void PPU::loadLineSprites()
-{
+void PPU::loadLineSprites() {
   int curY = lcd->getLy();
 
   uint8_t spriteHeight = lcd->getObjHeight();
 
-  for (int i = 0; i < 40; i++)
-  {
+  for (int i = 0; i < 40; i++) {
     OAM_ENTRY entry = state.oamRam[i];
 
-    if (state.lineSpritesCount >= 10)
-    {
+    if (state.lineSpritesCount >= 10) {
       break;
     }
 
-    if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16)
-    {
+    if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16) {
       uint8_t insertPos = 0;
       while (insertPos < state.lineSpritesCount &&
-             state.currentLineSprites[insertPos].x <= entry.x)
-      {
+             state.currentLineSprites[insertPos].x <= entry.x) {
         insertPos++;
       }
 
-      for (uint8_t j = state.lineSpritesCount; j > insertPos; j--)
-      {
+      for (uint8_t j = state.lineSpritesCount; j > insertPos; j--) {
         state.currentLineSprites[j] = state.currentLineSprites[j - 1];
       }
 
@@ -143,8 +125,7 @@ void PPU::loadLineSprites()
   }
 }
 
-void PPU::buildScanlineContext()
-{
+void PPU::buildScanlineContext() {
   state.scanlineCtx.scrollX = lcd->getScrollX();
   state.scanlineCtx.scrollY = lcd->getScrollY();
   state.scanlineCtx.ly = lcd->getLy();
@@ -166,16 +147,13 @@ void PPU::buildScanlineContext()
   state.scanlineCtx.lineTicks = &state.lineTicks;
 }
 
-void PPU::oamMode()
-{
-  if (state.lineTicks == 1)
-  {
+void PPU::oamMode() {
+  if (state.lineTicks == 1) {
     state.lineSpritesCount = 0;
     loadLineSprites();
   }
 
-  if (state.lineTicks >= 80)
-  {
+  if (state.lineTicks >= 80) {
     lcd->setLcdMode(LCD::MODE::DRAWING);
     state.spritePenalty = state.lineSpritesCount * 6;
 
@@ -185,17 +163,13 @@ void PPU::oamMode()
   }
 }
 
-void PPU::drawingMode()
-{
-  if (pipeline.getPushedCount() < XRES)
-  {
+void PPU::drawingMode() {
+  if (pipeline.getPushedCount() < XRES) {
     pipeline.process();
   }
 
-  if (pipeline.getPushedCount() >= XRES)
-  {
-    if (state.spritePenalty > 0)
-    {
+  if (pipeline.getPushedCount() >= XRES) {
+    if (state.spritePenalty > 0) {
       state.spritePenalty--;
       return;
     }
@@ -203,37 +177,31 @@ void PPU::drawingMode()
     pipeline.reset();
     lcd->setLcdMode(LCD::MODE::HBLANK);
 
-    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK)))
-    {
+    if (lcd->isLcdStatIntEnabled(
+            static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK))) {
       interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
   }
 }
 
-void PPU::hBlankMode()
-{
-  if (state.lineTicks >= TICKS_PER_LINE)
-  {
+void PPU::hBlankMode() {
+  if (state.lineTicks >= TICKS_PER_LINE) {
     incrementLY();
 
-    if (lcd->getLy() >= YRES)
-    {
+    if (lcd->getLy() >= YRES) {
       lcd->setLcdMode(LCD::MODE::VBLANK);
 
       interruptSink.requestInterrupt(InterruptType::VBLANK);
 
-      if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK)))
-      {
+      if (lcd->isLcdStatIntEnabled(
+              static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK))) {
         interruptSink.requestInterrupt(InterruptType::LCD_STAT);
       }
 
       currentFrame.fetch_add(1, std::memory_order_relaxed);
-      readBufferIndex.store(
-          1 - readBufferIndex.load(std::memory_order_relaxed),
-          std::memory_order_release);
-    }
-    else
-    {
+      readBufferIndex.store(1 - readBufferIndex.load(std::memory_order_relaxed),
+                            std::memory_order_release);
+    } else {
       lcd->setLcdMode(LCD::MODE::OAM);
     }
 
@@ -241,14 +209,11 @@ void PPU::hBlankMode()
   }
 }
 
-void PPU::vBlankMode()
-{
-  if (state.lineTicks >= TICKS_PER_LINE)
-  {
+void PPU::vBlankMode() {
+  if (state.lineTicks >= TICKS_PER_LINE) {
     incrementLY();
 
-    if (lcd->getLy() >= LINES_PER_FRAME)
-    {
+    if (lcd->getLy() >= LINES_PER_FRAME) {
       lcd->setLcdMode(LCD::MODE::OAM);
       lcd->setLy(0);
       state.windowLine = 0;
@@ -261,38 +226,25 @@ void PPU::vBlankMode()
 <-----PPU-SM-END----->
 */
 
-uint32_t PPU::getCurrentFrame() const
-{
+uint32_t PPU::getCurrentFrame() const {
   return currentFrame.load(std::memory_order_relaxed);
 }
 
-void PPU::setCurrentFrame(uint32_t frame)
-{
+void PPU::setCurrentFrame(uint32_t frame) {
   currentFrame.store(frame, std::memory_order_relaxed);
 }
 
-void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer)
-{
+void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer) {
   videoBuffers[0] = buffer;
   videoBuffers[1] = buffer;
 }
 
-PPU::State PPU::getState() const
-{
-  return state;
-}
+PPU::State PPU::getState() const { return state; }
 
-void PPU::setState(const State &state)
-{
-  this->state = state;
-};
+void PPU::setState(const State &state) { this->state = state; };
 
-Pipeline::State PPU::getPipelineState() const
-{
-  return pipeline.getState();
-}
+Pipeline::State PPU::getPipelineState() const { return pipeline.getState(); }
 
-void PPU::setPipelineState(const Pipeline::State &state)
-{
+void PPU::setPipelineState(const Pipeline::State &state) {
   pipeline.setState(state);
 };
