@@ -40,9 +40,9 @@ target_include_directories(gameboy PRIVATE
 )
 
 target_link_libraries(gameboy PRIVATE
-SDL3::SDL3 
-SDL3_ttf::SDL3_ttf
-PRIVATE spdlog::spdlog_header_only
+    SDL3::SDL3
+    SDL3_ttf::SDL3_ttf
+    spdlog::spdlog
 )
 
 if(NOT CMAKE_BUILD_TYPE)
