@@ -1,24 +1,22 @@
 #pragma once
 
-#include "./Pipeline.h"
-#include "./OamTypes.h"
-#include "./Common.h"
-#include "./ScanlineContext.h"
-
 #include <array>
 #include <atomic>
 #include <cstdint>
 
+#include "./Common.h"
+#include "./OamTypes.h"
+#include "./Pipeline.h"
+#include "./ScanlineContext.h"
+
 class IMemRead;
 class InterruptSink;
 class LCD;
-class PPU
-{
+class PPU {
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
-public:
-  struct State
-  {
+ public:
+  struct State {
     std::array<OAM_ENTRY, 40> oamRam{};
     std::array<uint8_t, 0x2000> vram{};
 
@@ -49,10 +47,10 @@ public:
   void setState(const State &state);
 
   [[nodiscard]] Pipeline::State getPipelineState() const;
-  [[nodiscard]] Pipeline* getPipeline() { return &pipeline; }
+  [[nodiscard]] Pipeline *getPipeline() { return &pipeline; }
   void setPipelineState(const Pipeline::State &state);
 
-private:
+ private:
   State state;
   InterruptSink &interruptSink;
   IMemRead *memRead = nullptr;

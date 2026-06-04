@@ -1,8 +1,9 @@
 #include "Lcd.h"
+
 #include "Logger.h"
 
-LCD::LCD(std::function<void(uint8_t)> onDmaStart) : onDmaStart(std::move(onDmaStart))
-{
+LCD::LCD(std::function<void(uint8_t)> onDmaStart)
+    : onDmaStart(std::move(onDmaStart)) {
   state.lcdc = 0x91;
   state.scrollX = 0;
   state.scrollY = 0;
@@ -13,265 +14,194 @@ LCD::LCD(std::function<void(uint8_t)> onDmaStart) : onDmaStart(std::move(onDmaSt
   state.palettes[PaletteType::OBP1].palette = 0xFF;
   state.windowX = 0;
   state.windowY = 0;
-  for (int i = 0; i < 4; i++)
-  {
+  for (int i = 0; i < 4; i++) {
     state.bgColors[i] = defaultColors[i];
     state.ob1Colors[i] = defaultColors[i];
     state.ob2Colors[i] = defaultColors[i];
   }
 }
 
-uint8_t LCD::read(uint16_t address) const
-{
-  switch (address)
-  {
-  case 0xFF40:
-    return state.lcdc;
-  case 0xFF41:
-    return state.lcds;
-  case 0xFF42:
-    return state.scrollY;
-  case 0xFF43:
-    return state.scrollX;
-  case 0xFF44:
-    return state.ly;
-  case 0xFF45:
-    return state.lyCompare;
-  case 0xFF46:
-    return state.dma;
-  case 0xFF47:
-    return state.palettes[PaletteType::BGP].palette;
-  case 0xFF48:
-    return state.palettes[PaletteType::OBP0].palette;
-  case 0xFF49:
-    return state.palettes[PaletteType::OBP1].palette;
-  case 0xFF4A:
-    return state.windowY;
-  case 0xFF4B:
-    return state.windowX;
-  default:
-    Logger::GetLogger()->error("LCD read from invalid address: 0x{:04X}", address);
-    return 0xFF;
+uint8_t LCD::read(uint16_t address) const {
+  switch (address) {
+    case 0xFF40:
+      return state.lcdc;
+    case 0xFF41:
+      return state.lcds;
+    case 0xFF42:
+      return state.scrollY;
+    case 0xFF43:
+      return state.scrollX;
+    case 0xFF44:
+      return state.ly;
+    case 0xFF45:
+      return state.lyCompare;
+    case 0xFF46:
+      return state.dma;
+    case 0xFF47:
+      return state.palettes[PaletteType::BGP].palette;
+    case 0xFF48:
+      return state.palettes[PaletteType::OBP0].palette;
+    case 0xFF49:
+      return state.palettes[PaletteType::OBP1].palette;
+    case 0xFF4A:
+      return state.windowY;
+    case 0xFF4B:
+      return state.windowX;
+    default:
+      Logger::GetLogger()->error("LCD read from invalid address: 0x{:04X}",
+                                 address);
+      return 0xFF;
   }
 }
 
-void LCD::write(uint16_t address, uint8_t value)
-{
-  switch (address)
-  {
-  case 0xFF40:
-    state.lcdc = value;
-    break;
-  case 0xFF41:
-    state.lcds = value & 0xFC;
-    break;
-  case 0xFF42:
-    state.scrollY = value;
-    break;
-  case 0xFF43:
-    state.scrollX = value;
-    break;
-  case 0xFF44:
-    break;
-  case 0xFF45:
-    state.lyCompare = value;
-    break;
-  case 0xFF46:
-    onDmaStart(value);
-    break;
-  case 0xFF47:
-    updatePalettes(PaletteType::BGP, value);
-    break;
-  case 0xFF48:
-    updatePalettes(PaletteType::OBP0, value & 0b11111100);
-    break;
-  case 0xFF49:
-    updatePalettes(PaletteType::OBP1, value & 0b11111100);
-    break;
-  case 0xFF4A:
-    state.windowY = value;
-    break;
-  case 0xFF4B:
-    state.windowX = value;
-    break;
-  default:
-    Logger::GetLogger()->error("LCD write to invalid address: 0x{:04X}", address);
-    break;
+void LCD::write(uint16_t address, uint8_t value) {
+  switch (address) {
+    case 0xFF40:
+      state.lcdc = value;
+      break;
+    case 0xFF41:
+      state.lcds = value & 0xFC;
+      break;
+    case 0xFF42:
+      state.scrollY = value;
+      break;
+    case 0xFF43:
+      state.scrollX = value;
+      break;
+    case 0xFF44:
+      break;
+    case 0xFF45:
+      state.lyCompare = value;
+      break;
+    case 0xFF46:
+      onDmaStart(value);
+      break;
+    case 0xFF47:
+      updatePalettes(PaletteType::BGP, value);
+      break;
+    case 0xFF48:
+      updatePalettes(PaletteType::OBP0, value & 0b11111100);
+      break;
+    case 0xFF49:
+      updatePalettes(PaletteType::OBP1, value & 0b11111100);
+      break;
+    case 0xFF4A:
+      state.windowY = value;
+      break;
+    case 0xFF4B:
+      state.windowX = value;
+      break;
+    default:
+      Logger::GetLogger()->error("LCD write to invalid address: 0x{:04X}",
+                                 address);
+      break;
   }
 }
 
-void LCD::updatePalettes(PaletteType type, uint8_t value)
-{
-  switch (type)
-  {
-  case BGP:
-    state.bgColors[0] = defaultColors.at(value & 0b11);
-    state.bgColors[1] = defaultColors.at((value >> 2) & 0b11);
-    state.bgColors[2] = defaultColors.at((value >> 4) & 0b11);
-    state.bgColors[3] = defaultColors.at((value >> 6) & 0b11);
-    break;
-  case OBP0:
-    state.ob1Colors[0] = defaultColors.at(value & 0b11);
-    state.ob1Colors[1] = defaultColors.at((value >> 2) & 0b11);
-    state.ob1Colors[2] = defaultColors.at((value >> 4) & 0b11);
-    state.ob1Colors[3] = defaultColors.at((value >> 6) & 0b11);
-    break;
-  case OBP1:
-    state.ob2Colors[0] = defaultColors.at(value & 0b11);
-    state.ob2Colors[1] = defaultColors.at((value >> 2) & 0b11);
-    state.ob2Colors[2] = defaultColors.at((value >> 4) & 0b11);
-    state.ob2Colors[3] = defaultColors.at((value >> 6) & 0b11);
-    break;
-  default:
-    Logger::GetLogger()->error("Invalid palette type: {}", static_cast<int>(type));
-    return;
+void LCD::updatePalettes(PaletteType type, uint8_t value) {
+  switch (type) {
+    case BGP:
+      state.bgColors[0] = defaultColors.at(value & 0b11);
+      state.bgColors[1] = defaultColors.at((value >> 2) & 0b11);
+      state.bgColors[2] = defaultColors.at((value >> 4) & 0b11);
+      state.bgColors[3] = defaultColors.at((value >> 6) & 0b11);
+      break;
+    case OBP0:
+      state.ob1Colors[0] = defaultColors.at(value & 0b11);
+      state.ob1Colors[1] = defaultColors.at((value >> 2) & 0b11);
+      state.ob1Colors[2] = defaultColors.at((value >> 4) & 0b11);
+      state.ob1Colors[3] = defaultColors.at((value >> 6) & 0b11);
+      break;
+    case OBP1:
+      state.ob2Colors[0] = defaultColors.at(value & 0b11);
+      state.ob2Colors[1] = defaultColors.at((value >> 2) & 0b11);
+      state.ob2Colors[2] = defaultColors.at((value >> 4) & 0b11);
+      state.ob2Colors[3] = defaultColors.at((value >> 6) & 0b11);
+      break;
+    default:
+      Logger::GetLogger()->error("Invalid palette type: {}",
+                                 static_cast<int>(type));
+      return;
   }
 }
 
-bool LCD::isLcdStatIntEnabled(uint8_t source) const
-{
+bool LCD::isLcdStatIntEnabled(uint8_t source) const {
   return (state.lcds & source) != 0;
 }
 
-bool LCD::getBit(uint8_t value, int bit) const
-{
+bool LCD::getBit(uint8_t value, int bit) const {
   return (value & (1 << bit)) != 0;
 }
 
-void LCD::setBit(uint8_t &value, int bit, bool set)
-{
-  if (set)
-  {
+void LCD::setBit(uint8_t &value, int bit, bool set) {
+  if (set) {
     value |= (1 << bit);
-  }
-  else
-  {
+  } else {
     value &= ~(1 << bit);
   }
 }
 
-bool LCD::isBgWindowEnabled() const
-{
-  return getBit(state.lcdc, 0);
-}
+bool LCD::isBgWindowEnabled() const { return getBit(state.lcdc, 0); }
 
-bool LCD::isObjEnabled() const
-{
-  return getBit(state.lcdc, 1);
-}
+bool LCD::isObjEnabled() const { return getBit(state.lcdc, 1); }
 
-uint8_t LCD::getObjHeight() const
-{
-  return getBit(state.lcdc, 2) ? 16 : 8;
-}
+uint8_t LCD::getObjHeight() const { return getBit(state.lcdc, 2) ? 16 : 8; }
 
-uint16_t LCD::getBgMapArea() const
-{
+uint16_t LCD::getBgMapArea() const {
   return getBit(state.lcdc, 3) ? 0x9C00 : 0x9800;
 }
 
-uint16_t LCD::getBgWindowDataArea() const
-{
+uint16_t LCD::getBgWindowDataArea() const {
   return getBit(state.lcdc, 4) ? 0x8000 : 0x8800;
 }
 
-bool LCD::isWindowEnabled() const
-{
-  return getBit(state.lcdc, 5);
-}
+bool LCD::isWindowEnabled() const { return getBit(state.lcdc, 5); }
 
-uint16_t LCD::getWindowMapArea() const
-{
+uint16_t LCD::getWindowMapArea() const {
   return getBit(state.lcdc, 6) ? 0x9C00 : 0x9800;
 }
 
-int LCD::getLcdMode() const
-{
-  return static_cast<MODE>(state.lcds & 0b11);
-}
+int LCD::getLcdMode() const { return static_cast<MODE>(state.lcds & 0b11); }
 
-void LCD::setLcdMode(MODE mode)
-{
+void LCD::setLcdMode(MODE mode) {
   state.lcds &= ~0b11;
   state.lcds |= static_cast<uint8_t>(mode);
 }
 
-bool LCD::isLycFlag() const
-{
-  return getBit(state.lcds, 2);
-}
+bool LCD::isLycFlag() const { return getBit(state.lcds, 2); }
 
-void LCD::setLycFlag(bool value)
-{
-  setBit(state.lcds, 2, value);
-}
+void LCD::setLycFlag(bool value) { setBit(state.lcds, 2, value); }
 
-LCD::State LCD::getState() const
-{
-  return state;
-}
+LCD::State LCD::getState() const { return state; }
 
-void LCD::setState(const State &state)
-{
-  this->state = state;
-}
+void LCD::setState(const State &state) { this->state = state; }
 
-uint8_t LCD::getLy() const
-{
-  return state.ly;
-}
+uint8_t LCD::getLy() const { return state.ly; }
 
-void LCD::setLy(uint8_t value)
-{
-  state.ly = value;
-}
+void LCD::setLy(uint8_t value) { state.ly = value; }
 
-void LCD::incrementLy()
-{
-  state.ly++;
-}
+void LCD::incrementLy() { state.ly++; }
 
-uint8_t LCD::getLyCompare() const
-{
-  return state.lyCompare;
-}
+uint8_t LCD::getLyCompare() const { return state.lyCompare; }
 
-uint8_t LCD::getScrollX() const
-{
-  return state.scrollX;
-}
+uint8_t LCD::getScrollX() const { return state.scrollX; }
 
-uint8_t LCD::getScrollY() const
-{
-  return state.scrollY;
-}
+uint8_t LCD::getScrollY() const { return state.scrollY; }
 
-uint8_t LCD::getWindowX() const
-{
-  return state.windowX;
-}
+uint8_t LCD::getWindowX() const { return state.windowX; }
 
-uint8_t LCD::getWindowY() const
-{
-  return state.windowY;
-}
+uint8_t LCD::getWindowY() const { return state.windowY; }
 
-const std::array<uint32_t, 4> &LCD::getBgColors() const
-{
+const std::array<uint32_t, 4> &LCD::getBgColors() const {
   return state.bgColors;
 }
 
-const std::array<uint32_t, 4> &LCD::getOb1Colors() const
-{
+const std::array<uint32_t, 4> &LCD::getOb1Colors() const {
   return state.ob1Colors;
 }
 
-const std::array<uint32_t, 4> &LCD::getOb2Colors() const
-{
+const std::array<uint32_t, 4> &LCD::getOb2Colors() const {
   return state.ob2Colors;
 }
 
-uint8_t LCD::getLcds() const
-{
-  return state.lcds;
-}
+uint8_t LCD::getLcds() const { return state.lcds; }

@@ -1,20 +1,19 @@
 #pragma once
 
-#include <string>
 #include <fstream>
+#include <string>
 
 class RAM;
 class CPU;
 class PPU;
 class LCD;
-class StateSerializer
-{
-public:
+class StateSerializer {
+ public:
   StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd);
   [[nodiscard]] bool saveState(const std::string &title);
   [[nodiscard]] bool loadState(const std::string &title);
 
-private:
+ private:
   CPU &cpu;
   RAM &ram;
   PPU &ppu;

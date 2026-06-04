@@ -1,11 +1,10 @@
 #pragma once
 
-#include "./Common.h"
-
 #include <cstdint>
 
-enum class AddressingMode
-{
+#include "./Common.h"
+
+enum class AddressingMode {
   NONE,
   IMP,
   R_D16,
@@ -30,8 +29,7 @@ enum class AddressingMode
   R_A16
 };
 
-enum class InstructionType
-{
+enum class InstructionType {
   NONE,
   NOP,
   LD,
@@ -82,8 +80,7 @@ enum class InstructionType
   SET
 };
 
-enum class RegisterType
-{
+enum class RegisterType {
   NONE,
   A,
   F,
@@ -101,17 +98,9 @@ enum class RegisterType
   PC
 };
 
-enum class ConditionType
-{
-  NONE,
-  NZ,
-  Z,
-  NC,
-  C
-};
+enum class ConditionType { NONE, NZ, Z, NC, C };
 
-struct Instruction
-{
+struct Instruction {
   InstructionType type = InstructionType::NONE;
   AddressingMode addressMode = AddressingMode::NONE;
   RegisterType reg1 = RegisterType::NONE;

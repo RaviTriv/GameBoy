@@ -6,9 +6,8 @@
 
 class APU;
 class Bus;
-class Channel
-{
-protected:
+class Channel {
+ protected:
   uint8_t nrx0 = 0, nrx1 = 0, nrx2 = 0, nrx3 = 0, nrx4 = 0;
   bool enabled = false;
   bool triggerLength = false;
@@ -34,18 +33,18 @@ protected:
   static constexpr uint8_t ENVELOPE_DIRECTION_BIT = 0x08;
   static constexpr uint8_t MAX_VOLUME = 0x0F;
 
-public:
+ public:
   virtual ~Channel() = default;
-  void updateTriggers(bool lengthTrigger, bool envelopeTrigger, bool sweepTrigger);
+  void updateTriggers(bool lengthTrigger, bool envelopeTrigger,
+                      bool sweepTrigger);
   void envelopeAction();
   virtual void reset() = 0;
   virtual bool lengthTimerAction() = 0;
   [[nodiscard]] virtual uint8_t getSample() const = 0;
 };
 
-class SquareChannel : public Channel
-{
-private:
+class SquareChannel : public Channel {
+ private:
   uint8_t duty = 0;
 
   static const std::array<std::array<uint8_t, 8>, 4> duties;
@@ -68,7 +67,7 @@ private:
 
   uint16_t sweepCalculation();
 
-public:
+ public:
   void reset() override;
   bool timerAction();
   int advanceTimer(int ticks);
@@ -78,16 +77,16 @@ public:
   [[nodiscard]] uint8_t getSample() const override;
 };
 
-class WaveChannel : public Channel
-{
-private:
+class WaveChannel : public Channel {
+ private:
   friend class APU;
   uint8_t sample = 0;
   static constexpr uint16_t MAX_LENGTH = 256;
   static constexpr uint8_t DAC_ENABLE_BIT = 0x80;
   static constexpr uint8_t DAC_ENABLE_SHIFT = 7;
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
-public:
+
+ public:
   void reset() override;
   bool timerAction();
   int advanceTimer(int ticks);
@@ -96,9 +95,8 @@ public:
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
 };
 
-class NoiseChannel : public Channel
-{
-private:
+class NoiseChannel : public Channel {
+ private:
   friend class APU;
   uint16_t lfsr = 0;
   static const std::array<int, 8> divisor;
@@ -116,7 +114,8 @@ private:
   static constexpr uint8_t LFSR_WIDTH_SHIFT = 3;
   static constexpr uint8_t LFSR_FEEDBACK_BIT = 14;
   static constexpr uint8_t LFSR_7BIT_TAP = 6;
-public:
+
+ public:
   void reset() override;
   bool timerAction();
   int advanceTimer(int ticks);

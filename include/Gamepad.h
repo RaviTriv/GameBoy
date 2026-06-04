@@ -3,9 +3,8 @@
 #include <atomic>
 #include <cstdint>
 
-class Gamepad
-{
-public:
+class Gamepad {
+ public:
   [[nodiscard]] bool isBPressed() const;
   [[nodiscard]] bool isAPressed() const;
   [[nodiscard]] bool isStartPressed() const;
@@ -29,7 +28,7 @@ public:
   void setSel(uint8_t value);
   [[nodiscard]] uint8_t getOutput() const;
 
-private:
+ private:
   std::atomic<uint8_t> buttons{0};
   bool directionSelected = false;
   bool actionSelected = false;

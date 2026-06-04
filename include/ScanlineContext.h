@@ -1,12 +1,11 @@
 #pragma once
 
-#include "OamTypes.h"
-
 #include <array>
 #include <cstdint>
 
-struct ScanlineContext
-{
+#include "OamTypes.h"
+
+struct ScanlineContext {
   uint8_t scrollX = 0;
   uint8_t scrollY = 0;
 

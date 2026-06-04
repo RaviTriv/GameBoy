@@ -1,17 +1,16 @@
 #pragma once
 
-#include "./Mbc.h"
-
 #include <array>
 #include <cstdint>
-#include <memory>
 #include <fstream>
-#include <vector>
+#include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
-enum class CartridgeType : uint8_t
-{
+#include "./Mbc.h"
+
+enum class CartridgeType : uint8_t {
   ROM_ONLY = 0x00,
   MBC1 = 0x01,
   MBC1_RAM = 0x02,
@@ -25,8 +24,7 @@ enum class CartridgeType : uint8_t
   MBC3_RAM_BATTERY = 0x13,
 };
 
-struct RomHeader
-{
+struct RomHeader {
   std::array<uint8_t, 4> entry;
   std::array<uint8_t, 0x30> logo;
   std::array<char, 16> title;
@@ -44,11 +42,9 @@ struct RomHeader
 };
 
 class MBC;
-class Cartridge
-{
-public:
-  struct State
-  {
+class Cartridge {
+ public:
+  struct State {
     std::array<char, 1024> filename;
     std::size_t romSize;
     std::vector<uint8_t> romData;
@@ -60,7 +56,7 @@ public:
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] std::string getTitle() const;
 
-private:
+ private:
   State state;
   std::unique_ptr<MBC> mbc;
   static constexpr size_t ROM_HEADER_OFFSET = 0x100;

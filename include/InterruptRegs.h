@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-struct InterruptRegs
-{
+struct InterruptRegs {
   uint8_t &ie;
   uint8_t &intf;
 };

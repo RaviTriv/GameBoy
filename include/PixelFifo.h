@@ -1,20 +1,18 @@
 #pragma once
 
-#include "./Common.h"
-
 #include <array>
 #include <cstdint>
 
-class PixelFifo
-{
+#include "./Common.h"
 
-private:
+class PixelFifo {
+ private:
   std::array<uint32_t, FIFO_CAPACITY> buffer{};
   size_t head = 0;
   size_t tail = 0;
   size_t count = 0;
 
-public:
+ public:
   PixelFifo();
   ~PixelFifo() = default;
 

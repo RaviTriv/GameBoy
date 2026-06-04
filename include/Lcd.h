@@ -4,36 +4,21 @@
 #include <cstdint>
 #include <functional>
 
-class LCD
-{
-public:
-  enum PaletteType
-  {
-    BGP = 0,
-    OBP0 = 1,
-    OBP1 = 2
-  };
+class LCD {
+ public:
+  enum PaletteType { BGP = 0, OBP0 = 1, OBP1 = 2 };
 
-  enum MODE
-  {
-    HBLANK,
-    VBLANK,
-    OAM,
-    DRAWING
-  };
+  enum MODE { HBLANK, VBLANK, OAM, DRAWING };
 
-  enum LCDS_SRC
-  {
+  enum LCDS_SRC {
     S_HBLANK = (1 << 3),
     S_VBLANK = (1 << 4),
     S_OAM = (1 << 5),
     S_LYC = (1 << 6),
   };
 
-  union PaletteRegister
-  {
-    struct
-    {
+  union PaletteRegister {
+    struct {
       uint8_t colorId0 : 2;
       uint8_t colorId1 : 2;
       uint8_t colorId2 : 2;
@@ -41,8 +26,7 @@ public:
     };
     uint8_t palette;
   };
-  struct State
-  {
+  struct State {
     uint8_t lcdc = 0;
     uint8_t lcds = 0;
     uint8_t scrollX = 0;
@@ -50,10 +34,8 @@ public:
     uint8_t ly = 0;
     uint8_t lyCompare = 0;
     uint8_t dma = 0;
-    union
-    {
-      struct
-      {
+    union {
+      struct {
         uint8_t colorId0 : 2;
         uint8_t colorId1 : 2;
         uint8_t colorId2 : 2;
@@ -100,10 +82,11 @@ public:
   [[nodiscard]] const std::array<uint32_t, 4> &getOb2Colors() const;
   [[nodiscard]] uint8_t getLcds() const;
 
-private:
+ private:
   State state;
   std::function<void(uint8_t)> onDmaStart;
-  static constexpr std::array<unsigned long, 4> defaultColors = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
+  static constexpr std::array<unsigned long, 4> defaultColors = {
+      0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
   bool getBit(uint8_t value, int bit) const;
   void setBit(uint8_t &value, int bit, bool set);

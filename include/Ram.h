@@ -3,11 +3,9 @@
 #include <array>
 #include <cstdint>
 
-class RAM
-{
-public:
-  struct State
-  {
+class RAM {
+ public:
+  struct State {
     std::array<uint8_t, 0x2000> wram = {};
     std::array<uint8_t, 0x80> hram = {};
   };
@@ -19,7 +17,7 @@ public:
   [[nodiscard]] RAM::State getState() const;
   void setState(const State &state);
 
-private:
+ private:
   State state;
   static constexpr uint16_t WRAM_BASE = 0xC000;
   static constexpr uint16_t HRAM_BASE = 0xFF80;

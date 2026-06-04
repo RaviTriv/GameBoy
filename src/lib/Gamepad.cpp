@@ -1,152 +1,123 @@
 #include "Gamepad.h"
 
-bool Gamepad::isBPressed() const
-{
+bool Gamepad::isBPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_B;
 }
-bool Gamepad::isAPressed() const
-{
+bool Gamepad::isAPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_A;
 }
-bool Gamepad::isStartPressed() const
-{
+bool Gamepad::isStartPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_START;
 }
-bool Gamepad::isSelectPressed() const
-{
+bool Gamepad::isSelectPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_SELECT;
 }
-bool Gamepad::isUpPressed() const
-{
+bool Gamepad::isUpPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_UP;
 }
-bool Gamepad::isDownPressed() const
-{
+bool Gamepad::isDownPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_DOWN;
 }
-bool Gamepad::isLeftPressed() const
-{
+bool Gamepad::isLeftPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_LEFT;
 }
-bool Gamepad::isRightPressed() const
-{
+bool Gamepad::isRightPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_RIGHT;
 }
 
-void Gamepad::setBPressed(bool pressed)
-{
+void Gamepad::setBPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_B, std::memory_order_relaxed);
   else
     buttons.fetch_and(static_cast<uint8_t>(~BTN_B), std::memory_order_relaxed);
 }
-void Gamepad::setAPressed(bool pressed)
-{
+void Gamepad::setAPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_A, std::memory_order_relaxed);
   else
     buttons.fetch_and(static_cast<uint8_t>(~BTN_A), std::memory_order_relaxed);
 }
-void Gamepad::setStartPressed(bool pressed)
-{
+void Gamepad::setStartPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_START, std::memory_order_relaxed);
   else
-    buttons.fetch_and(static_cast<uint8_t>(~BTN_START), std::memory_order_relaxed);
+    buttons.fetch_and(static_cast<uint8_t>(~BTN_START),
+                      std::memory_order_relaxed);
 }
-void Gamepad::setSelectPressed(bool pressed)
-{
+void Gamepad::setSelectPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_SELECT, std::memory_order_relaxed);
   else
-    buttons.fetch_and(static_cast<uint8_t>(~BTN_SELECT), std::memory_order_relaxed);
+    buttons.fetch_and(static_cast<uint8_t>(~BTN_SELECT),
+                      std::memory_order_relaxed);
 }
-void Gamepad::setUpPressed(bool pressed)
-{
+void Gamepad::setUpPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_UP, std::memory_order_relaxed);
   else
     buttons.fetch_and(static_cast<uint8_t>(~BTN_UP), std::memory_order_relaxed);
 }
-void Gamepad::setDownPressed(bool pressed)
-{
+void Gamepad::setDownPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_DOWN, std::memory_order_relaxed);
   else
-    buttons.fetch_and(static_cast<uint8_t>(~BTN_DOWN), std::memory_order_relaxed);
+    buttons.fetch_and(static_cast<uint8_t>(~BTN_DOWN),
+                      std::memory_order_relaxed);
 }
-void Gamepad::setLeftPressed(bool pressed)
-{
+void Gamepad::setLeftPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_LEFT, std::memory_order_relaxed);
   else
-    buttons.fetch_and(static_cast<uint8_t>(~BTN_LEFT), std::memory_order_relaxed);
+    buttons.fetch_and(static_cast<uint8_t>(~BTN_LEFT),
+                      std::memory_order_relaxed);
 }
-void Gamepad::setRightPressed(bool pressed)
-{
+void Gamepad::setRightPressed(bool pressed) {
   if (pressed)
     buttons.fetch_or(BTN_RIGHT, std::memory_order_relaxed);
   else
-    buttons.fetch_and(static_cast<uint8_t>(~BTN_RIGHT), std::memory_order_relaxed);
+    buttons.fetch_and(static_cast<uint8_t>(~BTN_RIGHT),
+                      std::memory_order_relaxed);
 }
 
-bool Gamepad::actionSel() const
-{
-  return actionSelected;
-}
+bool Gamepad::actionSel() const { return actionSelected; }
 
-bool Gamepad::directionSel() const
-{
-  return directionSelected;
-}
+bool Gamepad::directionSel() const { return directionSelected; }
 
-void Gamepad::setSel(uint8_t value)
-{
+void Gamepad::setSel(uint8_t value) {
   actionSelected = value & ACTION_SELECT_BIT;
   directionSelected = value & DIRECTION_SELECT_BIT;
 }
 
-uint8_t Gamepad::getOutput() const
-{
+uint8_t Gamepad::getOutput() const {
   uint8_t output = DEFAULT_OUTPUT;
   uint8_t btns = buttons.load(std::memory_order_relaxed);
 
-  if (!actionSel())
-  {
-    if (btns & BTN_START)
-    {
+  if (!actionSel()) {
+    if (btns & BTN_START) {
       output &= ~(1 << 3);
     }
-    if (btns & BTN_SELECT)
-    {
+    if (btns & BTN_SELECT) {
       output &= ~(1 << 2);
     }
-    if (btns & BTN_A)
-    {
+    if (btns & BTN_A) {
       output &= ~(1 << 0);
     }
-    if (btns & BTN_B)
-    {
+    if (btns & BTN_B) {
       output &= ~(1 << 1);
     }
   }
 
-  if (!directionSel())
-  {
-    if (btns & BTN_LEFT)
-    {
+  if (!directionSel()) {
+    if (btns & BTN_LEFT) {
       output &= ~(1 << 1);
     }
-    if (btns & BTN_RIGHT)
-    {
+    if (btns & BTN_RIGHT) {
       output &= ~(1 << 0);
     }
-    if (btns & BTN_UP)
-    {
+    if (btns & BTN_UP) {
       output &= ~(1 << 2);
     }
-    if (btns & BTN_DOWN)
-    {
+    if (btns & BTN_DOWN) {
       output &= ~(1 << 3);
     }
   }

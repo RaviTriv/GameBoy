@@ -1,33 +1,24 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
+#include <functional>
+
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
 #include "./ScanlineContext.h"
 
-#include <cstdint>
-#include <array>
-#include <functional>
-
 using ReadFn = std::function<uint8_t(uint16_t)>;
 using WritePixelFn = std::function<void(uint32_t, uint32_t)>;
 
-class Pipeline
-{
+class Pipeline {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
   constexpr static int PIXEL_TILE_DIMENSION = 8;
 
-  enum class FETCH_STATE
-  {
-    TILE,
-    DATA0,
-    DATA1,
-    IDLE,
-    PUSH
-  };
+  enum class FETCH_STATE { TILE, DATA0, DATA1, IDLE, PUSH };
 
-public:
-  struct State
-  {
+ public:
+  struct State {
     FETCH_STATE fetchState = FETCH_STATE::TILE;
     size_t fifoX = 0;
     uint8_t lineX = 0;
@@ -54,7 +45,7 @@ public:
   [[nodiscard]] PixelFifo *getPixelFifo() { return &pixelFifo; }
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
-private:
+ private:
   State state;
   ReadFn readFn;
   WritePixelFn writePixelFn;

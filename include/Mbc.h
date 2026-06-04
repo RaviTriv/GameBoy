@@ -3,83 +3,79 @@
 #include <cstdint>
 #include <vector>
 
-class MBC
-{
-public:
+class MBC {
+ public:
   virtual ~MBC() = default;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
   MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {};
-  MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
-      uint16_t romBanks, uint16_t ramBanks)
-      : romBanksCount(romBanks), ramBanksCount(ramBanks),
-        romData(rom), ramData(ram) {}
+  MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+      uint16_t ramBanks)
+      : romBanksCount(romBanks),
+        ramBanksCount(ramBanks),
+        romData(rom),
+        ramData(ram) {}
 
-protected:
+ protected:
   uint16_t romBanksCount = 0;
   uint16_t ramBanksCount = 0;
 
   std::vector<uint8_t> &romData;
   std::vector<uint8_t> &ramData;
 
-private:
+ private:
   static std::vector<uint8_t> empty;
 };
 
-class MBC0 : public MBC
-{
-public:
-  MBC0(std::vector<uint8_t> &rom)
-      : MBC(rom) {}
+class MBC0 : public MBC {
+ public:
+  MBC0(std::vector<uint8_t> &rom) : MBC(rom) {}
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
-class MBC1 : public MBC
-{
-private:
+class MBC1 : public MBC {
+ private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   uint8_t bankingMode = 0;
 
-public:
-  MBC1(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
-       uint16_t romBanks, uint16_t ramBanks)
+ public:
+  MBC1(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+       uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
-class MBC2 : public MBC
-{
-private:
+class MBC2 : public MBC {
+ private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   uint8_t bankingMode = 0;
 
-public:
-  MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
-       uint16_t romBanks, uint16_t ramBanks)
+ public:
+  MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+       uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
 };
 
-class MBC3 : public MBC
-{
-private:
+class MBC3 : public MBC {
+ private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   uint8_t bankingMode = 0;
 
-public:
-  MBC3(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram,
-       uint16_t romBanks, uint16_t ramBanks)
+ public:
+  MBC3(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+       uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;

@@ -2,24 +2,25 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
-#include <SDL3/SDL_main.h>
-#include <SDL3_ttf/SDL_ttf.h>
-#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_events.h>
-#include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_main.h>
 #include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include <functional>
 
 class APU;
 class PPU;
 class Gamepad;
-class UI
-{
-public:
+class UI {
+ public:
   using CloseCallback = std::function<void()>;
   using SaveStateCallback = std::function<void()>;
   using ToggleFastForwardCallback = std::function<void()>;
-  UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu, Gamepad &gamepad, APU &apu);
+  UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu,
+     Gamepad &gamepad, APU &apu);
   void init();
   void handleEvents();
   void update();
@@ -29,7 +30,7 @@ public:
   ~UI();
   APU &apu;
 
-private:
+ private:
   PPU &ppu;
   Gamepad &gamepad;
   static constexpr int SCREEN_WIDTH = 640;
@@ -46,4 +47,5 @@ private:
   void onKey(bool isDown, SDL_Keycode keyCode);
 };
 
-void audioCallback(void *_sound, SDL_AudioStream *_stream, int _additional_amount, int _length);
+void audioCallback(void *_sound, SDL_AudioStream *_stream,
+                   int _additional_amount, int _length);

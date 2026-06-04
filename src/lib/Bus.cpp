@@ -1,4 +1,5 @@
 #include "Bus.h"
+
 #include "Cartridge.h"
 #include "Common.h"
 #include "Dma.h"
@@ -9,25 +10,29 @@
 
 Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
          PPU &ppu, RAM &ram)
-    : cartridge(cartridge), interruptRegs(interruptRegs), dma(dma), io(io),
-      ppu(ppu), ram(ram) {}
+    : cartridge(cartridge),
+      interruptRegs(interruptRegs),
+      dma(dma),
+      io(io),
+      ppu(ppu),
+      ram(ram) {}
 
 uint8_t Bus::read8(uint16_t address) {
   switch (PAGE_TABLE[address >> 8]) {
-  case RegionType::CartROM:
-    return cartridge.read(address);
-  case RegionType::VRAM:
-    return ppu.vramRead(address);
-  case RegionType::CartRAM:
-    return cartridge.read(address);
-  case RegionType::WRAM:
-    return ram.readWRAM(address);
-  case RegionType::EchoRAM:
-    return ram.readWRAM(address - 0x2000);
-  case RegionType::MixedFE:
-    return readPageFE(address);
-  case RegionType::MixedFF:
-    return readPageFF(address);
+    case RegionType::CartROM:
+      return cartridge.read(address);
+    case RegionType::VRAM:
+      return ppu.vramRead(address);
+    case RegionType::CartRAM:
+      return cartridge.read(address);
+    case RegionType::WRAM:
+      return ram.readWRAM(address);
+    case RegionType::EchoRAM:
+      return ram.readWRAM(address - 0x2000);
+    case RegionType::MixedFE:
+      return readPageFE(address);
+    case RegionType::MixedFF:
+      return readPageFF(address);
   }
   return INVALID_READ_VALUE;
 }
@@ -60,27 +65,27 @@ uint16_t Bus::read16(uint16_t address) {
 
 void Bus::write8(uint16_t address, uint8_t value) {
   switch (PAGE_TABLE[address >> 8]) {
-  case RegionType::CartROM:
-    cartridge.write(address, value);
-    return;
-  case RegionType::VRAM:
-    ppu.vramWrite(address, value);
-    return;
-  case RegionType::CartRAM:
-    cartridge.write(address, value);
-    return;
-  case RegionType::WRAM:
-    ram.writeWRAM(address, value);
-    return;
-  case RegionType::EchoRAM:
-    ram.writeWRAM(address - 0x2000, value);
-    return;
-  case RegionType::MixedFE:
-    writePageFE(address, value);
-    return;
-  case RegionType::MixedFF:
-    writePageFF(address, value);
-    return;
+    case RegionType::CartROM:
+      cartridge.write(address, value);
+      return;
+    case RegionType::VRAM:
+      ppu.vramWrite(address, value);
+      return;
+    case RegionType::CartRAM:
+      cartridge.write(address, value);
+      return;
+    case RegionType::WRAM:
+      ram.writeWRAM(address, value);
+      return;
+    case RegionType::EchoRAM:
+      ram.writeWRAM(address - 0x2000, value);
+      return;
+    case RegionType::MixedFE:
+      writePageFE(address, value);
+      return;
+    case RegionType::MixedFF:
+      writePageFF(address, value);
+      return;
   }
 }
 

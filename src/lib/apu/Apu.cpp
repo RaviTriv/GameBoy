@@ -1,137 +1,138 @@
 #include "Apu.h"
+
 #include "Channel.h"
 #include "Logger.h"
 
 uint8_t APU::read(uint16_t address) const {
   switch (address) {
-  case NR10_REGISTER:
-    return state.channel1.nrx0;
-  case NR11_REGISTER:
-    return state.channel1.nrx1;
-  case NR12_REGISTER:
-    return state.channel1.nrx2;
-  case NR13_REGISTER:
-    return state.channel1.nrx3;
-  case NR14_REGISTER:
-    return state.channel1.nrx4;
-  case NR21_REGISTER:
-    return state.channel2.nrx1;
-  case NR22_REGISTER:
-    return state.channel2.nrx2;
-  case NR23_REGISTER:
-    return state.channel2.nrx3;
-  case NR24_REGISTER:
-    return state.channel2.nrx4;
-  case NR30_REGISTER:
-    return state.channel3.nrx0;
-  case NR31_REGISTER:
-    return state.channel3.nrx1;
-  case NR32_REGISTER:
-    return state.channel3.nrx2;
-  case NR33_REGISTER:
-    return state.channel3.nrx3;
-  case NR34_REGISTER:
-    return state.channel3.nrx4;
-  case NR41_REGISTER:
-    return state.channel4.nrx1;
-  case NR42_REGISTER:
-    return state.channel4.nrx2;
-  case NR43_REGISTER:
-    return state.channel4.nrx3;
-  case NR44_REGISTER:
-    return state.channel4.nrx4;
-  case NR50_REGISTER:
-    return state.registers.NR50;
-  case NR51_REGISTER:
-    return state.registers.NR51;
-  case NR52_REGISTER:
-    return state.registers.NR52 | (state.enabled ? ENABLE_BIT : 0x00);
-  default:
-    if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
-      return state.wavePattern[address - WAVE_RAM_START];
-    }
-    return 0xFF;
+    case NR10_REGISTER:
+      return state.channel1.nrx0;
+    case NR11_REGISTER:
+      return state.channel1.nrx1;
+    case NR12_REGISTER:
+      return state.channel1.nrx2;
+    case NR13_REGISTER:
+      return state.channel1.nrx3;
+    case NR14_REGISTER:
+      return state.channel1.nrx4;
+    case NR21_REGISTER:
+      return state.channel2.nrx1;
+    case NR22_REGISTER:
+      return state.channel2.nrx2;
+    case NR23_REGISTER:
+      return state.channel2.nrx3;
+    case NR24_REGISTER:
+      return state.channel2.nrx4;
+    case NR30_REGISTER:
+      return state.channel3.nrx0;
+    case NR31_REGISTER:
+      return state.channel3.nrx1;
+    case NR32_REGISTER:
+      return state.channel3.nrx2;
+    case NR33_REGISTER:
+      return state.channel3.nrx3;
+    case NR34_REGISTER:
+      return state.channel3.nrx4;
+    case NR41_REGISTER:
+      return state.channel4.nrx1;
+    case NR42_REGISTER:
+      return state.channel4.nrx2;
+    case NR43_REGISTER:
+      return state.channel4.nrx3;
+    case NR44_REGISTER:
+      return state.channel4.nrx4;
+    case NR50_REGISTER:
+      return state.registers.NR50;
+    case NR51_REGISTER:
+      return state.registers.NR51;
+    case NR52_REGISTER:
+      return state.registers.NR52 | (state.enabled ? ENABLE_BIT : 0x00);
+    default:
+      if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
+        return state.wavePattern[address - WAVE_RAM_START];
+      }
+      return 0xFF;
   }
 }
 
 void APU::write(uint16_t address, uint8_t value) {
   switch (address) {
-  case NR10_REGISTER:
-    state.channel1.nrx0 = value;
-    break;
-  case NR11_REGISTER:
-    state.channel1.nrx1 = value;
-    break;
-  case NR12_REGISTER:
-    state.channel1.nrx2 = value;
-    break;
-  case NR13_REGISTER:
-    state.channel1.nrx3 = value;
-    break;
-  case NR14_REGISTER:
-    state.channel1.nrx4 = value;
-    break;
-  case NR21_REGISTER:
-    state.channel2.nrx1 = value;
-    break;
-  case NR22_REGISTER:
-    state.channel2.nrx2 = value;
-    break;
-  case NR23_REGISTER:
-    state.channel2.nrx3 = value;
-    break;
-  case NR24_REGISTER:
-    state.channel2.nrx4 = value;
-    break;
-  case NR30_REGISTER:
-    state.channel3.nrx0 = value;
-    break;
-  case NR31_REGISTER:
-    state.channel3.nrx1 = value;
-    break;
-  case NR32_REGISTER:
-    state.channel3.nrx2 = value;
-    break;
-  case NR33_REGISTER:
-    state.channel3.nrx3 = value;
-    break;
-  case NR34_REGISTER:
-    state.channel3.nrx4 = value;
-    break;
-  case NR41_REGISTER:
-    state.channel4.nrx1 = value;
-    break;
-  case NR42_REGISTER:
-    state.channel4.nrx2 = value;
-    break;
-  case NR43_REGISTER:
-    state.channel4.nrx3 = value;
-    break;
-  case NR44_REGISTER:
-    state.channel4.nrx4 = value;
-    break;
-  case NR50_REGISTER:
-    state.registers.NR50 = value;
-    break;
-  case NR51_REGISTER:
-    state.registers.NR51 = value;
-    break;
-  case NR52_REGISTER:
-    state.registers.NR52 = value;
-    state.enabled = (value & ENABLE_BIT) != 0;
-    if (!state.enabled) {
-      state.channel1 = {};
-      state.channel2 = {};
-      state.channel3 = {};
-      state.channel4 = {};
-    }
-    break;
-  default:
-    if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
-      state.wavePattern[address - WAVE_RAM_START] = value;
+    case NR10_REGISTER:
+      state.channel1.nrx0 = value;
       break;
-    }
-    break;
+    case NR11_REGISTER:
+      state.channel1.nrx1 = value;
+      break;
+    case NR12_REGISTER:
+      state.channel1.nrx2 = value;
+      break;
+    case NR13_REGISTER:
+      state.channel1.nrx3 = value;
+      break;
+    case NR14_REGISTER:
+      state.channel1.nrx4 = value;
+      break;
+    case NR21_REGISTER:
+      state.channel2.nrx1 = value;
+      break;
+    case NR22_REGISTER:
+      state.channel2.nrx2 = value;
+      break;
+    case NR23_REGISTER:
+      state.channel2.nrx3 = value;
+      break;
+    case NR24_REGISTER:
+      state.channel2.nrx4 = value;
+      break;
+    case NR30_REGISTER:
+      state.channel3.nrx0 = value;
+      break;
+    case NR31_REGISTER:
+      state.channel3.nrx1 = value;
+      break;
+    case NR32_REGISTER:
+      state.channel3.nrx2 = value;
+      break;
+    case NR33_REGISTER:
+      state.channel3.nrx3 = value;
+      break;
+    case NR34_REGISTER:
+      state.channel3.nrx4 = value;
+      break;
+    case NR41_REGISTER:
+      state.channel4.nrx1 = value;
+      break;
+    case NR42_REGISTER:
+      state.channel4.nrx2 = value;
+      break;
+    case NR43_REGISTER:
+      state.channel4.nrx3 = value;
+      break;
+    case NR44_REGISTER:
+      state.channel4.nrx4 = value;
+      break;
+    case NR50_REGISTER:
+      state.registers.NR50 = value;
+      break;
+    case NR51_REGISTER:
+      state.registers.NR51 = value;
+      break;
+    case NR52_REGISTER:
+      state.registers.NR52 = value;
+      state.enabled = (value & ENABLE_BIT) != 0;
+      if (!state.enabled) {
+        state.channel1 = {};
+        state.channel2 = {};
+        state.channel3 = {};
+        state.channel4 = {};
+      }
+      break;
+    default:
+      if (address >= WAVE_RAM_START && address <= WAVE_RAM_END) {
+        state.wavePattern[address - WAVE_RAM_START] = value;
+        break;
+      }
+      break;
   };
 }
 
@@ -165,15 +166,31 @@ StereoSample APU::mixSample() {
   uint8_t left = 0;
   uint8_t right = 0;
 
-  if (nr51 & NR51_CH1_LEFT) { left += ch1; }
-  if (nr51 & NR51_CH2_LEFT) { left += ch2; }
-  if (nr51 & NR51_CH3_LEFT) { left += ch3; }
-  if (nr51 & NR51_CH4_LEFT) { left += ch4; }
+  if (nr51 & NR51_CH1_LEFT) {
+    left += ch1;
+  }
+  if (nr51 & NR51_CH2_LEFT) {
+    left += ch2;
+  }
+  if (nr51 & NR51_CH3_LEFT) {
+    left += ch3;
+  }
+  if (nr51 & NR51_CH4_LEFT) {
+    left += ch4;
+  }
 
-  if (nr51 & NR51_CH1_RIGHT) { right += ch1; }
-  if (nr51 & NR51_CH2_RIGHT) { right += ch2; }
-  if (nr51 & NR51_CH3_RIGHT) { right += ch3; }
-  if (nr51 & NR51_CH4_RIGHT) { right += ch4; }
+  if (nr51 & NR51_CH1_RIGHT) {
+    right += ch1;
+  }
+  if (nr51 & NR51_CH2_RIGHT) {
+    right += ch2;
+  }
+  if (nr51 & NR51_CH3_RIGHT) {
+    right += ch3;
+  }
+  if (nr51 & NR51_CH4_RIGHT) {
+    right += ch4;
+  }
 
   uint8_t leftVol = (nr50 >> NR50_LEFT_VOLUME_SHIFT) & NR50_VOLUME_MASK;
   uint8_t rightVol = nr50 & NR50_VOLUME_MASK;

@@ -21,11 +21,9 @@ class StateSerializer;
 class Timer;
 class Gamepad;
 class UI;
-class GameBoy
-{
-public:
-  struct State
-  {
+class GameBoy {
+ public:
+  struct State {
     std::atomic<bool> isRunning{false};
     bool isPaused = false;
     uint64_t ticks = 0;
@@ -37,7 +35,7 @@ public:
 
   void cycle(int cycles);
 
-private:
+ private:
   State state;
   std::unique_ptr<APU> apu;
   std::unique_ptr<Bus> bus;

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "IMemAccess.h"
-#include "InterruptRegs.h"
 #include <array>
 #include <cstdint>
+
+#include "IMemAccess.h"
+#include "InterruptRegs.h"
 
 class Cartridge;
 class DMA;
@@ -47,16 +48,15 @@ constexpr std::array<RegionType, 256> buildPageTable() {
 inline constexpr auto PAGE_TABLE = buildPageTable();
 
 class Bus : public IMemAccess {
-public:
-  Bus(Cartridge &cartridge, InterruptRegs interruptRegs,
-      DMA &dma, IO &io,
+ public:
+  Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
       PPU &ppu, RAM &ram);
   [[nodiscard]] uint8_t read8(uint16_t address) override;
   [[nodiscard]] uint16_t read16(uint16_t address) override;
   void write8(uint16_t address, uint8_t value) override;
   void write16(uint16_t address, uint16_t value) override;
 
-private:
+ private:
   Cartridge &cartridge;
   InterruptRegs interruptRegs;
   DMA &dma;

@@ -1,4 +1,5 @@
 #include "Ppu.h"
+
 #include "IMemRead.h"
 #include "InterruptSink.h"
 #include "Lcd.h"
@@ -25,21 +26,21 @@ std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer() {
 void PPU::tick() {
   state.lineTicks++;
   switch (lcd->getLcdMode()) {
-  case LCD::MODE::OAM:
-    oamMode();
-    break;
-  case LCD::MODE::DRAWING:
-    drawingMode();
-    break;
-  case LCD::MODE::HBLANK:
-    hBlankMode();
-    break;
-  case LCD::MODE::VBLANK:
-    vBlankMode();
-    break;
-  default:
-    Logger::GetLogger()->error("Unknown PPU mode: {}", lcd->getLcdMode());
-    break;
+    case LCD::MODE::OAM:
+      oamMode();
+      break;
+    case LCD::MODE::DRAWING:
+      drawingMode();
+      break;
+    case LCD::MODE::HBLANK:
+      hBlankMode();
+      break;
+    case LCD::MODE::VBLANK:
+      vBlankMode();
+      break;
+    default:
+      Logger::GetLogger()->error("Unknown PPU mode: {}", lcd->getLcdMode());
+      break;
   }
 }
 

@@ -1,59 +1,55 @@
 #include "Io.h"
+
 #include "Apu.h"
 #include "Common.h"
-#include "Lcd.h"
-#include "Timer.h"
 #include "Gamepad.h"
+#include "Lcd.h"
 #include "Logger.h"
+#include "Timer.h"
 
-IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad, APU &apu) : interruptRegs(interruptRegs), apu(apu), timer(timer), lcd(lcd), gamepad(gamepad)
-{
-}
+IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad,
+       APU &apu)
+    : interruptRegs(interruptRegs),
+      apu(apu),
+      timer(timer),
+      lcd(lcd),
+      gamepad(gamepad) {}
 
-uint8_t IO::read(uint16_t address) const
-{
-  if (address == JOYPAD_REGISTER)
-  {
+uint8_t IO::read(uint16_t address) const {
+  if (address == JOYPAD_REGISTER) {
     // Gamepad
     return gamepad.getOutput();
   }
 
-  if (address == SERIAL_DATA_REGISTER)
-  {
+  if (address == SERIAL_DATA_REGISTER) {
     return serialData[SERIAL_DATA_INDEX];
   }
 
-  if (address == SERIAL_CONTROL_REGISTER)
-  {
+  if (address == SERIAL_CONTROL_REGISTER) {
     return serialData[SERIAL_CONTROL_INDEX];
   }
 
-  if ((address >= TIMER_START) && (address <= TIMER_END))
-  {
+  if ((address >= TIMER_START) && (address <= TIMER_END)) {
     // Timer
     return timer.read(address);
   }
 
-  if (address == IF_REGISTER)
-  {
+  if (address == IF_REGISTER) {
     // Interrupt flags
     return interruptRegs.intf;
   }
 
-  if ((address >= APU_START) && (address <= APU_END))
-  {
+  if ((address >= APU_START) && (address <= APU_END)) {
     // Apu
     return apu.read(address);
   }
 
-  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END))
-  {
+  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END)) {
     // Apu
     return apu.read(address);
   }
 
-  if ((address >= LCD_START) && (address <= LCD_END))
-  {
+  if ((address >= LCD_START) && (address <= LCD_END)) {
     // Lcd
     return lcd.read(address);
   }
@@ -61,57 +57,48 @@ uint8_t IO::read(uint16_t address) const
   return 0;
 }
 
-void IO::write(uint16_t address, uint8_t value)
-{
-  if (address == JOYPAD_REGISTER)
-  {
+void IO::write(uint16_t address, uint8_t value) {
+  if (address == JOYPAD_REGISTER) {
     // Gamepad
     gamepad.setSel(value);
     return;
   }
 
-  if (address == SERIAL_DATA_REGISTER)
-  {
+  if (address == SERIAL_DATA_REGISTER) {
     serialData[SERIAL_DATA_INDEX] = value;
     return;
   }
 
-  if (address == SERIAL_CONTROL_REGISTER)
-  {
+  if (address == SERIAL_CONTROL_REGISTER) {
     serialData[SERIAL_CONTROL_INDEX] = value;
     return;
   }
 
-  if ((address >= TIMER_START) && (address <= TIMER_END))
-  {
+  if ((address >= TIMER_START) && (address <= TIMER_END)) {
     // Timer
     timer.write(address, value);
     return;
   }
 
-  if (address == IF_REGISTER)
-  {
+  if (address == IF_REGISTER) {
     // Interrupt flags
     interruptRegs.intf = value;
     return;
   }
 
-  if ((address >= APU_START) && (address <= APU_END))
-  {
+  if ((address >= APU_START) && (address <= APU_END)) {
     // Apu
     apu.write(address, value);
     return;
   }
 
-  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END))
-  {
+  if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END)) {
     // Apu
     apu.write(address, value);
     return;
   }
 
-  if ((address >= LCD_START) && (address <= LCD_END))
-  {
+  if ((address >= LCD_START) && (address <= LCD_END)) {
     // Lcd
     return lcd.write(address, value);
   }

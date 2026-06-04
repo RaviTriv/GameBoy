@@ -1,27 +1,23 @@
 #include "Dma.h"
+
 #include "IMemRead.h"
 
-DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite) : oamWrite(std::move(oamWrite))
-{
-}
+DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite)
+    : oamWrite(std::move(oamWrite)) {}
 
-void DMA::start(uint8_t start)
-{
+void DMA::start(uint8_t start) {
   state.isActive = true;
   state.byte = 0;
   state.value = start;
   state.startDelay = 2;
 }
 
-void DMA::tick()
-{
-  if (!state.isActive)
-  {
+void DMA::tick() {
+  if (!state.isActive) {
     return;
   }
 
-  if (state.startDelay)
-  {
+  if (state.startDelay) {
     state.startDelay--;
     return;
   }
@@ -31,7 +27,4 @@ void DMA::tick()
   state.isActive = state.byte < 0xA0;
 }
 
-bool DMA::isTransferring() const
-{
-  return state.isActive;
-}
+bool DMA::isTransferring() const { return state.isActive; }

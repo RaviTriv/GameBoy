@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-enum class InterruptType
-{
+enum class InterruptType {
   VBLANK = 1,
   LCD_STAT = 2,
   TIMER = 4,
@@ -11,9 +10,8 @@ enum class InterruptType
   JOYPAD = 16
 };
 
-class InterruptSink
-{
-public:
+class InterruptSink {
+ public:
   virtual ~InterruptSink() = default;
   virtual void requestInterrupt(InterruptType type) = 0;
 };

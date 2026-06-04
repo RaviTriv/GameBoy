@@ -1,13 +1,13 @@
-#include "Gameboy.h"
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <algorithm>
 
-int main(int argc, char **argv)
-{
-  if (argc < 2)
-  {
-    throw std::invalid_argument("Usage: gameboy <rom_path> [--trace] [--loadSave]");
+#include "Gameboy.h"
+
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    throw std::invalid_argument(
+        "Usage: gameboy <rom_path> [--trace] [--loadSave]");
   }
 
   std::string romPath;
@@ -15,33 +15,23 @@ int main(int argc, char **argv)
   bool loadSave = false;
   bool fastForward = false;
 
-  for (int i = 1; i < argc; ++i)
-  {
+  for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
 
-    if (arg == "--trace")
-    {
+    if (arg == "--trace") {
       trace = true;
-    }
-    else if (arg == "--loadSave")
-    {
+    } else if (arg == "--loadSave") {
       loadSave = true;
-    }
-    else if (arg == "--fastForward")
-    {
+    } else if (arg == "--fastForward") {
       fastForward = true;
-    }
-    else
-    {
-      if (arg.substr(0, 2) != "--")
-      {
+    } else {
+      if (arg.substr(0, 2) != "--") {
         romPath = arg;
       }
     }
   }
 
-  if (romPath.empty())
-  {
+  if (romPath.empty()) {
     throw std::invalid_argument("No ROM file provided.");
   }
 

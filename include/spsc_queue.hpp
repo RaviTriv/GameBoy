@@ -1,16 +1,17 @@
 #pragma once
 
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstring>
-#include <fcntl.h>
 #include <string>
-#include <sys/mman.h>
 #include <system_error>
 #include <type_traits>
-#include <unistd.h>
 
 namespace spsc {
 
@@ -32,7 +33,7 @@ class Queue {
                 "Capacity must be a power of 2");
   static constexpr std::size_t kMask = Capacity - 1;
 
-public:
+ public:
   Queue() = default;
 
   bool push(const T &item) {
@@ -65,8 +66,7 @@ public:
   }
 
   std::size_t push_n(const T *items, std::size_t count) {
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t t = tail_.load(std::memory_order_relaxed);
 
@@ -78,14 +78,14 @@ public:
     }
 
     count = std::min(count, available);
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     // Copy items, handling wrap-around
     const std::size_t first_chunk = std::min(count, Capacity - t);
     copy_into_buffer(buffer_.data() + t, items, first_chunk);
     if (first_chunk < count) {
-      copy_into_buffer(buffer_.data(), items + first_chunk, count - first_chunk);
+      copy_into_buffer(buffer_.data(), items + first_chunk,
+                       count - first_chunk);
     }
 
     tail_.store((t + count) & kMask, std::memory_order_release);
@@ -93,8 +93,7 @@ public:
   }
 
   std::size_t pop_n(T *out, std::size_t count) {
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t h = head_.load(std::memory_order_relaxed);
 
@@ -106,8 +105,7 @@ public:
     }
 
     count = std::min(count, available);
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     // Copy items out, handling wrap-around
     const std::size_t first_chunk = std::min(count, Capacity - h);
@@ -130,7 +128,7 @@ public:
     return (t - h) & kMask;
   }
 
-private:
+ private:
   static void copy_into_buffer(T *dst, const T *src, std::size_t n) {
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
@@ -154,11 +152,12 @@ private:
   alignas(kCacheLineSize) std::array<T, Capacity> buffer_;
 };
 
-template <typename T, std::size_t Capacity> struct SharedQueueStorage {
+template <typename T, std::size_t Capacity>
+struct SharedQueueStorage {
   alignas(kCacheLineSize) std::atomic<std::size_t> head{0};
-  std::size_t cached_tail{0}; // consumer-local cache of tail
+  std::size_t cached_tail{0};  // consumer-local cache of tail
   alignas(kCacheLineSize) std::atomic<std::size_t> tail{0};
-  std::size_t cached_head{0}; // producer-local cache of head
+  std::size_t cached_head{0};  // producer-local cache of head
   alignas(kCacheLineSize) std::array<T, Capacity> buffer;
 };
 
@@ -169,28 +168,28 @@ class Queue<T, Capacity, MemoryType::Shared> {
                 "Capacity must be a power of 2");
   static constexpr std::size_t kMask = Capacity - 1;
 
-public:
+ public:
   explicit Queue(const SharedMemoryConfig &config) : shm_name_(config.name) {
     constexpr std::size_t total_size = sizeof(SharedQueueStorage<T, Capacity>);
 
     bool is_creator = false;
 
     switch (config.mode) {
-    case OpenMode::Create:
-      shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
-      is_creator = true;
-      break;
-    case OpenMode::Open:
-      shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR, 0600);
-      break;
-    case OpenMode::OpenOrCreate:
-      shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
-      if (shm_fd_ != -1) {
+      case OpenMode::Create:
+        shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
         is_creator = true;
-      } else if (errno == EEXIST) {
+        break;
+      case OpenMode::Open:
         shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR, 0600);
-      }
-      break;
+        break;
+      case OpenMode::OpenOrCreate:
+        shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+        if (shm_fd_ != -1) {
+          is_creator = true;
+        } else if (errno == EEXIST) {
+          shm_fd_ = shm_open(shm_name_.c_str(), O_RDWR, 0600);
+        }
+        break;
     }
     if (shm_fd_ == -1) {
       throw std::system_error(errno, std::system_category(),
@@ -210,8 +209,7 @@ public:
                           MAP_SHARED, shm_fd_, 0);
     if (mapped_region_ == MAP_FAILED) {
       close(shm_fd_);
-      if (is_creator)
-        shm_unlink(shm_name_.c_str());
+      if (is_creator) shm_unlink(shm_name_.c_str());
       throw std::system_error(errno, std::system_category(), "mmap failed!!");
     }
     mapped_size_ = total_size;
@@ -237,8 +235,10 @@ public:
   Queue &operator=(const Queue &) = delete;
 
   Queue(Queue &&other) noexcept
-      : shm_fd_(other.shm_fd_), mapped_region_(other.mapped_region_),
-        mapped_size_(other.mapped_size_), shm_name_(std::move(other.shm_name_)),
+      : shm_fd_(other.shm_fd_),
+        mapped_region_(other.mapped_region_),
+        mapped_size_(other.mapped_size_),
+        shm_name_(std::move(other.shm_name_)),
         storage_(other.storage_) {
     other.shm_fd_ = -1;
     other.mapped_region_ = nullptr;
@@ -295,21 +295,18 @@ public:
   }
 
   std::size_t push_n(const T *items, std::size_t count) {
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t t = storage_->tail.load(std::memory_order_relaxed);
 
     std::size_t available = (storage_->cached_head - t - 1) & kMask;
     if (available < count) {
-      storage_->cached_head =
-          storage_->head.load(std::memory_order_acquire);
+      storage_->cached_head = storage_->head.load(std::memory_order_acquire);
       available = (storage_->cached_head - t - 1) & kMask;
     }
 
     count = std::min(count, available);
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t first_chunk = std::min(count, Capacity - t);
     copy_into_buffer(storage_->buffer.data() + t, items, first_chunk);
@@ -323,21 +320,18 @@ public:
   }
 
   std::size_t pop_n(T *out, std::size_t count) {
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t h = storage_->head.load(std::memory_order_relaxed);
 
     std::size_t available = (storage_->cached_tail - h) & kMask;
     if (available < count) {
-      storage_->cached_tail =
-          storage_->tail.load(std::memory_order_acquire);
+      storage_->cached_tail = storage_->tail.load(std::memory_order_acquire);
       available = (storage_->cached_tail - h) & kMask;
     }
 
     count = std::min(count, available);
-    if (count == 0)
-      return 0;
+    if (count == 0) return 0;
 
     const std::size_t first_chunk = std::min(count, Capacity - h);
     copy_from_buffer(out, storage_->buffer.data() + h, first_chunk);
@@ -367,7 +361,7 @@ public:
 
   static void unlink(const std::string &name) { shm_unlink(name.c_str()); }
 
-private:
+ private:
   static void copy_into_buffer(T *dst, const T *src, std::size_t n) {
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
@@ -391,4 +385,4 @@ private:
   SharedQueueStorage<T, Capacity> *storage_ = nullptr;
 };
 
-} // namespace spsc
+}  // namespace spsc

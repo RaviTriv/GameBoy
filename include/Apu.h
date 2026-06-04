@@ -1,28 +1,24 @@
 #pragma once
 
-#include "./Channel.h"
-#include "spsc_queue.hpp"
-
 #include <array>
 #include <cstdint>
 
-struct StereoSample
-{
+#include "./Channel.h"
+#include "spsc_queue.hpp"
+
+struct StereoSample {
   uint8_t left;
   uint8_t right;
 };
 
-class APU
-{
-  struct Registers
-  {
+class APU {
+  struct Registers {
     uint8_t NR52 = 0;
     uint8_t NR51 = 0;
     uint8_t NR50 = 0;
   };
 
-  struct State
-  {
+  struct State {
     Registers registers;
     SquareChannel channel1;
     SquareChannel channel2;
@@ -34,7 +30,7 @@ class APU
     uint32_t cycleCounter = 0;
   };
 
-public:
+ public:
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
 
@@ -44,7 +40,7 @@ public:
 
   static constexpr int audioFreq = 44100;
 
-private:
+ private:
   State state;
   spsc::Queue<StereoSample, 8192> sampleQueue;
   static constexpr int SAMPLE_RATE = 95;
