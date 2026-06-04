@@ -22,6 +22,16 @@ make
 | `--loadSave` | No | Loads saved game data if available |
 | `--fastForward` | No | Speeds up the game when enabled |
 
+## Testing
+
+The CPU is tested against Blargg's `cpu_instrs` test ROMs.
+
+```console
+cmake -S . -B build-test -DBUILD_APP=OFF -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-test -j
+ctest --test-dir build-test --output-on-failure
+```
+
 ## Controls
 
 | Keyboard Key | GameBoy Button | Function |
