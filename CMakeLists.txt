@@ -9,6 +9,8 @@ find_package(spdlog REQUIRED)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(gameboy
     src/lib/apu/Apu.cpp
     src/lib/apu/Channel.cpp
