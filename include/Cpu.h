@@ -57,28 +57,32 @@ class CPU : public InterruptSink {
 
   inline void setFlags(int z, int n, int h, int c) {
     if (z != -1) {
-      if (z)
+      if (z) {
         state.registers.f |= (1 << 7);
-      else
+      } else {
         state.registers.f &= ~(1 << 7);
+      }
     }
     if (n != -1) {
-      if (n)
+      if (n) {
         state.registers.f |= (1 << 6);
-      else
+      } else {
         state.registers.f &= ~(1 << 6);
+      }
     }
     if (h != -1) {
-      if (h)
+      if (h) {
         state.registers.f |= (1 << 5);
-      else
+      } else {
         state.registers.f &= ~(1 << 5);
+      }
     }
     if (c != -1) {
-      if (c)
+      if (c) {
         state.registers.f |= (1 << 4);
-      else
+      } else {
         state.registers.f &= ~(1 << 4);
+      }
     }
   }
 
