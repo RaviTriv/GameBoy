@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 3.30)
 
 project(GameBoy LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_APP "Build UI" ON)
 option(BUILD_TESTS "Build headless for testing" ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+enable_testing()
 
 set(CORE_SOURCES
     src/lib/apu/Apu.cpp
@@ -28,18 +31,25 @@ set(CORE_SOURCES
     src/lib/Timer.cpp
 )
 
-find_package(spdlog REQUIRED)
+find_package(spdlog 1.11 REQUIRED CONFIG)
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+add_library(gameboy_core OBJECT ${CORE_SOURCES})
+
+target_include_directories(gameboy_core PUBLIC include src)
+
+target_link_libraries(gameboy_core PUBLIC spdlog::spdlog)
+
+target_compile_features(gameboy_core PUBLIC cxx_std_20)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(gameboy_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 if(BUILD_APP)
-    find_package(SDL3 CONFIG REQUIRED)
-    find_package(SDL3_ttf CONFIG REQUIRED)
+    find_package(SDL3 3.2 CONFIG REQUIRED)
+    find_package(SDL3_ttf 3.2 CONFIG REQUIRED)
 
     add_executable(gameboy
-        ${CORE_SOURCES}
         src/lib/Gameboy.cpp
         src/lib/FramePacer.cpp
         src/lib/StateSerializer.cpp
@@ -47,34 +57,21 @@ if(BUILD_APP)
         src/main.cpp
     )
 
-    target_include_directories(gameboy PRIVATE
-        include
-        src
-        ${SDL3_INCLUDE_DIRS}
-        ${SDL3_TTF_INCLUDE_DIRS}
-    )
-
     target_link_libraries(gameboy PRIVATE
+        gameboy_core
         SDL3::SDL3
         SDL3_ttf::SDL3_ttf
-        spdlog::spdlog
     )
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(gameboy PRIVATE -Wall -Wextra -Wpedantic -DSDLTTF_SAMPLES=ON)
+        target_compile_options(gameboy PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endif()
 
 if(BUILD_TESTS)
-    enable_testing()
+    add_executable(gameboy_tests tests/test_runner.cpp)
 
-    add_executable(gameboy_tests
-        ${CORE_SOURCES}
-        tests/test_runner.cpp
-    )
-
-    target_include_directories(gameboy_tests PRIVATE include src)
-    target_link_libraries(gameboy_tests PRIVATE spdlog::spdlog)
+    target_link_libraries(gameboy_tests PRIVATE gameboy_core)
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(gameboy_tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -85,6 +82,6 @@ if(BUILD_TESTS)
         get_filename_component(rom_name "${rom}" NAME_WE)
         add_test(NAME "blargg.${rom_name}"
                  COMMAND gameboy_tests "${rom}")
-        set_tests_properties("blargg.${rom_name}" PROPERTIES TIMEOUT 120)
+        set_tests_properties("blargg.${rom_name}" PROPERTIES TIMEOUT 120 LABELS "cpu")
     endforeach()
 endif()

@@ -4,10 +4,17 @@ DMG-01 Game Boy Emulator
 This application emulates the orginal Game Boy hardware allowing users to  play Game Boy games. It has been tested with a few games such as, Pokemon Red, Tetris and Zelda's Awakening.
 
 ## Building
+
+### Dependencies
+
+- CMake 3.30+
+- [spdlog](https://github.com/gabime/spdlog) 1.11+
+- [SDL3](https://github.com/libsdl-org/SDL) 3.2+ and [SDL3_ttf](https://github.com/libsdl-org/SDL_ttf) 3.2+
+
+
 ```console
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
 ```
 
 ## Running
