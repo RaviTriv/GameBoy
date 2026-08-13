@@ -1,5 +1,9 @@
 #include "Ui.h"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+
 #include "Apu.h"
 #include "Common.h"
 #include "Gamepad.h"
@@ -33,35 +37,43 @@ void UI::init() {
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
 }
 
-void audioCallback(void *_sound, SDL_AudioStream *_stream,
-                   int _additional_amount, int _length) {
-  if (_additional_amount <= 0) {
+namespace {
+
+constexpr int BYTES_PER_FRAME = 2;
+static_assert(sizeof(StereoSample) == BYTES_PER_FRAME,
+              "StereoSample must be a packed U8 stereo frame");
+
+constexpr std::size_t MAX_CHUNK_FRAMES = 2048;
+
+}  // namespace
+
+void audioCallback(void *sound, SDL_AudioStream *stream, int additionalAmount,
+                   int totalAmount) {
+  (void)totalAmount;
+
+  if (additionalAmount <= 0) {
     return;
   }
 
-  UI *ui = (UI *)_sound;
+  UI *ui = static_cast<UI *>(sound);
 
-  std::size_t stereoSamples = _length / 2;
+  std::array<StereoSample, MAX_CHUNK_FRAMES> chunk;
 
-  StereoSample *buffer = (StereoSample *)SDL_stack_alloc(
-      uint8_t, stereoSamples * sizeof(StereoSample));
-  std::size_t popped = ui->apu.popSamples(buffer, stereoSamples);
+  int remaining = additionalAmount;
+  while (remaining >= BYTES_PER_FRAME) {
+    const std::size_t frames = std::min<std::size_t>(
+        static_cast<std::size_t>(remaining / BYTES_PER_FRAME),
+        MAX_CHUNK_FRAMES);
 
-  uint8_t *data = SDL_stack_alloc(uint8_t, _additional_amount);
-  std::size_t i = 0;
-  for (; i < popped; i++) {
-    data[i * 2] = buffer[i].left;
-    data[i * 2 + 1] = buffer[i].right;
+    const std::size_t popped = ui->apu.popSamples(chunk.data(), frames);
+    for (std::size_t i = popped; i < frames; i++) {
+      chunk[i] = {};
+    }
+
+    const int bytes = static_cast<int>(frames * BYTES_PER_FRAME);
+    SDL_PutAudioStreamData(stream, chunk.data(), bytes);
+    remaining -= bytes;
   }
-
-  for (; i < stereoSamples; i++) {
-    data[i * 2] = 0;
-    data[i * 2 + 1] = 0;
-  }
-
-  SDL_PutAudioStreamData(_stream, data, _additional_amount);
-  SDL_stack_free(data);
-  SDL_stack_free(buffer);
 }
 
 void UI::update() {

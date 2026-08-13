@@ -47,5 +47,5 @@ class UI {
   void onKey(bool isDown, SDL_Keycode keyCode);
 };
 
-void audioCallback(void *_sound, SDL_AudioStream *_stream,
-                   int _additional_amount, int _length);
+void audioCallback(void *sound, SDL_AudioStream *stream, int additionalAmount,
+                   int totalAmount);
