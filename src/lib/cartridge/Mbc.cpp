@@ -1,5 +1,7 @@
 #include "Mbc.h"
 
+#include <cstddef>
+
 #include "Logger.h"
 
 std::vector<uint8_t> MBC::empty;
@@ -18,7 +20,7 @@ uint8_t MBC1::read(uint16_t address) const {
     int bank = ((ramBank << 5) | romBank) % romBanksCount;
     return romData[bank * 0x4000 + address - 0x4000];
   } else if (address >= 0xA000 && address < 0xC000) {
-    if (ramEnabled) {
+    if (ramEnabled && !ramData.empty()) {
       int bank = bankingMode * ramBank % ramBanksCount;
       return ramData[bank * 0x2000 + address - 0xA000];
     }
@@ -40,7 +42,7 @@ void MBC1::write(uint16_t address, uint8_t value) {
   } else if (address < 0x8000) {
     bankingMode = value & 0x01;
   } else if (address >= 0xA000 && address < 0xC000) {
-    if (ramEnabled) {
+    if (ramEnabled && !ramData.empty()) {
       int bank = (bankingMode * ramBank) % ramBanksCount;
       ramData[bank * 0x2000 + address - 0xA000] = value;
     }
@@ -54,7 +56,10 @@ uint8_t MBC2::read(uint16_t address) const {
     return romData[romBank * 0x4000 + address - 0x4000];
   } else if (address >= 0xA000 && address < 0xC000) {
     if (ramEnabled) {
-      return ramData[ramBank * 0x2000 + address - 0xA000];
+      const std::size_t index = ramBank * 0x2000 + address - 0xA000;
+      if (index < ramData.size()) {
+        return ramData[index];
+      }
     }
   }
   return 0;
@@ -71,7 +76,10 @@ void MBC2::write(uint16_t address, uint8_t value) {
     }
   } else if (address >= 0xA000 && address < 0xC000) {
     if (ramEnabled) {
-      ramData[ramBank * 0x2000 + address - 0xA000] = value;
+      const std::size_t index = ramBank * 0x2000 + address - 0xA000;
+      if (index < ramData.size()) {
+        ramData[index] = value;
+      }
     }
   }
 }
@@ -84,7 +92,10 @@ uint8_t MBC3::read(uint16_t address) const {
   } else if (address >= 0xA000 && address < 0xC000) {
     if (ramEnabled) {
       if (ramBank <= 0x03) {
-        return ramData[ramBank * 0x2000 + address - 0xA000];
+        const std::size_t index = ramBank * 0x2000 + address - 0xA000;
+        if (index < ramData.size()) {
+          return ramData[index];
+        }
       }
     }
   }
@@ -104,7 +115,10 @@ void MBC3::write(uint16_t address, uint8_t value) {
   } else if (address >= 0xA000 && address < 0xC000) {
     if (ramEnabled) {
       if (ramBank <= 0x03) {
-        ramData[ramBank * 0x2000 + address - 0xA000] = value;
+        const std::size_t index = ramBank * 0x2000 + address - 0xA000;
+        if (index < ramData.size()) {
+          ramData[index] = value;
+        }
       }
     }
   }
