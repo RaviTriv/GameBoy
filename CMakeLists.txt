@@ -14,6 +14,10 @@ endif()
 
 enable_testing()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(GB_WARNINGS -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 set(CORE_SOURCES
     src/lib/apu/Apu.cpp
     src/lib/apu/Channel.cpp
@@ -43,7 +47,7 @@ target_link_libraries(gameboy_core PUBLIC spdlog::spdlog)
 target_compile_features(gameboy_core PUBLIC cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(gameboy_core PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(gameboy_core PRIVATE ${GB_WARNINGS})
 endif()
 
 if(BUILD_APP)
@@ -66,7 +70,7 @@ if(BUILD_APP)
     )
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(gameboy PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(gameboy PRIVATE ${GB_WARNINGS})
     endif()
 endif()
 
@@ -76,7 +80,7 @@ if(BUILD_TESTS)
     target_link_libraries(gameboy_tests PRIVATE gameboy_core)
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(gameboy_tests PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(gameboy_tests PRIVATE ${GB_WARNINGS})
     endif()
 
     file(GLOB BLARGG_ROMS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/roms/blargg/*.gb")

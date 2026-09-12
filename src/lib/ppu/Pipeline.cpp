@@ -126,7 +126,7 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
   for (int i = 0; i < state.entryCount; i++) {
     int spriteX = (state.fetchedEntries[i].x - 8) + (ctx->scrollX % 8);
 
-    if ((spriteX + 8) < state.fifoX) {
+    if ((spriteX + 8) < static_cast<int>(state.fifoX)) {
       continue;
     }
 
@@ -138,22 +138,22 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
 
     bit = 7 - offset;
 
-    if (state.fetchedEntries[i].xFlip) {
+    if (state.fetchedEntries[i].bits.xFlip) {
       bit = offset;
     }
 
     uint8_t hi = !!(state.objectBuffer[i * 2] & (1 << bit));
     uint8_t lo = !!(state.objectBuffer[(i * 2) + 1] & (1 << bit)) << 1;
 
-    bool bgPriority = state.fetchedEntries[i].bgp;
+    bool bgPriority = state.fetchedEntries[i].bits.bgp;
 
     if (!(hi | lo)) {
       continue;
     }
 
     if (!bgPriority || bgColor == 0) {
-      color = state.fetchedEntries[i].pn ? ctx->ob2Colors[(hi | lo)]
-                                         : ctx->ob1Colors[(hi | lo)];
+      color = state.fetchedEntries[i].bits.pn ? ctx->ob2Colors[(hi | lo)]
+                                              : ctx->ob1Colors[(hi | lo)];
 
       if (hi | lo) {
         break;
@@ -207,7 +207,7 @@ void Pipeline::loadSpriteData(uint8_t offset) {
   for (int i = 0; i < state.entryCount; i++) {
     uint8_t tileY = ((curY + 16) - state.fetchedEntries[i].y) * 2;
 
-    if (state.fetchedEntries[i].yFlip) {
+    if (state.fetchedEntries[i].bits.yFlip) {
       tileY = ((spriteHeight * 2) - 2) - tileY;
     }
 

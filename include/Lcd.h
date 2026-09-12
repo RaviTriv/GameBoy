@@ -23,7 +23,7 @@ class LCD {
       uint8_t colorId1 : 2;
       uint8_t colorId2 : 2;
       uint8_t colorId3 : 2;
-    };
+    } bits;
     uint8_t palette;
   };
   struct State {
@@ -40,7 +40,7 @@ class LCD {
         uint8_t colorId1 : 2;
         uint8_t colorId2 : 2;
         uint8_t colorId3 : 2;
-      };
+      } bits;
       uint8_t bgp = 0;
     };
     std::array<PaletteRegister, 3> palettes{};

@@ -14,7 +14,7 @@ struct OAM_ENTRY {
       uint8_t xFlip : 1;
       uint8_t yFlip : 1;
       uint8_t bgp : 1;
-    };
+    } bits;
     uint8_t flags = 0;
   };
 };
