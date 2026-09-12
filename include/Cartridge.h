@@ -52,6 +52,7 @@ class Cartridge {
     std::unique_ptr<RomHeader> header;
   };
   Cartridge(std::string_view romPath);
+  Cartridge(std::vector<uint8_t> rom);
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] std::string getTitle() const;
@@ -62,6 +63,8 @@ class Cartridge {
   static constexpr size_t ROM_HEADER_OFFSET = 0x100;
 
   void loadCartridge(std::string_view romPath);
+  void initFromRom();
+  static constexpr std::size_t MIN_ROM_SIZE = 0x150;
 
   [[nodiscard]] int getRomBanksCount(uint8_t type) const;
   [[nodiscard]] static std::string cartridgeType(CartridgeType type);

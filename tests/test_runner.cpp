@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -23,10 +24,18 @@ constexpr uint64_t DEFAULT_BUDGET_MCYCLES = 300'000'000ULL;
 
 enum class Result { Running, Pass, Fail };
 
+enum class Protocol { Blargg, Mooneye };
+
+const std::string MOONEYE_PASS{"\x03\x05\x08\x0D\x15\x22", 6};
+const std::string MOONEYE_FAIL(6, '\x42');
+const std::string PASS_MARKER = "Passed";
+const std::string FAIL_MARKER = "Failed";
+
 class TestRunner {
  public:
-  explicit TestRunner(const std::string &romPath) {
-    Logger::GetLogger()->set_level(spdlog::level::off);
+  TestRunner(const std::string &romPath, Protocol protocol)
+      : protocol(protocol) {
+    Logger::Disable();
     cartridge = std::make_unique<Cartridge>(romPath);
     dma = std::make_unique<DMA>(
         [this](uint16_t addr, uint8_t val) { ppu->oamWrite(addr, val); });
@@ -93,16 +102,33 @@ class TestRunner {
       return Result::Running;
     }
     serialDirty = false;
-    if (serialLog.find("Passed") != std::string::npos) {
+
+    const std::string &pass =
+        protocol == Protocol::Mooneye ? MOONEYE_PASS : PASS_MARKER;
+    const std::string &fail =
+        protocol == Protocol::Mooneye ? MOONEYE_FAIL : FAIL_MARKER;
+
+    if (serialLog.find(pass) != std::string::npos) {
       return Result::Pass;
     }
-    if (serialLog.find("Failed") != std::string::npos) {
+    if (serialLog.find(fail) != std::string::npos) {
       return Result::Fail;
     }
     return Result::Running;
   }
 
-  void report() const { std::cout << serialLog << std::endl; }
+  void report() const {
+    if (protocol != Protocol::Mooneye) {
+      std::cout << serialLog << std::endl;
+      return;
+    }
+    std::cout << "serial:";
+    for (unsigned char byte : serialLog) {
+      std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0')
+                << static_cast<int>(byte);
+    }
+    std::cout << std::dec << '\n';
+  }
 
   std::unique_ptr<Cartridge> cartridge;
   std::unique_ptr<DMA> dma;
@@ -116,6 +142,7 @@ class TestRunner {
   std::unique_ptr<IO> io;
   std::unique_ptr<Bus> bus;
 
+  Protocol protocol = Protocol::Blargg;
   std::string serialLog;
   bool serialDirty = false;
   uint64_t totalCycles = 0;
@@ -124,18 +151,29 @@ class TestRunner {
 }  // namespace
 
 int main(int argc, char **argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: test_runner <rom_path> [max_million_cycles]\n";
+  std::string romPath;
+  uint64_t budget = DEFAULT_BUDGET_MCYCLES;
+  Protocol protocol = Protocol::Blargg;
+
+  for (int i = 1; i < argc; i++) {
+    const std::string arg = argv[i];
+    if (arg == "--mooneye") {
+      protocol = Protocol::Mooneye;
+    } else if (romPath.empty()) {
+      romPath = arg;
+    } else {
+      budget = std::stoull(arg) * 1'000'000ULL;
+    }
+  }
+
+  if (romPath.empty()) {
+    std::cerr
+        << "Usage: test_runner <rom_path> [max_million_cycles] [--mooneye]\n";
     return 3;
   }
 
-  uint64_t budget = DEFAULT_BUDGET_MCYCLES;
-  if (argc >= 3) {
-    budget = std::stoull(argv[2]) * 1'000'000ULL;
-  }
-
   try {
-    TestRunner runner(argv[1]);
+    TestRunner runner(romPath, protocol);
     return runner.run(budget);
   } catch (const std::exception &e) {
     std::cerr << "ERROR: " << e.what() << "\n";

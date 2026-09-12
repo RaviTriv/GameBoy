@@ -38,6 +38,8 @@ class Logger {
     return logger;
   }
 
+  static void Disable() { GetLogger()->set_level(spdlog::level::off); }
+
  private:
   Logger() = default;
   ~Logger() = default;

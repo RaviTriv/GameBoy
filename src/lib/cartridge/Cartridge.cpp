@@ -4,6 +4,12 @@
 
 Cartridge::Cartridge(std::string_view romPath) { loadCartridge(romPath); }
 
+Cartridge::Cartridge(std::vector<uint8_t> rom) {
+  state.romData = std::move(rom);
+  state.romSize = state.romData.size();
+  initFromRom();
+}
+
 void Cartridge::loadCartridge(std::string_view romPath) {
   std::ifstream cartridge(std::string(romPath),
                           std::ios::binary | std::ios::ate);
@@ -22,6 +28,14 @@ void Cartridge::loadCartridge(std::string_view romPath) {
                       state.romSize)) {
     throw std::runtime_error("Failed to load cartridge data.");
   };
+
+  initFromRom();
+}
+
+void Cartridge::initFromRom() {
+  if (state.romSize < MIN_ROM_SIZE) {
+    throw std::runtime_error("Cartridge is too small to contain a ROM header.");
+  }
 
   state.header = std::make_unique<RomHeader>();
 

@@ -1,9 +1,9 @@
 #include "StateSerializer.h"
 
+#include <cstring>
 #include <ctime>
-#include <filesystem>
 #include <sstream>
-#include <system_error>
+#include <stdexcept>
 
 #include "Cpu.h"
 #include "Lcd.h"
@@ -15,59 +15,31 @@
 #include "Ram.h"
 
 StateSerializer::StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd)
-    : cpu(cpu), ram(ram), ppu(ppu), lcd(lcd) {
-  std::error_code ec;
-  if (!std::filesystem::exists("../saves", ec)) {
-    std::filesystem::create_directory("../saves", ec);
-    if (ec) {
-      Logger::GetLogger()->error("Failed to create saves directory: {}",
-                                 ec.message());
-    }
-  }
-}
+    : cpu(cpu), ram(ram), ppu(ppu), lcd(lcd) {}
 
-std::string StateSerializer::removeSpaces(const std::string &str) const {
-  std::string result = str;
-  result.erase(std::remove(result.begin(), result.end(), ' '), result.end());
-  return result;
-}
-
-bool StateSerializer::saveState(const std::string &title) {
-  std::string saveTitle = removeSpaces(title);
-  std::filesystem::path savesDir = "../saves";
-  std::filesystem::path saveFile = savesDir / (saveTitle + ".sav");
-  std::string fileName = saveFile.string();
-  std::ofstream file(fileName, std::ios::binary);
-
-  if (!file.is_open()) {
-    Logger::GetLogger()->error("Failed to create save state file: {}",
-                               fileName);
-    return false;
-  }
-
+bool StateSerializer::save(std::ostream &out, const std::string &label) {
   try {
     std::time_t currentTime = std::time(nullptr);
     std::stringstream headerStream;
-    headerStream << saveTitle << "_" << currentTime;
+    headerStream << label << "_" << currentTime;
     std::string headerStr = headerStream.str();
 
     uint32_t headerLength = headerStr.length();
-    file.write(reinterpret_cast<const char *>(&headerLength),
-               sizeof(headerLength));
-    file.write(headerStr.c_str(), headerStr.length());
-    saveCPUState(file);
-    saveRAMState(file);
-    savePPUState(file);
-    saveLCDState(file);
-    Logger::GetLogger()->info("State successfully saved to: {}", fileName);
-    return true;
+    out.write(reinterpret_cast<const char *>(&headerLength),
+              sizeof(headerLength));
+    out.write(headerStr.c_str(), headerStr.length());
+    saveCPUState(out);
+    saveRAMState(out);
+    savePPUState(out);
+    saveLCDState(out);
+    return out.good();
   } catch (const std::exception &e) {
     Logger::GetLogger()->error("Error saving state: {}", e.what());
     return false;
   }
 }
 
-void StateSerializer::saveCPUState(std::ofstream &file) {
+void StateSerializer::saveCPUState(std::ostream &file) {
   const char *cpuMarker = "CPU_STATE";
   file.write(cpuMarker, 9);
 
@@ -75,7 +47,7 @@ void StateSerializer::saveCPUState(std::ofstream &file) {
   file.write(reinterpret_cast<const char *>(&state), sizeof(state));
 }
 
-void StateSerializer::saveRAMState(std::ofstream &file) {
+void StateSerializer::saveRAMState(std::ostream &file) {
   const char *ramMarker = "RAM_STATE";
   file.write(ramMarker, 9);
 
@@ -83,7 +55,7 @@ void StateSerializer::saveRAMState(std::ofstream &file) {
   file.write(reinterpret_cast<const char *>(&state), sizeof(state));
 }
 
-void StateSerializer::savePPUState(std::ofstream &file) {
+void StateSerializer::savePPUState(std::ostream &file) {
   const char *ppuMarker = "PPU_STATE";
   file.write(ppuMarker, 9);
 
@@ -146,7 +118,7 @@ void StateSerializer::savePPUState(std::ofstream &file) {
              sizeof(pipelineState.entryCount));
 }
 
-void StateSerializer::saveLCDState(std::ofstream &file) {
+void StateSerializer::saveLCDState(std::ostream &file) {
   const char *lcdMarker = "LCD_STATE";
   file.write(lcdMarker, 9);
 
@@ -181,32 +153,21 @@ void StateSerializer::saveLCDState(std::ofstream &file) {
              state.ob2Colors.size() * sizeof(uint32_t));
 }
 
-bool StateSerializer::loadState(const std::string &title) {
-  std::string saveTitle = removeSpaces(title);
-  std::filesystem::path savesDir = "../saves";
-  std::filesystem::path saveFile = savesDir / (saveTitle + ".sav");
-  std::string fileName = saveFile.string();
-
-  std::ifstream file(fileName, std::ios::binary);
-  if (!file.is_open()) {
-    Logger::GetLogger()->error("Failed to open save state file: {}", fileName);
-    return false;
-  }
-
+bool StateSerializer::load(std::istream &in) {
   try {
-    uint32_t headerLength;
-    file.read(reinterpret_cast<char *>(&headerLength), sizeof(headerLength));
+    uint32_t headerLength = 0;
+    in.read(reinterpret_cast<char *>(&headerLength), sizeof(headerLength));
 
-    char *headerBuffer = new char[headerLength];
-    file.read(headerBuffer, headerLength);
-    delete[] headerBuffer;
+    if (!in.good() || headerLength > MAX_HEADER_LENGTH) {
+      throw std::runtime_error("Invalid save state header");
+    }
 
-    loadCPUState(file);
-    loadRAMState(file);
-    loadPPUState(file);
-    loadLCDState(file);
+    in.seekg(headerLength, std::ios::cur);
 
-    Logger::GetLogger()->info("State successfully loaded from: {}", fileName);
+    loadCPUState(in);
+    loadRAMState(in);
+    loadPPUState(in);
+    loadLCDState(in);
     return true;
   } catch (const std::exception &e) {
     Logger::GetLogger()->error("Error loading state: {}", e.what());
@@ -214,7 +175,7 @@ bool StateSerializer::loadState(const std::string &title) {
   }
 }
 
-void StateSerializer::loadCPUState(std::ifstream &file) {
+void StateSerializer::loadCPUState(std::istream &file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -228,7 +189,7 @@ void StateSerializer::loadCPUState(std::ifstream &file) {
   cpu.setState(state);
 }
 
-void StateSerializer::loadRAMState(std::ifstream &file) {
+void StateSerializer::loadRAMState(std::istream &file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -242,7 +203,7 @@ void StateSerializer::loadRAMState(std::ifstream &file) {
   ram.setState(state);
 }
 
-void StateSerializer::loadPPUState(std::ifstream &file) {
+void StateSerializer::loadPPUState(std::istream &file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -314,7 +275,7 @@ void StateSerializer::loadPPUState(std::ifstream &file) {
   pixelFifo->setState(fifoBuffer, fifoHead, fifoTail, fifoCount);
 }
 
-void StateSerializer::loadLCDState(std::ifstream &file) {
+void StateSerializer::loadLCDState(std::istream &file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
