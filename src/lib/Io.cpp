@@ -65,16 +65,16 @@ void IO::write(uint16_t address, uint8_t value) {
   }
 
   if (address == SERIAL_DATA_REGISTER) {
-    serialData[SERIAL_DATA_INDEX] = value;
+    serialData[SERIAL_DATA_INDEX] = static_cast<char>(value);
     return;
   }
 
   if (address == SERIAL_CONTROL_REGISTER) {
-    serialData[SERIAL_CONTROL_INDEX] = value;
+    serialData[SERIAL_CONTROL_INDEX] = static_cast<char>(value);
 
     if ((value & BIT7_MASK) && serialSink) {
       serialSink(static_cast<uint8_t>(serialData[SERIAL_DATA_INDEX]));
-      serialData[SERIAL_CONTROL_INDEX] = value & ~BIT7_MASK;
+      serialData[SERIAL_CONTROL_INDEX] = static_cast<char>(value & ~BIT7_MASK);
     }
     return;
   }

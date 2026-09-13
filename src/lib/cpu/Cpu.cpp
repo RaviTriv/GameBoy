@@ -64,7 +64,8 @@ bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
 }
 
 void CPU::handleInterrupts() {
-  if (checkInterrupt(0x40, InterruptType::VBLANK)) {
+  if (checkInterrupt(0x40,
+                     InterruptType::VBLANK)) {  // NOLINT(bugprone-branch-clone)
   } else if (checkInterrupt(0x48, InterruptType::LCD_STAT)) {
   } else if (checkInterrupt(0x50, InterruptType::TIMER)) {
   } else if (checkInterrupt(0x58, InterruptType::SERIAL)) {
@@ -72,7 +73,9 @@ void CPU::handleInterrupts() {
   }
 }
 
-void CPU::requestInterrupt(InterruptType type) { state.intf |= (uint8_t)type; }
+void CPU::requestInterrupt(InterruptType type) {
+  state.intf |= static_cast<uint8_t>(type);
+}
 
 void CPU::setInterruptEnable(uint8_t value) { state.ie = value; }
 uint8_t CPU::getInterruptEnable() const { return state.ie; }
@@ -80,7 +83,9 @@ void CPU::setInterruptFlags(uint8_t value) { state.intf = value; }
 uint8_t CPU::getInterruptFlags() const { return state.intf; }
 CPU::State CPU::getState() const { return state; }
 void CPU::setState(const State &s) { this->state = s; }
-InterruptRegs CPU::getInterruptRegs() { return {state.ie, state.intf}; }
+InterruptRegs CPU::getInterruptRegs() {
+  return {.ie = state.ie, .intf = state.intf};
+}
 
 void CPU::executeCB() {
   uint8_t sub = bus->read8(state.registers.pc++);
@@ -135,6 +140,8 @@ void CPU::executeCB() {
       case 7:
         state.registers.a = val;
         break;
+      default:
+        break;
     }
   };
 
@@ -182,7 +189,7 @@ void CPU::executeCB() {
           setFlags(!result, 0, 0, !!(old & BIT7_MASK));
         } break;
         case 5: { /* SRA */
-          uint8_t result = (int8_t)val >> 1;
+          uint8_t result = static_cast<int8_t>(val) >> 1;
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, val & 1);
         } break;
@@ -197,6 +204,8 @@ void CPU::executeCB() {
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, val & 1);
         } break;
+        default:
+          break;
       }
     } break;
     case 1: { /* BIT */
@@ -208,6 +217,8 @@ void CPU::executeCB() {
     case 3: { /* SET */
       cbWrite(reg_idx, val | (1 << bit_num));
     } break;
+    default:
+      break;
   }
 }
 
@@ -376,7 +387,7 @@ void CPU::step() {
       } break;
 
       case 0x18: { /* JR r8 */
-        int8_t rel = (int8_t)bus->read8(state.registers.pc++);
+        auto rel = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         state.registers.pc += rel;
         cycle(1);
@@ -430,7 +441,7 @@ void CPU::step() {
       } break;
 
       case 0x20: { /* JR NZ,r8 */
-        int8_t rel = (int8_t)bus->read8(state.registers.pc++);
+        auto rel = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         if (!flagZ()) {
           state.registers.pc += rel;
@@ -492,7 +503,7 @@ void CPU::step() {
       } break;
 
       case 0x28: { /* JR Z,r8 */
-        int8_t rel = (int8_t)bus->read8(state.registers.pc++);
+        auto rel = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         if (flagZ()) {
           state.registers.pc += rel;
@@ -546,7 +557,7 @@ void CPU::step() {
       } break;
 
       case 0x30: { /* JR NC,r8 */
-        int8_t rel = (int8_t)bus->read8(state.registers.pc++);
+        auto rel = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         if (!flagC()) {
           state.registers.pc += rel;
@@ -605,7 +616,7 @@ void CPU::step() {
       } break;
 
       case 0x38: { /* JR C,r8 */
-        int8_t rel = (int8_t)bus->read8(state.registers.pc++);
+        auto rel = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         if (flagC()) {
           state.registers.pc += rel;
@@ -1256,7 +1267,8 @@ void CPU::step() {
 
       // CP A,r  (0xB8-0xBF)
       case 0xB8: { /* CP B */
-        int tmp = (int)state.registers.a - (int)state.registers.b;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.b);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.b & NIBBLE_MASK) <
@@ -1264,7 +1276,8 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xB9: { /* CP C */
-        int tmp = (int)state.registers.a - (int)state.registers.c;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.c);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.c & NIBBLE_MASK) <
@@ -1272,7 +1285,8 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xBA: { /* CP D */
-        int tmp = (int)state.registers.a - (int)state.registers.d;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.d);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.d & NIBBLE_MASK) <
@@ -1280,7 +1294,8 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xBB: { /* CP E */
-        int tmp = (int)state.registers.a - (int)state.registers.e;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.e);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.e & NIBBLE_MASK) <
@@ -1288,7 +1303,8 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xBC: { /* CP H */
-        int tmp = (int)state.registers.a - (int)state.registers.h;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.h);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.h & NIBBLE_MASK) <
@@ -1296,7 +1312,8 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xBD: { /* CP L */
-        int tmp = (int)state.registers.a - (int)state.registers.l;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.l);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.l & NIBBLE_MASK) <
@@ -1306,15 +1323,16 @@ void CPU::step() {
       case 0xBE: { /* CP (HL) */
         uint8_t val = bus->read8(state.registers.hl());
         cycle(1);
-        int tmp = (int)state.registers.a - (int)val;
-        setFlags(
-            tmp == 0, 1,
-            ((int)state.registers.a & NIBBLE_MASK) - ((int)val & NIBBLE_MASK) <
-                0,
-            tmp < 0);
+        int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
+        setFlags(tmp == 0, 1,
+                 (static_cast<int>(state.registers.a) & NIBBLE_MASK) -
+                         (static_cast<int>(val) & NIBBLE_MASK) <
+                     0,
+                 tmp < 0);
       } break;
       case 0xBF: { /* CP A */
-        int tmp = (int)state.registers.a - (int)state.registers.a;
+        int tmp = static_cast<int>(state.registers.a) -
+                  static_cast<int>(state.registers.a);
         setFlags(tmp == 0, 1,
                  (state.registers.a & NIBBLE_MASK) -
                          (state.registers.a & NIBBLE_MASK) <
@@ -1655,10 +1673,7 @@ void CPU::step() {
         cycle(1);
       } break;
 
-      case 0xE3: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
+      case 0xE3:   /* UNUSED */
       case 0xE4: { /* UNUSED */
         throw std::runtime_error("Unknown Instruction Type");
       } break;
@@ -1688,14 +1703,13 @@ void CPU::step() {
       } break;
 
       case 0xE8: { /* ADD SP,r8 */
-        int8_t val = (int8_t)bus->read8(state.registers.pc++);
+        auto val = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         int h =
             (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
-        int c =
-            (int)(state.registers.sp & BYTE_MASK) + (int)(val & BYTE_MASK) >=
-            0x100;
-        state.registers.sp = (uint16_t)((int)state.registers.sp + val);
+        int c = (state.registers.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
+        state.registers.sp =
+            static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val);
         cycle(1);
         setFlags(0, 0, h, c);
       } break;
@@ -1714,14 +1728,8 @@ void CPU::step() {
         cycle(1);
       } break;
 
-      case 0xEB: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xEC: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
+      case 0xEB:   /* UNUSED */
+      case 0xEC:   /* UNUSED */
       case 0xED: { /* UNUSED */
         throw std::runtime_error("Unknown Instruction Type");
       } break;
@@ -1793,14 +1801,15 @@ void CPU::step() {
       } break;
 
       case 0xF8: { /* LD HL,SP+r8 */
-        int8_t val = (int8_t)bus->read8(state.registers.pc++);
+        auto val = static_cast<int8_t>(bus->read8(state.registers.pc++));
         cycle(1);
         uint8_t H =
             (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
         uint8_t C =
             (state.registers.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
         setFlags(0, 0, H, C);
-        state.registers.setHl((uint16_t)((int)state.registers.sp + val));
+        state.registers.setHl(
+            static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val));
       } break;
 
       case 0xF9: { /* LD SP,HL */
@@ -1822,10 +1831,7 @@ void CPU::step() {
         state.imeScheduled = true;
       } break;
 
-      case 0xFC: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
+      case 0xFC:   /* UNUSED */
       case 0xFD: { /* UNUSED */
         throw std::runtime_error("Unknown Instruction Type");
       } break;
@@ -1833,12 +1839,12 @@ void CPU::step() {
       case 0xFE: { /* CP d8 */
         uint8_t val = bus->read8(state.registers.pc++);
         cycle(1);
-        int tmp = (int)state.registers.a - (int)val;
-        setFlags(
-            tmp == 0, 1,
-            ((int)state.registers.a & NIBBLE_MASK) - ((int)val & NIBBLE_MASK) <
-                0,
-            tmp < 0);
+        int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
+        setFlags(tmp == 0, 1,
+                 (static_cast<int>(state.registers.a) & NIBBLE_MASK) -
+                         (static_cast<int>(val) & NIBBLE_MASK) <
+                     0,
+                 tmp < 0);
       } break;
 
       case 0xFF: { /* RST 38H */
@@ -1847,6 +1853,9 @@ void CPU::step() {
         state.registers.pc = 0x38;
         cycle(1);
       } break;
+
+      default:
+        break;
     }
   }
 

@@ -25,7 +25,7 @@ enum class RegionType : uint8_t {
 constexpr std::array<RegionType, 256> buildPageTable() {
   std::array<RegionType, 256> table{};
   for (int page = 0; page < 256; ++page) {
-    uint16_t base = static_cast<uint16_t>(page << 8);
+    auto base = static_cast<uint16_t>(page << 8);
     if (base <= 0x7F00) {
       table[page] = RegionType::CartROM;
     } else if (base <= 0x9F00) {

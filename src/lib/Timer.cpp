@@ -26,6 +26,8 @@ void Timer::tick() {
     case 0b11:
       updateTimer = (prevDivider & (1 << 7)) && (!(state.div & (1 << 7)));
       break;
+    default:
+      break;
   }
 
   if (updateTimer && state.tac & (1 << 2)) {
@@ -55,6 +57,8 @@ void Timer::write(uint16_t address, uint8_t value) {
 
     case TAC_REGISTER:
       state.tac = value;
+      break;
+    default:
       break;
   }
 }

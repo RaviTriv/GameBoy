@@ -198,7 +198,7 @@ StereoSample APU::mixSample() {
   left = left * (leftVol + 1) / 8;
   right = right * (rightVol + 1) / 8;
 
-  return {left, right};
+  return {.left = left, .right = right};
 }
 
 void APU::flushChannelTimers() {

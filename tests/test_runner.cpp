@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "Apu.h"
 #include "Bus.h"
@@ -26,10 +27,10 @@ enum class Result { Running, Pass, Fail };
 
 enum class Protocol { Blargg, Mooneye };
 
-const std::string MOONEYE_PASS{"\x03\x05\x08\x0D\x15\x22", 6};
-const std::string MOONEYE_FAIL(6, '\x42');
-const std::string PASS_MARKER = "Passed";
-const std::string FAIL_MARKER = "Failed";
+constexpr std::string_view MOONEYE_PASS{"\x03\x05\x08\x0D\x15\x22", 6};
+constexpr std::string_view MOONEYE_FAIL = "BBBBBB";
+constexpr std::string_view PASS_MARKER = "Passed";
+constexpr std::string_view FAIL_MARKER = "Failed";
 
 class TestRunner {
  public:
@@ -103,9 +104,9 @@ class TestRunner {
     }
     serialDirty = false;
 
-    const std::string &pass =
+    const std::string_view pass =
         protocol == Protocol::Mooneye ? MOONEYE_PASS : PASS_MARKER;
-    const std::string &fail =
+    const std::string_view fail =
         protocol == Protocol::Mooneye ? MOONEYE_FAIL : FAIL_MARKER;
 
     if (serialLog.find(pass) != std::string::npos) {
@@ -119,7 +120,7 @@ class TestRunner {
 
   void report() const {
     if (protocol != Protocol::Mooneye) {
-      std::cout << serialLog << std::endl;
+      std::cout << serialLog << '\n';
       return;
     }
     std::cout << "serial:";
@@ -151,28 +152,28 @@ class TestRunner {
 }  // namespace
 
 int main(int argc, char **argv) {
-  std::string romPath;
-  uint64_t budget = DEFAULT_BUDGET_MCYCLES;
-  Protocol protocol = Protocol::Blargg;
-
-  for (int i = 1; i < argc; i++) {
-    const std::string arg = argv[i];
-    if (arg == "--mooneye") {
-      protocol = Protocol::Mooneye;
-    } else if (romPath.empty()) {
-      romPath = arg;
-    } else {
-      budget = std::stoull(arg) * 1'000'000ULL;
-    }
-  }
-
-  if (romPath.empty()) {
-    std::cerr
-        << "Usage: test_runner <rom_path> [max_million_cycles] [--mooneye]\n";
-    return 3;
-  }
-
   try {
+    std::string romPath;
+    uint64_t budget = DEFAULT_BUDGET_MCYCLES;
+    Protocol protocol = Protocol::Blargg;
+
+    for (int i = 1; i < argc; i++) {
+      const std::string arg = argv[i];
+      if (arg == "--mooneye") {
+        protocol = Protocol::Mooneye;
+      } else if (romPath.empty()) {
+        romPath = arg;
+      } else {
+        budget = std::stoull(arg) * 1'000'000ULL;
+      }
+    }
+
+    if (romPath.empty()) {
+      std::cerr
+          << "Usage: test_runner <rom_path> [max_million_cycles] [--mooneye]\n";
+      return 3;
+    }
+
     TestRunner runner(romPath, protocol);
     return runner.run(budget);
   } catch (const std::exception &e) {

@@ -17,13 +17,14 @@ class LCD {
     S_LYC = (1 << 6),
   };
 
+  struct PaletteBits {
+    uint8_t colorId0 : 2;
+    uint8_t colorId1 : 2;
+    uint8_t colorId2 : 2;
+    uint8_t colorId3 : 2;
+  };
   union PaletteRegister {
-    struct {
-      uint8_t colorId0 : 2;
-      uint8_t colorId1 : 2;
-      uint8_t colorId2 : 2;
-      uint8_t colorId3 : 2;
-    } bits;
+    PaletteBits bits;
     uint8_t palette;
   };
   struct State {
@@ -35,12 +36,7 @@ class LCD {
     uint8_t lyCompare = 0;
     uint8_t dma = 0;
     union {
-      struct {
-        uint8_t colorId0 : 2;
-        uint8_t colorId1 : 2;
-        uint8_t colorId2 : 2;
-        uint8_t colorId3 : 2;
-      } bits;
+      PaletteBits bits;
       uint8_t bgp = 0;
     };
     std::array<PaletteRegister, 3> palettes{};

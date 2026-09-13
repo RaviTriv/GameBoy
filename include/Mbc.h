@@ -55,7 +55,6 @@ class MBC2 : public MBC {
   bool ramEnabled = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
-  uint8_t bankingMode = 0;
 
  public:
   MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
@@ -71,7 +70,6 @@ class MBC3 : public MBC {
   bool ramEnabled = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
-  uint8_t bankingMode = 0;
 
  public:
   MBC3(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,

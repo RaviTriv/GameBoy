@@ -25,7 +25,7 @@ void Cartridge::loadCartridge(std::string_view romPath) {
   state.romData.resize(state.romSize);
 
   if (!cartridge.read(reinterpret_cast<char *>(state.romData.data()),
-                      state.romSize)) {
+                      static_cast<std::streamsize>(state.romSize))) {
     throw std::runtime_error("Failed to load cartridge data.");
   };
 
@@ -61,10 +61,10 @@ void Cartridge::initFromRom() {
   state.header->globalChecksum =
       (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
 
-  int romBanks = (state.romSize / 0x4000);
+  int romBanks = static_cast<int>(state.romSize / 0x4000);
   int ramBanks = getRomBanksCount(state.romData.at(0x149));
 
-  state.ramData.resize(ramBanks * 0x2000);
+  state.ramData.resize(static_cast<std::size_t>(ramBanks) * 0x2000);
 
   switch (state.header->type) {
     case CartridgeType::ROM_ONLY:
@@ -115,11 +115,8 @@ void Cartridge::write(uint16_t address, uint8_t value) {
 int Cartridge::getRomBanksCount(uint8_t type) const {
   switch (type) {
     case 0x00:
-      return 0;
-      break;
     case 0x01:
       return 0;
-      break;
     case 0x02:
       return 1;
       break;
@@ -168,6 +165,4 @@ std::string Cartridge::cartridgeType(CartridgeType type) {
   }
 }
 
-std::string Cartridge::getTitle() const {
-  return std::string(state.header->title.data());
-}
+std::string Cartridge::getTitle() const { return {state.header->title.data()}; }

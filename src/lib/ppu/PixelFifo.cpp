@@ -1,6 +1,6 @@
 #include "PixelFifo.h"
 
-PixelFifo::PixelFifo() : head(0), tail(0), count(0) { buffer.fill(0); }
+PixelFifo::PixelFifo() { buffer.fill(0); }
 
 void PixelFifo::push(uint32_t pixel) {
   if (isFull()) {

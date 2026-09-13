@@ -51,7 +51,7 @@ void PPU::oamWrite(uint16_t address, uint8_t value) {
   if (address >= 0xA0) {
     return;
   }
-  uint8_t *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
+  auto *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
   p[address] = value;
 }
 
@@ -62,7 +62,7 @@ uint8_t PPU::oamRead(uint16_t address) const {
   if (address >= 0xA0) {
     return 0xFF;
   }
-  const uint8_t *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
+  const auto *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
   return p[address];
 }
 
@@ -87,13 +87,13 @@ void PPU::incrementLY() {
   lcd->incrementLy();
 
   if (lcd->getLy() == lcd->getLyCompare()) {
-    lcd->setLycFlag(1);
+    lcd->setLycFlag(true);
 
     if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
       interruptSink.requestInterrupt(InterruptType::LCD_STAT);
     }
   } else {
-    lcd->setLycFlag(0);
+    lcd->setLycFlag(false);
   }
 }
 

@@ -9,6 +9,9 @@
 
 class Logger {
  public:
+  Logger(const Logger &) = delete;
+  Logger &operator=(const Logger &) = delete;
+
   static std::shared_ptr<spdlog::logger> GetLogger() {
     static std::shared_ptr<spdlog::logger> logger = nullptr;
 
@@ -43,6 +46,4 @@ class Logger {
  private:
   Logger() = default;
   ~Logger() = default;
-  Logger(const Logger &) = delete;
-  Logger &operator=(const Logger &) = delete;
 };

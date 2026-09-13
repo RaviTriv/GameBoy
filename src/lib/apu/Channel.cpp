@@ -1,5 +1,7 @@
 #include "Channel.h"
 
+#include <utility>
+
 #include "Logger.h"
 
 const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {
@@ -71,7 +73,7 @@ void Channel::envelopeAction() {
       envelopeTimer = nrx2 & ENVELOPE_PERIOD_MASK;
       int direction = (nrx2 & ENVELOPE_DIRECTION_BIT) ? 1 : -1;
       int newVolume = envelopeVolume + direction;
-      if (newVolume >= 0 && newVolume <= MAX_VOLUME) {
+      if (newVolume >= 0 && std::cmp_less_equal(newVolume, MAX_VOLUME)) {
         envelopeVolume = newVolume;
       } else {
         envelopeEnabled = false;
