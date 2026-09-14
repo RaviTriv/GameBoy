@@ -26,3 +26,25 @@ jobs:
 
       - name: Run test ROMs
         run: ctest --test-dir build --output-on-failure
+
+  clang-tidy:
+    name: Clang Tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libspdlog-dev ninja-build clang-tidy clang-format
+          pip install "cmake>=3.30"
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DBUILD_APP=OFF -DBUILD_TESTS=ON -DFETCH_TEST_ROMS=OFF -DCMAKE_BUILD_TYPE=Release
+
+      - name: Run clang-tidy
+        run: clang-tidy -p build $(find src -name '*.cpp') tests/test_runner.cpp
+
+      - name: Run clang-format
+        run: clang-format --dry-run --Werror $(find src include tests -name '*.cpp' -o -name '*.h')
