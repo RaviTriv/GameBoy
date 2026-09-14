@@ -14,4 +14,4 @@ Checks: >
 
 HeaderFilterRegex: '(include|src)/.*'
 
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
