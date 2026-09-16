@@ -25,6 +25,7 @@ set(CORE_SOURCES
     src/lib/cartridge/Cartridge.cpp
     src/lib/cartridge/Mbc.cpp
     src/lib/cpu/Cpu.cpp
+    src/lib/FramePacer.cpp
     src/lib/Gamepad.cpp
     src/lib/Io.cpp
     src/lib/ppu/Dma.cpp
@@ -33,6 +34,8 @@ set(CORE_SOURCES
     src/lib/ppu/PixelFifo.cpp
     src/lib/ppu/Ppu.cpp
     src/lib/Ram.cpp
+    src/lib/StateSerializer.cpp
+    src/lib/StateSerializerFile.cpp
     src/lib/Timer.cpp
 )
 
@@ -56,9 +59,6 @@ if(BUILD_APP)
 
     add_executable(gameboy
         src/lib/Gameboy.cpp
-        src/lib/FramePacer.cpp
-        src/lib/StateSerializer.cpp
-        src/lib/StateSerializerFile.cpp
         src/lib/Ui.cpp
         src/main.cpp
     )
