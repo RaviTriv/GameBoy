@@ -101,10 +101,25 @@ if(BUILD_TESTS)
         FetchContent_MakeAvailable(gb_test_roms)
 
         set(BLARGG_DIR "${gb_test_roms_SOURCE_DIR}/blargg")
+        set(MOONEYE_DIR "${gb_test_roms_SOURCE_DIR}/mooneye-test-suite/acceptance")
+        set(ACID2_ROM "${gb_test_roms_SOURCE_DIR}/dmg-acid2/dmg-acid2.gb")
 
         function(add_rom_test name rom label)
             add_test(NAME "${name}" COMMAND gameboy_tests "${rom}")
             set_tests_properties("${name}" PROPERTIES TIMEOUT 120 LABELS "${label}")
+        endfunction()
+
+        function(add_mooneye_test relpath)
+            string(REPLACE ".gb" "" test_id "${relpath}")
+            string(REPLACE "/" "." test_id "${test_id}")
+            add_test(NAME "mooneye.${test_id}"
+                     COMMAND gameboy_tests "${MOONEYE_DIR}/${relpath}" --mooneye)
+            set_tests_properties("mooneye.${test_id}" PROPERTIES TIMEOUT 120 LABELS "mooneye")
+        endfunction()
+
+        function(add_blargg_memory_test name rom)
+            add_test(NAME "blargg.${name}" COMMAND gameboy_tests "${rom}" --memory)
+            set_tests_properties("blargg.${name}" PROPERTIES TIMEOUT 120 LABELS "apu")
         endfunction()
 
         # Not yet passing -- uncomment as each is fixed.
