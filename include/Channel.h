@@ -15,7 +15,6 @@ class Channel {
   bool triggerSweep = false;
   int freqTimer = 0;
   int lengthTimer = 0;
-  uint16_t baseAddress = 0;
   bool envelopeEnabled = false;
   int envelopeVolume = 0;
   int envelopeTimer = 0;
@@ -69,10 +68,8 @@ class SquareChannel : public Channel {
 
  public:
   void reset() override;
-  bool timerAction();
   int advanceTimer(int ticks);
   bool lengthTimerAction() override;
-  void dutyAction();
   void sweepAction();
   [[nodiscard]] uint8_t getSample() const override;
 };
@@ -88,7 +85,6 @@ class WaveChannel : public Channel {
 
  public:
   void reset() override;
-  bool timerAction();
   int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;
@@ -117,7 +113,6 @@ class NoiseChannel : public Channel {
 
  public:
   void reset() override;
-  bool timerAction();
   int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;

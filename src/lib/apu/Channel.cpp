@@ -40,17 +40,6 @@ void SquareChannel::reset() {
   }
 }
 
-bool SquareChannel::timerAction() {
-  if (freqTimer <= 0) {
-    uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
-    freqTimer = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
-    return true;
-  } else {
-    freqTimer--;
-  }
-  return false;
-}
-
 bool SquareChannel::lengthTimerAction() {
   if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer) {
     lengthTimer--;
@@ -80,11 +69,6 @@ void Channel::envelopeAction() {
       }
     }
   }
-}
-
-void SquareChannel::dutyAction() {
-  duty++;
-  duty %= DUTY_CYCLE_STEPS;
 }
 
 uint16_t SquareChannel::sweepCalculation() {
@@ -183,17 +167,6 @@ void WaveChannel::reset() {
   }
 }
 
-bool WaveChannel::timerAction() {
-  if (freqTimer <= 0) {
-    uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
-    freqTimer = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
-    return true;
-  } else {
-    freqTimer--;
-  }
-  return false;
-}
-
 bool WaveChannel::lengthTimerAction() {
   if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer) {
     lengthTimer--;
@@ -277,25 +250,6 @@ bool NoiseChannel::lengthTimerAction() {
 
 uint8_t NoiseChannel::getSample() const {
   return (~lfsr & LFSR_BIT0_MASK) * envelopeVolume * enabled;
-}
-
-bool NoiseChannel::timerAction() {
-  freqTimer--;
-
-  if (freqTimer <= 0) {
-    freqTimer = divisor[nrx3 & DIVISOR_INDEX_MASK]
-                << (nrx3 >> SHIFT_AMOUNT_SHIFT);
-    uint8_t xorRes =
-        (lfsr & LFSR_BIT0_MASK) ^ ((lfsr & LFSR_BIT1_MASK) >> LFSR_BIT1_SHIFT);
-    lfsr = (lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT);
-
-    if ((nrx3 >> LFSR_WIDTH_SHIFT) & LFSR_BIT0_MASK) {
-      lfsr &= ~(1 << LFSR_7BIT_TAP);
-      lfsr |= (xorRes << LFSR_7BIT_TAP);
-    }
-    return true;
-  }
-  return false;
 }
 
 int NoiseChannel::advanceTimer(int ticks) {
