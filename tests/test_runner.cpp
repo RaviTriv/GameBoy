@@ -1,4 +1,6 @@
+#include <array>
 #include <cstdint>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -26,6 +28,34 @@ constexpr uint64_t DEFAULT_BUDGET_MCYCLES = 300'000'000ULL;
 enum class Result { Running, Pass, Fail };
 
 enum class Protocol { Blargg, Mooneye, Memory };
+
+constexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ULL;
+constexpr uint64_t FNV_PRIME = 0x100000001b3ULL;
+
+template <std::size_t N>
+uint64_t hashFramebuffer(const std::array<uint32_t, N> &buffer) {
+  uint64_t hash = FNV_OFFSET_BASIS;
+  for (uint32_t pixel : buffer) {
+    for (int shift = 0; shift < 32; shift += 8) {
+      hash ^= static_cast<uint8_t>(pixel >> shift);
+      hash *= FNV_PRIME;
+    }
+  }
+  return hash;
+}
+
+template <std::size_t N>
+void dumpFramebuffer(const std::string &path,
+                     const std::array<uint32_t, N> &buffer) {
+  std::ofstream out(path, std::ios::binary);
+  out << "P6\n" << XRES << ' ' << YRES << "\n255\n";
+  for (uint32_t pixel : buffer) {
+    const char rgb[3] = {static_cast<char>(pixel >> 16),
+                         static_cast<char>(pixel >> 8),
+                         static_cast<char>(pixel)};
+    out.write(rgb, sizeof(rgb));
+  }
+}
 
 constexpr std::string_view MOONEYE_PASS{"\x03\x05\x08\x0D\x15\x22", 6};
 constexpr std::string_view MOONEYE_FAIL = "BBBBBB";
@@ -89,6 +119,16 @@ class TestRunner {
     return 2;
   }
 
+  void runFrames(uint32_t frames) {
+    while (framesElapsed < frames) {
+      cpu->step();
+    }
+  }
+
+  [[nodiscard]] const auto &videoBuffer() const {
+    return ppu->getVideoBuffer();
+  }
+
  private:
   static void cycleTrampoline(void *self, int cycles) {
     static_cast<TestRunner *>(self)->cycle(cycles);
@@ -103,6 +143,7 @@ class TestRunner {
         ppu->tick();
         if (prevFrame != ppu->getCurrentFrame()) {
           frameDirty = true;
+          framesElapsed++;
         }
         apu->tick();
       }
@@ -182,6 +223,7 @@ class TestRunner {
   bool serialDirty = false;
   bool frameDirty = false;
   uint64_t totalCycles = 0;
+  uint32_t framesElapsed = 0;
 };
 
 }  // namespace
@@ -191,6 +233,10 @@ int main(int argc, char **argv) {
     std::string romPath;
     uint64_t budget = DEFAULT_BUDGET_MCYCLES;
     Protocol protocol = Protocol::Blargg;
+    uint32_t frames = 0;
+    bool frameMode = false;
+    bool printHash = false;
+    std::string dumpPath;
 
     for (int i = 1; i < argc; i++) {
       const std::string arg = argv[i];
@@ -198,6 +244,13 @@ int main(int argc, char **argv) {
         protocol = Protocol::Mooneye;
       } else if (arg == "--memory") {
         protocol = Protocol::Memory;
+      } else if (arg == "--hash") {
+        printHash = true;
+      } else if (arg == "--frames") {
+        frameMode = true;
+        frames = static_cast<uint32_t>(std::stoul(argv[++i]));
+      } else if (arg == "--dump") {
+        dumpPath = argv[++i];
       } else if (romPath.empty()) {
         romPath = arg;
       } else {
@@ -207,11 +260,25 @@ int main(int argc, char **argv) {
 
     if (romPath.empty()) {
       std::cerr << "Usage: test_runner <rom_path> [max_million_cycles] "
-                   "[--mooneye] [--memory]\n";
+                   "[--mooneye] [--memory] [--frames N] [--hash] "
+                   "[--dump path]\n";
       return 3;
     }
 
     TestRunner runner(romPath, protocol);
+
+    if (frameMode) {
+      runner.runFrames(frames);
+      if (printHash) {
+        std::cout << std::hex << std::setfill('0') << std::setw(16)
+                  << hashFramebuffer(runner.videoBuffer()) << std::dec << '\n';
+      }
+      if (!dumpPath.empty()) {
+        dumpFramebuffer(dumpPath, runner.videoBuffer());
+      }
+      return 0;
+    }
+
     return runner.run(budget);
   } catch (const std::exception &e) {
     std::cerr << "ERROR: " << e.what() << "\n";
