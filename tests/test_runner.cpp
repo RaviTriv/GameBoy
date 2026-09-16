@@ -25,12 +25,20 @@ constexpr uint64_t DEFAULT_BUDGET_MCYCLES = 300'000'000ULL;
 
 enum class Result { Running, Pass, Fail };
 
-enum class Protocol { Blargg, Mooneye };
+enum class Protocol { Blargg, Mooneye, Memory };
 
 constexpr std::string_view MOONEYE_PASS{"\x03\x05\x08\x0D\x15\x22", 6};
 constexpr std::string_view MOONEYE_FAIL = "BBBBBB";
 constexpr std::string_view PASS_MARKER = "Passed";
 constexpr std::string_view FAIL_MARKER = "Failed";
+
+constexpr uint16_t MEMORY_RESULT_ADDR = 0xA000;
+constexpr uint16_t MEMORY_SIGNATURE_ADDR = 0xA001;
+constexpr uint8_t MEMORY_SIGNATURE_0 = 0xDE;
+constexpr uint8_t MEMORY_SIGNATURE_1 = 0xB0;
+constexpr uint8_t MEMORY_SIGNATURE_2 = 0x61;
+constexpr uint8_t MEMORY_STILL_RUNNING = 0x80;
+constexpr uint8_t MEMORY_PASS_CODE = 0x00;
 
 class TestRunner {
  public:
@@ -91,7 +99,11 @@ class TestRunner {
     for (int i = 0; i < cycles; i++) {
       for (int j = 0; j < CLOCK_CYCLES; j++) {
         timer->tick();
+        const uint32_t prevFrame = ppu->getCurrentFrame();
         ppu->tick();
+        if (prevFrame != ppu->getCurrentFrame()) {
+          frameDirty = true;
+        }
         apu->tick();
       }
       dma->tick();
@@ -99,6 +111,14 @@ class TestRunner {
   }
 
   Result checkResult() {
+    if (protocol == Protocol::Memory) {
+      if (!frameDirty) {
+        return Result::Running;
+      }
+      frameDirty = false;
+      return checkMemoryResult();
+    }
+
     if (!serialDirty) {
       return Result::Running;
     }
@@ -116,6 +136,20 @@ class TestRunner {
       return Result::Fail;
     }
     return Result::Running;
+  }
+
+  Result checkMemoryResult() {
+    if (bus->read8(MEMORY_SIGNATURE_ADDR) != MEMORY_SIGNATURE_0 ||
+        bus->read8(MEMORY_SIGNATURE_ADDR + 1) != MEMORY_SIGNATURE_1 ||
+        bus->read8(MEMORY_SIGNATURE_ADDR + 2) != MEMORY_SIGNATURE_2) {
+      return Result::Running;
+    }
+
+    const uint8_t code = bus->read8(MEMORY_RESULT_ADDR);
+    if (code == MEMORY_STILL_RUNNING) {
+      return Result::Running;
+    }
+    return code == MEMORY_PASS_CODE ? Result::Pass : Result::Fail;
   }
 
   void report() const {
@@ -146,6 +180,7 @@ class TestRunner {
   Protocol protocol = Protocol::Blargg;
   std::string serialLog;
   bool serialDirty = false;
+  bool frameDirty = false;
   uint64_t totalCycles = 0;
 };
 
@@ -161,6 +196,8 @@ int main(int argc, char **argv) {
       const std::string arg = argv[i];
       if (arg == "--mooneye") {
         protocol = Protocol::Mooneye;
+      } else if (arg == "--memory") {
+        protocol = Protocol::Memory;
       } else if (romPath.empty()) {
         romPath = arg;
       } else {
@@ -169,8 +206,8 @@ int main(int argc, char **argv) {
     }
 
     if (romPath.empty()) {
-      std::cerr
-          << "Usage: test_runner <rom_path> [max_million_cycles] [--mooneye]\n";
+      std::cerr << "Usage: test_runner <rom_path> [max_million_cycles] "
+                   "[--mooneye] [--memory]\n";
       return 3;
     }
 
