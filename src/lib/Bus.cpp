@@ -57,12 +57,6 @@ uint8_t Bus::readPageFF(uint16_t address) {
   return ram.readHRAM(address);
 }
 
-uint16_t Bus::read16(uint16_t address) {
-  uint8_t low = read8(address);
-  uint8_t high = read8(address + 1);
-  return low | (high << BYTE_BITS);
-}
-
 void Bus::write8(uint16_t address, uint8_t value) {
   switch (PAGE_TABLE[address >> 8]) {
     case RegionType::CartROM:

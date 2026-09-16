@@ -168,8 +168,6 @@ void LCD::setLcdMode(MODE mode) {
   state.lcds |= static_cast<uint8_t>(mode);
 }
 
-bool LCD::isLycFlag() const { return getBit(state.lcds, 2); }
-
 void LCD::setLycFlag(bool value) { setBit(state.lcds, 2, value); }
 
 LCD::State LCD::getState() const { return state; }
@@ -203,5 +201,3 @@ const std::array<uint32_t, 4> &LCD::getOb1Colors() const {
 const std::array<uint32_t, 4> &LCD::getOb2Colors() const {
   return state.ob2Colors;
 }
-
-uint8_t LCD::getLcds() const { return state.lcds; }

@@ -60,7 +60,6 @@ class LCD {
   [[nodiscard]] bool isObjEnabled() const;
   [[nodiscard]] int getLcdMode() const;
   void setLcdMode(MODE mode);
-  [[nodiscard]] bool isLycFlag() const;
   void setLycFlag(bool value);
   [[nodiscard]] LCD::State getState() const;
   void setState(const State &state);
@@ -76,7 +75,6 @@ class LCD {
   [[nodiscard]] const std::array<uint32_t, 4> &getBgColors() const;
   [[nodiscard]] const std::array<uint32_t, 4> &getOb1Colors() const;
   [[nodiscard]] const std::array<uint32_t, 4> &getOb2Colors() const;
-  [[nodiscard]] uint8_t getLcds() const;
 
  private:
   State state;
