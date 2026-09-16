@@ -27,6 +27,28 @@ jobs:
       - name: Run test ROMs
         run: ctest --test-dir build --output-on-failure
 
+  sanitizers:
+    name: Sanitizers
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libspdlog-dev ninja-build
+          pip install "cmake>=3.30"
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DBUILD_APP=OFF -DBUILD_TESTS=ON -DFETCH_TEST_ROMS=ON -DGB_SANITIZE=ON -DGB_TEST_TIMEOUT=600 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Run test ROMs
+        run: ctest --test-dir build --output-on-failure -L "cpu|mbc"
+
   clang-tidy:
     name: Clang Tidy
     runs-on: ubuntu-latest

@@ -7,6 +7,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_APP "Build UI" ON)
 option(BUILD_TESTS "Build headless for testing" ON)
 option(FETCH_TEST_ROMS "Download extra test ROM suites" ON)
+option(GB_SANITIZE "Build with -fsanitize=address,undefined" OFF)
+set(GB_TEST_TIMEOUT 120 CACHE STRING "Per-test ctest TIMEOUT in seconds")
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
@@ -16,6 +18,11 @@ enable_testing()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(GB_WARNINGS -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+if(GB_SANITIZE)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
 endif()
 
 set(CORE_SOURCES
@@ -88,7 +95,7 @@ if(BUILD_TESTS)
         get_filename_component(rom_name "${rom}" NAME_WE)
         add_test(NAME "blargg.${rom_name}"
                  COMMAND gameboy_tests "${rom}")
-        set_tests_properties("blargg.${rom_name}" PROPERTIES TIMEOUT 120 LABELS "cpu")
+        set_tests_properties("blargg.${rom_name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "cpu")
     endforeach()
 
     if(FETCH_TEST_ROMS)
@@ -106,7 +113,7 @@ if(BUILD_TESTS)
 
         function(add_rom_test name rom label)
             add_test(NAME "${name}" COMMAND gameboy_tests "${rom}")
-            set_tests_properties("${name}" PROPERTIES TIMEOUT 120 LABELS "${label}")
+            set_tests_properties("${name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "${label}")
         endfunction()
 
         function(add_mooneye_test relpath)
@@ -114,12 +121,12 @@ if(BUILD_TESTS)
             string(REPLACE "/" "." test_id "${test_id}")
             add_test(NAME "mooneye.${test_id}"
                      COMMAND gameboy_tests "${MOONEYE_DIR}/${relpath}" --mooneye)
-            set_tests_properties("mooneye.${test_id}" PROPERTIES TIMEOUT 120 LABELS "mooneye")
+            set_tests_properties("mooneye.${test_id}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "mooneye")
         endfunction()
 
         function(add_blargg_memory_test name rom)
             add_test(NAME "blargg.${name}" COMMAND gameboy_tests "${rom}" --memory)
-            set_tests_properties("blargg.${name}" PROPERTIES TIMEOUT 120 LABELS "apu")
+            set_tests_properties("blargg.${name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "apu")
         endfunction()
 
         # Not yet passing -- uncomment as each is fixed.
