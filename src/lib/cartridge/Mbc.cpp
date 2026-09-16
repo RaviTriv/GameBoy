@@ -6,7 +6,12 @@
 
 std::vector<uint8_t> MBC::empty;
 
-uint8_t MBC0::read(uint16_t address) const { return romData[address]; }
+uint8_t MBC0::read(uint16_t address) const {
+  if (address >= 0x8000 || address >= romData.size()) {
+    return 0xFF;
+  }
+  return romData[address];
+}
 
 void MBC0::write(uint16_t, uint8_t) {
   Logger::GetLogger()->error("Write not supported for MBC0");
