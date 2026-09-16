@@ -66,7 +66,7 @@ class Cartridge {
   void initFromRom();
   static constexpr std::size_t MIN_ROM_SIZE = 0x150;
 
-  [[nodiscard]] int getRomBanksCount(uint8_t type) const;
+  [[nodiscard]] int getRamBanksCount(uint8_t type) const;
   [[nodiscard]] static std::string cartridgeType(CartridgeType type);
 
   void outputCartridgeInfo();

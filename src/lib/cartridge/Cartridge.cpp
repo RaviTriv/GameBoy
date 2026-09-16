@@ -62,7 +62,7 @@ void Cartridge::initFromRom() {
       (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
 
   int romBanks = static_cast<int>(state.romSize / 0x4000);
-  int ramBanks = getRomBanksCount(state.romData.at(0x149));
+  int ramBanks = getRamBanksCount(state.romData.at(0x149));
 
   state.ramData.resize(static_cast<std::size_t>(ramBanks) * 0x2000);
 
@@ -112,7 +112,7 @@ void Cartridge::write(uint16_t address, uint8_t value) {
   mbc->write(address, value);
 }
 
-int Cartridge::getRomBanksCount(uint8_t type) const {
+int Cartridge::getRamBanksCount(uint8_t type) const {
   switch (type) {
     case 0x00:
     case 0x01:

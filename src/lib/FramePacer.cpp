@@ -19,10 +19,8 @@ void FramePacer::onFrameComplete() {
   }
   if (end - startTimer >= 1000) {
     startTimer = end;
-    frameCount = 0;
   }
 
-  frameCount++;
   prevFrameTime = getTicksFn();
 }
 

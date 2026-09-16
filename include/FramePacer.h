@@ -18,6 +18,5 @@ class FramePacer {
   uint32_t targetFrameTime;
   long prevFrameTime = 0;
   long startTimer = 0;
-  long frameCount = 0;
   bool fastForward = false;
 };
