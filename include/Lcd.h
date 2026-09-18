@@ -17,6 +17,8 @@ class LCD {
     S_LYC = (1 << 6),
   };
 
+  enum EnableTransition { NO_TRANSITION, TURNED_ON, TURNED_OFF };
+
   struct PaletteBits {
     uint8_t colorId0 : 2;
     uint8_t colorId1 : 2;
@@ -61,6 +63,8 @@ class LCD {
   [[nodiscard]] int getLcdMode() const;
   void setLcdMode(MODE mode);
   void setLycFlag(bool value);
+  [[nodiscard]] bool isLcdEnabled() const;
+  EnableTransition consumeEnableTransition();
   [[nodiscard]] LCD::State getState() const;
   void setState(const State &state);
 
@@ -78,6 +82,7 @@ class LCD {
 
  private:
   State state;
+  bool lcdWasEnabled = true;
   std::function<void(uint8_t)> onDmaStart;
   static constexpr std::array<unsigned long, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};

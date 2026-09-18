@@ -24,6 +24,32 @@ std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer() {
 }
 
 void PPU::tick() {
+  switch (lcd->consumeEnableTransition()) {
+    case LCD::TURNED_OFF:
+      lcd->setLy(0);
+      lcd->setLcdMode(LCD::MODE::HBLANK);
+      pipeline.reset();
+      state.lineTicks = 0;
+      state.windowLine = 0;
+      getWriteBuffer().fill(0xFFFFFFFF);
+      currentFrame.fetch_add(1, std::memory_order_relaxed);
+      readBufferIndex.store(1 - readBufferIndex.load(std::memory_order_relaxed),
+                            std::memory_order_release);
+      return;
+    case LCD::TURNED_ON:
+      lcd->setLy(0);
+      lcd->setLcdMode(LCD::MODE::OAM);
+      state.lineTicks = 0;
+      state.windowLine = 0;
+      break;
+    case LCD::NO_TRANSITION:
+      break;
+  }
+
+  if (!lcd->isLcdEnabled()) {
+    return;
+  }
+
   state.lineTicks++;
   switch (lcd->getLcdMode()) {
     case LCD::MODE::OAM:

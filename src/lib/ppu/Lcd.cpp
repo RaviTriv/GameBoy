@@ -170,6 +170,20 @@ void LCD::setLcdMode(MODE mode) {
 
 void LCD::setLycFlag(bool value) { setBit(state.lcds, 2, value); }
 
+bool LCD::isLcdEnabled() const { return getBit(state.lcdc, 7); }
+
+LCD::EnableTransition LCD::consumeEnableTransition() {
+  bool enabled = isLcdEnabled();
+  EnableTransition transition = NO_TRANSITION;
+  if (enabled && !lcdWasEnabled) {
+    transition = TURNED_ON;
+  } else if (!enabled && lcdWasEnabled) {
+    transition = TURNED_OFF;
+  }
+  lcdWasEnabled = enabled;
+  return transition;
+}
+
 LCD::State LCD::getState() const { return state; }
 
 void LCD::setState(const State &state) { this->state = state; }
