@@ -26,7 +26,7 @@ uint8_t LCD::read(uint16_t address) const {
     case 0xFF40:
       return state.lcdc;
     case 0xFF41:
-      return state.lcds;
+      return state.lcds | 0x80;
     case 0xFF42:
       return state.scrollY;
     case 0xFF43:
@@ -60,7 +60,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       state.lcdc = value;
       break;
     case 0xFF41:
-      state.lcds = value & 0xFC;
+      state.lcds = (state.lcds & 0x07) | (value & 0x78);
       break;
     case 0xFF42:
       state.scrollY = value;
