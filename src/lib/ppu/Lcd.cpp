@@ -99,6 +99,7 @@ void LCD::write(uint16_t address, uint8_t value) {
 }
 
 void LCD::updatePalettes(PaletteType type, uint8_t value) {
+  state.palettes[type].palette = value;
   switch (type) {
     case BGP:
       state.bgColors[0] = defaultColors.at(value & 0b11);
