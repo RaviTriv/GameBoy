@@ -114,6 +114,7 @@ void MBC3::write(uint16_t address, uint8_t value) {
     if (romBank == 0x00) {
       romBank = 0x01;
     }
+    romBank %= romBanksCount;
   } else if (address < 0x6000) {
     ramBank = value & 0x0f;
   } else if (address >= 0xA000 && address < 0xC000) {
