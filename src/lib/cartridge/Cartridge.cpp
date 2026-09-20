@@ -1,5 +1,6 @@
 #include "Cartridge.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 
@@ -40,6 +41,14 @@ void Cartridge::initFromRom() {
     throw std::runtime_error("Cartridge is too small to contain a ROM header.");
   }
 
+  if (state.romSize < 0x8000 || state.romSize % 0x4000 != 0) {
+    std::ostringstream message;
+    message << "Cartridge ROM size " << state.romSize
+            << " bytes is invalid: must be at least 0x8000 and a multiple of "
+               "0x4000.";
+    throw std::runtime_error(message.str());
+  }
+
   state.header = std::make_unique<RomHeader>();
 
   const uint8_t *rom = state.romData.data();
@@ -64,7 +73,7 @@ void Cartridge::initFromRom() {
   state.header->globalChecksum =
       (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
 
-  int romBanks = static_cast<int>(state.romSize / 0x4000);
+  int romBanks = std::max(2, static_cast<int>(state.romSize / 0x4000));
   int ramBanks = getRamBanksCount(state.romData.at(0x149));
 
   state.ramData.resize(static_cast<std::size_t>(ramBanks) * 0x2000);
