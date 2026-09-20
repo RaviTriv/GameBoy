@@ -1,5 +1,8 @@
 #include "Cartridge.h"
 
+#include <iomanip>
+#include <sstream>
+
 #include "Logger.h"
 
 Cartridge::Cartridge(std::string_view romPath) { loadCartridge(romPath); }
@@ -89,10 +92,13 @@ void Cartridge::initFromRom() {
       mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks,
                                    ramBanks);
       break;
-    default:
-      Logger::GetLogger()->error("Unsupported cartridge type: {}",
-                                 cartridgeType(state.header->type));
-      break;
+    default: {
+      std::ostringstream message;
+      message << "Unsupported cartridge type: 0x" << std::hex
+              << std::setfill('0') << std::setw(2)
+              << static_cast<int>(rom[ROM_HEADER_OFFSET + 0x47]);
+      throw std::runtime_error(message.str());
+    }
   }
   outputCartridgeInfo();
 }
