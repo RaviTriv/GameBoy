@@ -109,6 +109,7 @@ if(BUILD_TESTS)
 
         set(BLARGG_DIR "${gb_test_roms_SOURCE_DIR}/blargg")
         set(MOONEYE_DIR "${gb_test_roms_SOURCE_DIR}/mooneye-test-suite/acceptance")
+        set(MOONEYE_EMULATOR_ONLY_DIR "${gb_test_roms_SOURCE_DIR}/mooneye-test-suite/emulator-only")
         set(ACID2_ROM "${gb_test_roms_SOURCE_DIR}/dmg-acid2/dmg-acid2.gb")
 
         function(add_rom_test name rom label)
@@ -128,6 +129,28 @@ if(BUILD_TESTS)
             add_test(NAME "blargg.${name}" COMMAND gameboy_tests "${rom}" --memory)
             set_tests_properties("blargg.${name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "apu")
         endfunction()
+
+        function(add_mooneye_mbc_test relpath)
+            string(REPLACE ".gb" "" test_id "${relpath}")
+            string(REPLACE "/" "." test_id "${test_id}")
+            add_test(NAME "mooneye.${test_id}"
+                     COMMAND gameboy_tests "${MOONEYE_EMULATOR_ONLY_DIR}/${relpath}" --mooneye)
+            set_tests_properties("mooneye.${test_id}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "mbc")
+        endfunction()
+
+        add_mooneye_mbc_test(mbc1/bits_bank1.gb)
+        add_mooneye_mbc_test(mbc1/bits_bank2.gb)
+        add_mooneye_mbc_test(mbc1/bits_mode.gb)
+        add_mooneye_mbc_test(mbc1/bits_ramg.gb)
+        add_mooneye_mbc_test(mbc1/ram_64kb.gb)
+        add_mooneye_mbc_test(mbc1/ram_256kb.gb)
+        add_mooneye_mbc_test(mbc1/rom_512kb.gb)
+        add_mooneye_mbc_test(mbc1/rom_1Mb.gb)
+        add_mooneye_mbc_test(mbc1/rom_2Mb.gb)
+        add_mooneye_mbc_test(mbc1/rom_4Mb.gb)
+        add_mooneye_mbc_test(mbc1/rom_8Mb.gb)
+        add_mooneye_mbc_test(mbc1/rom_16Mb.gb)
+        # add_mooneye_mbc_test(mbc1/multicart_rom_8Mb.gb)
 
         # Not yet passing -- uncomment as each is fixed.
         # add_rom_test(blargg.halt_bug      "${BLARGG_DIR}/halt_bug.gb"                 cpu)
