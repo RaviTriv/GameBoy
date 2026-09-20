@@ -152,6 +152,14 @@ if(BUILD_TESTS)
         add_mooneye_mbc_test(mbc1/rom_16Mb.gb)
         # add_mooneye_mbc_test(mbc1/multicart_rom_8Mb.gb)
 
+        # add_mooneye_mbc_test(mbc2/bits_ramg.gb)
+        # add_mooneye_mbc_test(mbc2/bits_romb.gb)
+        add_mooneye_mbc_test(mbc2/bits_unused.gb)
+        add_mooneye_mbc_test(mbc2/ram.gb)
+        add_mooneye_mbc_test(mbc2/rom_512kb.gb)
+        add_mooneye_mbc_test(mbc2/rom_1Mb.gb)
+        add_mooneye_mbc_test(mbc2/rom_2Mb.gb)
+
         # Not yet passing -- uncomment as each is fixed.
         # add_rom_test(blargg.halt_bug      "${BLARGG_DIR}/halt_bug.gb"                 cpu)
         # add_rom_test(blargg.instr_timing  "${BLARGG_DIR}/instr_timing/instr_timing.gb" cpu)
