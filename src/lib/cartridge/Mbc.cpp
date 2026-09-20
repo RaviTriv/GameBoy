@@ -103,7 +103,7 @@ uint8_t MBC3::read(uint16_t address) const {
       }
     }
   }
-  return 0;
+  return 0xFF;
 }
 
 void MBC3::write(uint16_t address, uint8_t value) {
