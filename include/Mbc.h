@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -8,7 +9,7 @@ class MBC {
   virtual ~MBC() = default;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
-  MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {};
+  MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty){};
   MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
       uint16_t ramBanks)
       : romBanksCount(romBanks),
@@ -54,7 +55,7 @@ class MBC2 : public MBC {
  private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
-  uint8_t ramBank = 0;
+  std::array<uint8_t, 512> ram{};
 
  public:
   MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,

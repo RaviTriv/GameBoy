@@ -60,14 +60,12 @@ uint8_t MBC2::read(uint16_t address) const {
   } else if (address < 0x8000) {
     return romData[romBank * 0x4000 + address - 0x4000];
   } else if (address >= 0xA000 && address < 0xC000) {
-    if (ramEnabled) {
-      const std::size_t index = ramBank * 0x2000 + address - 0xA000;
-      if (index < ramData.size()) {
-        return ramData[index];
-      }
+    if (!ramEnabled) {
+      return 0xFF;
     }
+    return 0xF0 | ram[address & 0x1FF];
   }
-  return 0;
+  return 0xFF;
 }
 
 void MBC2::write(uint16_t address, uint8_t value) {
@@ -85,10 +83,7 @@ void MBC2::write(uint16_t address, uint8_t value) {
     }
   } else if (address >= 0xA000 && address < 0xC000) {
     if (ramEnabled) {
-      const std::size_t index = ramBank * 0x2000 + address - 0xA000;
-      if (index < ramData.size()) {
-        ramData[index] = value;
-      }
+      ram[address & 0x1FF] = value & 0x0F;
     }
   }
 }
