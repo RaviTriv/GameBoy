@@ -1,6 +1,7 @@
 #include "Cartridge.h"
 
 #include <algorithm>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 
@@ -180,4 +181,13 @@ std::string Cartridge::cartridgeType(CartridgeType type) {
   }
 }
 
-std::string Cartridge::getTitle() const { return {state.header->title.data()}; }
+std::string Cartridge::getTitle() const {
+  const auto &title = state.header->title;
+  std::string result(title.data(), strnlen(title.data(), title.size()));
+  for (char &c : result) {
+    if (c < 0x20 || c > 0x7E) {
+      c = '_';
+    }
+  }
+  return result;
+}
