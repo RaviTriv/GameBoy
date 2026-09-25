@@ -227,7 +227,7 @@ void CPU::executeCB() {
 void CPU::step() {
   if (state.halted) [[unlikely]] {
     cycle(1);
-    if (state.intf) {
+    if (state.intf & state.ie & 0x1F) {
       state.halted = false;
     }
   } else {
