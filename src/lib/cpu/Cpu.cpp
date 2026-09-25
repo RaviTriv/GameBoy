@@ -290,7 +290,9 @@ void CPU::step() {
         cycle(1);
         uint16_t addr = lo | (hi << 8);
         state.registers.pc += 2;
-        bus->write16(addr, state.registers.sp);
+        bus->write8(addr, state.registers.sp & BYTE_MASK);
+        cycle(1);
+        bus->write8(addr + 1, (state.registers.sp >> 8) & BYTE_MASK);
         cycle(1);
       } break;
 
@@ -594,6 +596,7 @@ void CPU::step() {
         cycle(1);
         val++;
         bus->write8(hl, val);
+        cycle(1);
         setFlags(val == 0, 0, (val & NIBBLE_MASK) == 0, -1);
       } break;
 
@@ -603,6 +606,7 @@ void CPU::step() {
         cycle(1);
         val--;
         bus->write8(hl, val);
+        cycle(1);
         setFlags(val == 0, 1, (val & NIBBLE_MASK) == NIBBLE_MASK, -1);
       } break;
 
@@ -1713,6 +1717,7 @@ void CPU::step() {
         state.registers.sp =
             static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val);
         cycle(1);
+        cycle(1);
         setFlags(0, 0, h, c);
       } break;
 
@@ -1812,6 +1817,7 @@ void CPU::step() {
         setFlags(0, 0, H, C);
         state.registers.setHl(
             static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val));
+        cycle(1);
       } break;
 
       case 0xF9: { /* LD SP,HL */
