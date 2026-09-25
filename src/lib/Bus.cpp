@@ -103,6 +103,6 @@ void Bus::writePageFF(uint16_t address, uint8_t value) {
 }
 
 void Bus::write16(uint16_t address, uint16_t value) {
-  write8(address + 1, (value >> BYTE_BITS) & BYTE_MASK);
   write8(address, value & BYTE_MASK);
+  write8(address + 1, (value >> BYTE_BITS) & BYTE_MASK);
 }
