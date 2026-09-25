@@ -33,7 +33,7 @@ void Timer::tick() {
   if (updateTimer && state.tac & (1 << 2)) {
     state.tima++;
 
-    if (state.tima == TIMA_OVERFLOW) {
+    if (state.tima == 0) {
       state.tima = state.tma;
 
       interruptSink.requestInterrupt(InterruptType::TIMER);
