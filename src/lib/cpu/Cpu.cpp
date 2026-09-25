@@ -153,8 +153,7 @@ void CPU::executeCB() {
   uint8_t bit_num = (sub >> 3) & 0x07;
   bool isHL = (reg_idx == 6);
 
-  cycle(1);
-  if (isHL) cycle(2);
+  if (isHL) cycle(op_group == 1 ? 1 : 2);
 
   uint8_t val = cbRead(reg_idx);
 
