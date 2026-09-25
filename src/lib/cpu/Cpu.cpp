@@ -1787,6 +1787,7 @@ void CPU::step() {
 
       case 0xF3: { /* DI */
         state.ime = false;
+        state.imeScheduled = false;
       } break;
 
       case 0xF4: { /* UNUSED */
