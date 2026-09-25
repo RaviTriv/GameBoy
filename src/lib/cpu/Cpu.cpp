@@ -231,7 +231,13 @@ void CPU::step() {
       state.halted = false;
     }
   } else {
-    uint8_t opcode = bus->read8(state.registers.pc++);
+    uint8_t opcode;
+    if (state.haltBug) {
+      opcode = bus->read8(state.registers.pc);
+      state.haltBug = false;
+    } else {
+      opcode = bus->read8(state.registers.pc++);
+    }
     cycle(1);
 
     switch (opcode) {
@@ -851,7 +857,11 @@ void CPU::step() {
         break;
 
       case 0x76: { /* HALT */
-        state.halted = true;
+        if (!state.ime && (state.intf & state.ie & 0x1F)) {
+          state.haltBug = true;
+        } else {
+          state.halted = true;
+        }
       } break;
 
       case 0x77: /* LD (HL),A */

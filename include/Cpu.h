@@ -24,6 +24,7 @@ class CPU : public InterruptSink {
     uint8_t ie = 0;
     uint8_t intf = 0;
     bool halted = false;
+    bool haltBug = false;
   };
 
   using CycleCallbackFn = void (*)(void *, int);
