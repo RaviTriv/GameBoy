@@ -29,11 +29,6 @@ inline void CPU::stackPush8(uint8_t val) {
   bus->write8(state.registers.sp, val);
 }
 
-inline void CPU::stackPush16(uint16_t val) {
-  stackPush8((val >> 8) & BYTE_MASK);
-  stackPush8(val & BYTE_MASK);
-}
-
 inline uint8_t CPU::stackPop8() {
   uint8_t val = bus->read8(state.registers.sp);
   state.registers.sp++;
@@ -48,8 +43,10 @@ inline uint16_t CPU::stackPop16() {
 
 void CPU::interruptHandle(uint16_t address) {
   cycle(2);
-  cycle(2);
-  stackPush16(state.registers.pc);
+  cycle(1);
+  stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+  cycle(1);
+  stackPush8(state.registers.pc & BYTE_MASK);
   state.registers.pc = address;
   cycle(1);
 }
@@ -1406,8 +1403,10 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (!flagZ()) {
-          cycle(2);
-          stackPush16(state.registers.pc);
+          cycle(1);
+          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          cycle(1);
+          stackPush8(state.registers.pc & BYTE_MASK);
           state.registers.pc = lo | (hi << 8);
           cycle(1);
         }
@@ -1434,8 +1433,10 @@ void CPU::step() {
       } break;
 
       case 0xC7: { /* RST 00H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x00;
         cycle(1);
       } break;
@@ -1484,8 +1485,10 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (flagZ()) {
-          cycle(2);
-          stackPush16(state.registers.pc);
+          cycle(1);
+          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          cycle(1);
+          stackPush8(state.registers.pc & BYTE_MASK);
           state.registers.pc = lo | (hi << 8);
           cycle(1);
         }
@@ -1497,8 +1500,10 @@ void CPU::step() {
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = lo | (hi << 8);
         cycle(1);
       } break;
@@ -1515,8 +1520,10 @@ void CPU::step() {
       } break;
 
       case 0xCF: { /* RST 08H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x08;
         cycle(1);
       } break;
@@ -1564,8 +1571,10 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (!flagC()) {
-          cycle(2);
-          stackPush16(state.registers.pc);
+          cycle(1);
+          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          cycle(1);
+          stackPush8(state.registers.pc & BYTE_MASK);
           state.registers.pc = lo | (hi << 8);
           cycle(1);
         }
@@ -1591,8 +1600,10 @@ void CPU::step() {
       } break;
 
       case 0xD7: { /* RST 10H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x10;
         cycle(1);
       } break;
@@ -1642,8 +1653,10 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (flagC()) {
-          cycle(2);
-          stackPush16(state.registers.pc);
+          cycle(1);
+          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          cycle(1);
+          stackPush8(state.registers.pc & BYTE_MASK);
           state.registers.pc = lo | (hi << 8);
           cycle(1);
         }
@@ -1665,8 +1678,10 @@ void CPU::step() {
       } break;
 
       case 0xDF: { /* RST 18H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x18;
         cycle(1);
       } break;
@@ -1714,8 +1729,10 @@ void CPU::step() {
       } break;
 
       case 0xE7: { /* RST 20H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x20;
         cycle(1);
       } break;
@@ -1761,8 +1778,10 @@ void CPU::step() {
       } break;
 
       case 0xEF: { /* RST 28H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x28;
         cycle(1);
       } break;
@@ -1814,8 +1833,10 @@ void CPU::step() {
       } break;
 
       case 0xF7: { /* RST 30H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x30;
         cycle(1);
       } break;
@@ -1869,8 +1890,10 @@ void CPU::step() {
       } break;
 
       case 0xFF: { /* RST 38H */
-        cycle(2);
-        stackPush16(state.registers.pc);
+        cycle(1);
+        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        cycle(1);
+        stackPush8(state.registers.pc & BYTE_MASK);
         state.registers.pc = 0x38;
         cycle(1);
       } break;

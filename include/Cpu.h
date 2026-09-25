@@ -88,7 +88,6 @@ class CPU : public InterruptSink {
   }
 
   inline void stackPush8(uint8_t val);
-  inline void stackPush16(uint16_t val);
   inline uint8_t stackPop8();
   inline uint16_t stackPop16();
 
