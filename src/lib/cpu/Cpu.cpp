@@ -349,6 +349,8 @@ void CPU::step() {
       } break;
 
       case 0x10: { /* STOP */
+        (void)bus->read8(state.registers.pc++);
+        bus->write8(TIMER_DIV_REGISTER, 0);
       } break;
 
       case 0x11: { /* LD DE,d16 */
