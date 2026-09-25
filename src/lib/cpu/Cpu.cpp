@@ -47,8 +47,11 @@ inline uint16_t CPU::stackPop16() {
 }
 
 void CPU::interruptHandle(uint16_t address) {
+  cycle(2);
+  cycle(2);
   stackPush16(state.registers.pc);
   state.registers.pc = address;
+  cycle(1);
 }
 
 bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
