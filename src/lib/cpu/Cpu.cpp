@@ -136,6 +136,7 @@ void CPU::executeCB() {
         break;
       case 6:
         bus->write8(state.registers.hl(), val);
+        cycle(1);
         break;
       case 7:
         state.registers.a = val;
@@ -150,9 +151,8 @@ void CPU::executeCB() {
   uint8_t bit_num = (sub >> 3) & 0x07;
   bool isHL = (reg_idx == 6);
 
-  if (isHL) cycle(op_group == 1 ? 1 : 2);
-
   uint8_t val = cbRead(reg_idx);
+  if (isHL) cycle(1);
 
   switch (op_group) {
     case 0: {
