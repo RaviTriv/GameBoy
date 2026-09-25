@@ -7,6 +7,12 @@ Timer::Timer(InterruptSink &interruptSink) : interruptSink(interruptSink) {
 }
 
 void Timer::tick() {
+  if (state.reloadPending) {
+    state.reloadPending = false;
+    state.tima = state.tma;
+    interruptSink.requestInterrupt(InterruptType::TIMER);
+  }
+
   uint16_t prevDivider = state.div;
 
   state.div++;
@@ -34,9 +40,7 @@ void Timer::tick() {
     state.tima++;
 
     if (state.tima == 0) {
-      state.tima = state.tma;
-
-      interruptSink.requestInterrupt(InterruptType::TIMER);
+      state.reloadPending = true;
     }
   }
 }
