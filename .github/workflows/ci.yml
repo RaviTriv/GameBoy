@@ -66,7 +66,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DBUILD_APP=OFF -DBUILD_TESTS=ON -DFETCH_TEST_ROMS=OFF -DCMAKE_BUILD_TYPE=Release
 
       - name: Run clang-tidy
-        run: clang-tidy -p build $(find src -name '*.cpp') tests/test_runner.cpp
+        run: clang-tidy -p build $(jq -r '.[].file' build/compile_commands.json | grep -E '/(src|tests)/' | grep -v '/_deps/' | sort -u)
 
       - name: Run clang-format
         run: clang-format --dry-run --Werror $(find src include tests -name '*.cpp' -o -name '*.h')

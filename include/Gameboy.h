@@ -30,7 +30,8 @@ class GameBoy {
   };
   GameBoy();
   ~GameBoy();
-  void init(std::string romPath, bool trace, bool loadSave, bool fastForward);
+  void init(const std::string &romPath, bool trace, bool loadSave,
+            bool fastForward);
   void run();
 
   void cycle(int cycles);

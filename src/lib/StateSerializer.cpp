@@ -14,6 +14,14 @@
 #include "Ppu.h"
 #include "Ram.h"
 
+namespace {
+
+std::streamsize streamSize(std::size_t bytes) {
+  return static_cast<std::streamsize>(bytes);
+}
+
+}  // namespace
+
 StateSerializer::StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd)
     : cpu(cpu), ram(ram), ppu(ppu), lcd(lcd) {}
 
@@ -27,7 +35,7 @@ bool StateSerializer::save(std::ostream &out, const std::string &label) {
     uint32_t headerLength = headerStr.length();
     out.write(reinterpret_cast<const char *>(&headerLength),
               sizeof(headerLength));
-    out.write(headerStr.c_str(), headerStr.length());
+    out.write(headerStr.c_str(), streamSize(headerStr.length()));
     saveCPUState(out);
     saveRAMState(out);
     savePPUState(out);
@@ -70,12 +78,12 @@ void StateSerializer::savePPUState(std::ostream &file) {
   file.write(reinterpret_cast<const char *>(&ppuState.lineSpritesCount),
              sizeof(ppuState.lineSpritesCount));
   file.write(reinterpret_cast<const char *>(ppuState.vram.data()),
-             ppuState.vram.size());
+             streamSize(ppuState.vram.size()));
   file.write(reinterpret_cast<const char *>(ppuState.oamRam.data()),
-             ppuState.oamRam.size() * sizeof(OAM_ENTRY));
+             streamSize(ppuState.oamRam.size() * sizeof(OAM_ENTRY)));
   const auto &videoBuffer = ppu.getVideoBuffer();
   file.write(reinterpret_cast<const char *>(videoBuffer.data()),
-             videoBuffer.size() * sizeof(uint32_t));
+             streamSize(videoBuffer.size() * sizeof(uint32_t)));
 
   const Pipeline::State &pipelineState = ppu.getPipelineState();
   const PixelFifo *pixelFifo = ppu.getPipeline()->getPixelFifo();
@@ -84,7 +92,7 @@ void StateSerializer::savePPUState(std::ostream &file) {
              sizeof(pipelineState.fetchState));
 
   file.write(reinterpret_cast<const char *>(pixelFifo->getBuffer().data()),
-             pixelFifo->getBuffer().size() * sizeof(uint32_t));
+             streamSize(pixelFifo->getBuffer().size() * sizeof(uint32_t)));
   size_t head = pixelFifo->getHead();
   size_t tail = pixelFifo->getTail();
   size_t count = pixelFifo->getCount();
@@ -100,12 +108,12 @@ void StateSerializer::savePPUState(std::ostream &file) {
   file.write(reinterpret_cast<const char *>(&pipelineState.fetchX),
              sizeof(pipelineState.fetchX));
   file.write(reinterpret_cast<const char *>(pipelineState.bgwBuffer.data()),
-             pipelineState.bgwBuffer.size() * sizeof(uint8_t));
+             streamSize(pipelineState.bgwBuffer.size() * sizeof(uint8_t)));
   file.write(reinterpret_cast<const char *>(pipelineState.objectBuffer.data()),
-             pipelineState.objectBuffer.size() * sizeof(uint8_t));
+             streamSize(pipelineState.objectBuffer.size() * sizeof(uint8_t)));
   file.write(
       reinterpret_cast<const char *>(pipelineState.fetchedEntries.data()),
-      pipelineState.fetchedEntries.size() * sizeof(OAM_ENTRY));
+      streamSize(pipelineState.fetchedEntries.size() * sizeof(OAM_ENTRY)));
   file.write(reinterpret_cast<const char *>(&pipelineState.mapX),
              sizeof(pipelineState.mapX));
   file.write(reinterpret_cast<const char *>(&pipelineState.mapY),
@@ -138,7 +146,7 @@ void StateSerializer::saveLCDState(std::ostream &file) {
   file.write(reinterpret_cast<const char *>(&state.bgp), sizeof(state.bgp));
 
   file.write(reinterpret_cast<const char *>(state.palettes.data()),
-             state.palettes.size() * sizeof(LCD::PaletteRegister));
+             streamSize(state.palettes.size() * sizeof(LCD::PaletteRegister)));
 
   file.write(reinterpret_cast<const char *>(&state.windowX),
              sizeof(state.windowX));
@@ -146,11 +154,11 @@ void StateSerializer::saveLCDState(std::ostream &file) {
              sizeof(state.windowY));
 
   file.write(reinterpret_cast<const char *>(state.bgColors.data()),
-             state.bgColors.size() * sizeof(uint32_t));
+             streamSize(state.bgColors.size() * sizeof(uint32_t)));
   file.write(reinterpret_cast<const char *>(state.ob1Colors.data()),
-             state.ob1Colors.size() * sizeof(uint32_t));
+             streamSize(state.ob1Colors.size() * sizeof(uint32_t)));
   file.write(reinterpret_cast<const char *>(state.ob2Colors.data()),
-             state.ob2Colors.size() * sizeof(uint32_t));
+             streamSize(state.ob2Colors.size() * sizeof(uint32_t)));
 }
 
 bool StateSerializer::load(std::istream &in) {
@@ -225,7 +233,7 @@ void StateSerializer::loadPPUState(std::istream &file) {
   file.read(reinterpret_cast<char *>(state.vram.data()), state.vram.size());
   file.read(reinterpret_cast<char *>(state.oamRam.data()),
             state.oamRam.size() * sizeof(OAM_ENTRY));
-  std::array<uint32_t, XRES * YRES> videoBuffer;
+  std::array<uint32_t, static_cast<std::size_t>(XRES) * YRES> videoBuffer;
   file.read(reinterpret_cast<char *>(videoBuffer.data()),
             videoBuffer.size() * sizeof(uint32_t));
 

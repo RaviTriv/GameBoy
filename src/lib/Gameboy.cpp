@@ -27,7 +27,7 @@ GameBoy::~GameBoy() {
   }
 }
 
-void GameBoy::init(std::string romPath, bool trace, bool loadSave,
+void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
                    bool fastForward) {
   Logger::GetLogger()->set_level(spdlog::level::off);
   if (trace) {

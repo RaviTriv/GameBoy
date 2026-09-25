@@ -130,6 +130,7 @@ class Queue {
 
  private:
   static void copy_into_buffer(T *dst, const T *src, std::size_t n) {
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
     } else {
@@ -138,6 +139,7 @@ class Queue {
   }
 
   static void copy_from_buffer(T *dst, const T *src, std::size_t n) {
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
     } else {
@@ -363,6 +365,7 @@ class Queue<T, Capacity, MemoryType::Shared> {
 
  private:
   static void copy_into_buffer(T *dst, const T *src, std::size_t n) {
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
     } else {
@@ -371,6 +374,7 @@ class Queue<T, Capacity, MemoryType::Shared> {
   }
 
   static void copy_from_buffer(T *dst, const T *src, std::size_t n) {
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if constexpr (std::is_trivially_copyable_v<T>) {
       std::memcpy(dst, src, n * sizeof(T));
     } else {
