@@ -161,8 +161,9 @@ if(BUILD_TESTS)
         add_mooneye_mbc_test(mbc2/rom_2Mb.gb)
 
         # Not yet passing -- uncomment as each is fixed.
+        # halt_bug: no serial output, times out
         # add_rom_test(blargg.halt_bug      "${BLARGG_DIR}/halt_bug.gb"                 cpu)
-        # add_rom_test(blargg.instr_timing  "${BLARGG_DIR}/instr_timing/instr_timing.gb" cpu)
+        add_rom_test(blargg.instr_timing  "${BLARGG_DIR}/instr_timing/instr_timing.gb" cpu)
         # add_rom_test(blargg.mem_timing    "${BLARGG_DIR}/mem_timing/mem_timing.gb"     cpu)
         # add_rom_test(blargg.mem_timing_2  "${BLARGG_DIR}/mem_timing-2/mem_timing.gb"   cpu)
         # add_rom_test(blargg.oam_bug       "${BLARGG_DIR}/oam_bug/oam_bug.gb"           ppu)
