@@ -1,5 +1,7 @@
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <fstream>
 #include <iomanip>
 #include <iostream>

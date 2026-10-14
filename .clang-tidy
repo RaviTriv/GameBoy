@@ -5,6 +5,7 @@ Checks: >
   portability-*,
   clang-analyzer-*,
   google-readability-braces-around-statements,
+  misc-include-cleaner,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
   -bugprone-easily-swappable-parameters,
