@@ -1,8 +1,9 @@
 #include "Channel.h"
 
+#include <array>
+#include <cstdint>
 #include <utility>
 
-#include "Logger.h"
 
 const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {
     {{0, 0, 0, 0, 0, 0, 0, 1},

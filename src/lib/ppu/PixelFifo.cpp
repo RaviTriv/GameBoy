@@ -1,4 +1,8 @@
 #include "PixelFifo.h"
+#include "Common.h"
+#include <array>
+#include <cstddef>
+#include <cstdint>
 
 PixelFifo::PixelFifo() { buffer.fill(0); }
 

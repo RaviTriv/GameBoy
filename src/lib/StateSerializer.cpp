@@ -1,10 +1,18 @@
 #include "StateSerializer.h"
 
+#include <array>
+#include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <exception>
+#include <ios>
+#include <istream>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
+#include "Common.h"
 #include "Cpu.h"
 #include "Lcd.h"
 #include "Logger.h"

@@ -1,9 +1,14 @@
 #include "Ppu.h"
+#include <array>
+#include <atomic>
+#include <cstdint>
 
+#include "Common.h"
 #include "IMemRead.h"
 #include "InterruptSink.h"
 #include "Lcd.h"
 #include "Logger.h"
+#include "OamTypes.h"
 
 PPU::PPU(InterruptSink &interruptSink)
     : interruptSink(interruptSink),

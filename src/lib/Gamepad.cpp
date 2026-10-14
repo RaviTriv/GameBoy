@@ -1,4 +1,6 @@
 #include "Gamepad.h"
+#include <atomic>
+#include <cstdint>
 
 bool Gamepad::isBPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_B;

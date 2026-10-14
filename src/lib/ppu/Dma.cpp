@@ -1,4 +1,7 @@
 #include "Dma.h"
+#include <cstdint>
+#include <functional>
+#include <utility>
 
 #include "IMemRead.h"
 

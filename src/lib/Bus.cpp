@@ -1,10 +1,11 @@
 #include "Bus.h"
+#include <cstdint>
 
 #include "Cartridge.h"
 #include "Common.h"
 #include "Dma.h"
+#include "InterruptRegs.h"
 #include "Io.h"
-#include "Logger.h"
 #include "Ppu.h"
 #include "Ram.h"
 

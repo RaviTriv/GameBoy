@@ -1,10 +1,11 @@
 #include "Io.h"
+#include <cstdint>
 
 #include "Apu.h"
 #include "Common.h"
 #include "Gamepad.h"
+#include "InterruptRegs.h"
 #include "Lcd.h"
-#include "Logger.h"
 #include "Timer.h"
 
 IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad,

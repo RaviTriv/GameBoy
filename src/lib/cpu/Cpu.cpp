@@ -1,6 +1,11 @@
 #include "Cpu.h"
+#include <cstdint>
+#include <stdexcept>
 
 #include "Bus.h"
+#include "Common.h"
+#include "InterruptRegs.h"
+#include "InterruptSink.h"
 
 CPU::CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus)
     : cycleCallback(cycleCallback),

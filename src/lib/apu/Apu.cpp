@@ -1,7 +1,8 @@
 #include "Apu.h"
+#include <cstddef>
+#include <cstdint>
 
 #include "Channel.h"
-#include "Logger.h"
 
 uint8_t APU::read(uint16_t address) const {
   switch (address) {

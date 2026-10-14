@@ -1,6 +1,8 @@
 #include "Mbc.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include "Logger.h"
 

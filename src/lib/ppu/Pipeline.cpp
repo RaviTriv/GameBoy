@@ -1,9 +1,12 @@
 #include "Pipeline.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
 #include <utility>
 
 #include "Common.h"
-#include "Logger.h"
+#include "ScanlineContext.h"
 
 Pipeline::Pipeline(ReadFn readFn, WritePixelFn writePixelFn)
     : readFn(std::move(readFn)), writePixelFn(std::move(writePixelFn)) {}

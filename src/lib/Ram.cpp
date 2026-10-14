@@ -1,4 +1,6 @@
 #include "Ram.h"
+#include <cstddef>
+#include <cstdint>
 
 #include "Common.h"
 #include "Logger.h"

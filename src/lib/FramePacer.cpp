@@ -1,4 +1,7 @@
 #include "FramePacer.h"
+#include <cstdint>
+#include <functional>
+#include <utility>
 
 FramePacer::FramePacer(std::function<uint32_t()> getTicksFn,
                        std::function<void(uint32_t)> delayFn,

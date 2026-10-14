@@ -1,4 +1,8 @@
 #include "Lcd.h"
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <utility>
 
 #include "Logger.h"
 

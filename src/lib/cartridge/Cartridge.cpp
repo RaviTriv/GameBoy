@@ -1,11 +1,22 @@
 #include "Cartridge.h"
+#include <_string.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
+#include <ios>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include "Logger.h"
+#include "Mbc.h"
 
 Cartridge::Cartridge(std::string_view romPath) { loadCartridge(romPath); }
 
