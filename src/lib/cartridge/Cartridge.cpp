@@ -1,5 +1,4 @@
 #include "Cartridge.h"
-#include <_string.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -194,7 +193,7 @@ std::string Cartridge::cartridgeType(CartridgeType type) {
 
 std::string Cartridge::getTitle() const {
   const auto &title = state.header->title;
-  std::string result(title.data(), strnlen(title.data(), title.size()));
+  std::string result(title.begin(), std::ranges::find(title, '\0'));
   for (char &c : result) {
     if (c < 0x20 || c > 0x7E) {
       c = '_';

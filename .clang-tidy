@@ -16,3 +16,6 @@ Checks: >
 HeaderFilterRegex: '(include|src)/.*'
 
 WarningsAsErrors: '*'
+
+CheckOptions:
+  misc-include-cleaner.IgnoreHeaders: '/_.*'
