@@ -172,10 +172,10 @@ class TestRunner {
     const std::string_view fail =
         protocol == Protocol::Mooneye ? MOONEYE_FAIL : FAIL_MARKER;
 
-    if (serialLog.find(pass) != std::string::npos) {
+    if (serialLog.contains(pass)) {
       return Result::Pass;
     }
-    if (serialLog.find(fail) != std::string::npos) {
+    if (serialLog.contains(fail)) {
       return Result::Fail;
     }
     return Result::Running;
