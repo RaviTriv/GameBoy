@@ -27,12 +27,12 @@ class CPU : public InterruptSink {
     bool haltBug = false;
   };
 
-  using CycleCallbackFn = void (*)(void *, int);
+  using CycleCallbackFn = void (*)(void*, int);
 
-  CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus);
+  CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx, Bus* bus);
 
   void step();
-  void setBus(Bus *bus);
+  void setBus(Bus* bus);
   void requestInterrupt(InterruptType type) override;
   [[nodiscard]] uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
@@ -40,21 +40,21 @@ class CPU : public InterruptSink {
   [[nodiscard]] InterruptRegs getInterruptRegs();
   void setInterruptFlags(uint8_t value);
   [[nodiscard]] CPU::State getState() const;
-  void setState(const State &state);
+  void setState(const State& state);
 
  private:
   CycleCallbackFn cycleCallback;
-  void *cycleCallbackCtx;
-  Bus *bus;
+  void* cycleCallbackCtx;
+  Bus* bus;
 
   State state;
 
   void cycle(int n) { cycleCallback(cycleCallbackCtx, n); }
 
-  int flagZ() const { return (state.registers.f >> 7) & 1; }
-  int flagN() const { return (state.registers.f >> 6) & 1; }
-  int flagH() const { return (state.registers.f >> 5) & 1; }
-  int flagC() const { return (state.registers.f >> 4) & 1; }
+  uint8_t flagZ() const { return (state.registers.f >> 7) & 1; }
+  uint8_t flagN() const { return (state.registers.f >> 6) & 1; }
+  uint8_t flagH() const { return (state.registers.f >> 5) & 1; }
+  uint8_t flagC() const { return (state.registers.f >> 4) & 1; }
 
   void setFlags(int z, int n, int h, int c) {
     if (z != -1) {

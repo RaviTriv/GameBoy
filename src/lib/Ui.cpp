@@ -24,7 +24,7 @@
 #include "Ppu.h"
 
 UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback,
-       PPU &ppu, Gamepad &gamepad, APU &apu)
+       PPU& ppu, Gamepad& gamepad, APU& apu)
     : apu(apu),
       ppu(ppu),
       gamepad(gamepad),
@@ -46,7 +46,7 @@ void UI::init() {
   SDL_InitSubSystem(SDL_INIT_AUDIO);
   const SDL_AudioSpec spec = {
       .format = SDL_AUDIO_U8, .channels = 2, .freq = APU::audioFreq};
-  SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(
+  SDL_AudioStream* stream = SDL_OpenAudioDeviceStream(
       SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
 }
@@ -61,7 +61,7 @@ constexpr std::size_t MAX_CHUNK_FRAMES = 2048;
 
 }  // namespace
 
-void audioCallback(void *sound, SDL_AudioStream *stream, int additionalAmount,
+void audioCallback(void* sound, SDL_AudioStream* stream, int additionalAmount,
                    int totalAmount) {
   (void)totalAmount;
 
@@ -69,7 +69,7 @@ void audioCallback(void *sound, SDL_AudioStream *stream, int additionalAmount,
     return;
   }
 
-  UI *ui = static_cast<UI *>(sound);
+  UI* ui = static_cast<UI*>(sound);
 
   std::array<StereoSample, MAX_CHUNK_FRAMES> chunk;
 
@@ -97,7 +97,7 @@ void UI::update() {
   rect.w = SCALE;
   rect.h = SCALE;
 
-  const auto &videoBuffer = ppu.getVideoBuffer();
+  const auto& videoBuffer = ppu.getVideoBuffer();
 
   for (int i = 0; i < YRES; i++) {
     for (int j = 0; j < XRES; j++) {
@@ -106,7 +106,9 @@ void UI::update() {
       rect.w = SCALE;
       rect.h = SCALE;
 
-      SDL_FillSurfaceRect(screen, &rect, videoBuffer[j + (i * XRES)]);
+      const int index = j + (i * XRES);
+      SDL_FillSurfaceRect(screen, &rect,
+                          videoBuffer[static_cast<std::size_t>(index)]);
     }
   }
 
@@ -170,6 +172,7 @@ void UI::handleEvents() {
         break;
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         onClose();
+        break;
       default:
         break;
     }
@@ -182,7 +185,7 @@ void UI::setToggleFastForward(ToggleFastForwardCallback fn) {
   onToggleFastForward = std::move(fn);
 }
 
-uint32_t UI::getTicks() const { return SDL_GetTicks(); }
+uint32_t UI::getTicks() const { return static_cast<uint32_t>(SDL_GetTicks()); }
 
 UI::~UI() {
   SDL_DestroyTexture(sdlTexture);

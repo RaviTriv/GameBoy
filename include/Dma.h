@@ -17,10 +17,10 @@ class DMA {
   void start(uint8_t start);
   void tick();
   [[nodiscard]] bool isTransferring() const;
-  void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
+  void setMemRead(IMemRead& reader) { memRead = &reader; }
 
  private:
   State state;
-  IMemRead *memRead = nullptr;
+  IMemRead* memRead = nullptr;
   std::function<void(uint16_t, uint8_t)> oamWrite;
 };

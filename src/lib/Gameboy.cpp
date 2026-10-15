@@ -34,10 +34,10 @@ GameBoy::~GameBoy() {
   }
 }
 
-void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
-                   bool fastForward) {
+void GameBoy::init(const std::string& romPath, bool enableTrace,
+                   bool loadSaveOnStart, bool startFastForward) {
   Logger::GetLogger()->set_level(spdlog::level::off);
-  if (trace) {
+  if (enableTrace) {
     Logger::GetLogger()->set_level(spdlog::level::trace);
   }
   displayBootArt();
@@ -50,8 +50,8 @@ void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
   lcd = std::make_unique<LCD>([this](uint8_t value) { dma->start(value); });
   apu = std::make_unique<APU>();
   cpu = std::make_unique<CPU>(
-      [](void *self, int cycles) {
-        static_cast<GameBoy *>(self)->cycle(cycles);
+      [](void* self, int cycles) {
+        static_cast<GameBoy*>(self)->cycle(cycles);
       },
       this, nullptr);
   ppu = std::make_unique<PPU>(*cpu);
@@ -70,14 +70,14 @@ void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
   framePacer =
       std::make_unique<FramePacer>([this] { return ui->getTicks(); },
                                    [this](uint32_t ms) { ui->delay(ms); });
-  framePacer->setFastForward(fastForward);
+  framePacer->setFastForward(startFastForward);
   ui->setToggleFastForward(
       [this] { framePacer->setFastForward(!framePacer->isFastForward()); });
   stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
   state.isRunning.store(true);
-  this->trace = trace;
-  this->loadSave = loadSave;
-  this->fastForward = fastForward;
+  trace = enableTrace;
+  loadSave = loadSaveOnStart;
+  fastForward = startFastForward;
 }
 
 void GameBoy::saveState() {

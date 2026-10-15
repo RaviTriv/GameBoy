@@ -8,7 +8,15 @@
 #include "InterruptRegs.h"
 #include "InterruptSink.h"
 
-CPU::CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus)
+namespace {
+
+constexpr uint16_t toWord(int high, int low) {
+  return static_cast<uint16_t>((high << 8) | low);
+}
+
+}  // namespace
+
+CPU::CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx, Bus* bus)
     : cycleCallback(cycleCallback),
       cycleCallbackCtx(cycleCallbackCtx),
       bus(bus) {
@@ -28,7 +36,7 @@ CPU::CPU(CycleCallbackFn cycleCallback, void *cycleCallbackCtx, Bus *bus)
   state.ime = false;
 }
 
-void CPU::setBus(Bus *b) { this->bus = b; }
+void CPU::setBus(Bus* b) { this->bus = b; }
 
 inline void CPU::stackPush8(uint8_t val) {
   state.registers.sp--;
@@ -44,7 +52,7 @@ inline uint8_t CPU::stackPop8() {
 inline uint16_t CPU::stackPop16() {
   uint16_t low = stackPop8();
   uint16_t high = stackPop8();
-  return (high << 8) | low;
+  return toWord(high, low);
 }
 
 void CPU::interruptHandle(uint16_t address) {
@@ -88,7 +96,7 @@ uint8_t CPU::getInterruptEnable() const { return state.ie; }
 void CPU::setInterruptFlags(uint8_t value) { state.intf = value; }
 uint8_t CPU::getInterruptFlags() const { return state.intf; }
 CPU::State CPU::getState() const { return state; }
-void CPU::setState(const State &s) { this->state = s; }
+void CPU::setState(const State& s) { this->state = s; }
 InterruptRegs CPU::getInterruptRegs() {
   return {.ie = state.ie, .intf = state.intf};
 }
@@ -171,36 +179,36 @@ void CPU::executeCB() {
         } break;
         case 1: { /* RRC */
           uint8_t old = val;
-          uint8_t result = (val >> 1) | (old << 7);
+          auto result = static_cast<uint8_t>((val >> 1) | (old << 7));
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, old & 1);
         } break;
         case 2: { /* RL */
           uint8_t old = val;
-          uint8_t result = (val << 1) | flagC();
+          auto result = static_cast<uint8_t>((val << 1) | flagC());
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, !!(old & BIT7_MASK));
         } break;
         case 3: { /* RR */
           uint8_t old = val;
-          uint8_t result = (val >> 1) | (flagC() << 7);
+          auto result = static_cast<uint8_t>((val >> 1) | (flagC() << 7));
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, old & 1);
         } break;
         case 4: { /* SLA */
           uint8_t old = val;
-          uint8_t result = val << 1;
+          auto result = static_cast<uint8_t>(val << 1);
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, !!(old & BIT7_MASK));
         } break;
         case 5: { /* SRA */
-          uint8_t result = static_cast<int8_t>(val) >> 1;
+          auto result = static_cast<uint8_t>(static_cast<int8_t>(val) >> 1);
           cbWrite(reg_idx, result);
           setFlags(!result, 0, 0, val & 1);
         } break;
         case 6: { /* SWAP */
-          uint8_t result =
-              ((val & HIGH_NIBBLE_MASK) >> 4) | ((val & NIBBLE_MASK) << 4);
+          auto result = static_cast<uint8_t>(((val & HIGH_NIBBLE_MASK) >> 4) |
+                                             ((val & NIBBLE_MASK) << 4));
           cbWrite(reg_idx, result);
           setFlags(result == 0, 0, 0, 0);
         } break;
@@ -220,7 +228,7 @@ void CPU::executeCB() {
       cbWrite(reg_idx, val & ~(1 << bit_num));
     } break;
     case 3: { /* SET */
-      cbWrite(reg_idx, val | (1 << bit_num));
+      cbWrite(reg_idx, static_cast<uint8_t>(val | (1 << bit_num)));
     } break;
     default:
       break;
@@ -287,7 +295,7 @@ void CPU::step() {
       case 0x07: { /* RLCA */
         uint8_t u = state.registers.a;
         bool c = (u >> 7) & 1;
-        u = (u << 1) | c;
+        u = static_cast<uint8_t>((u << 1) | c);
         state.registers.a = u;
         setFlags(0, 0, 0, c);
       } break;
@@ -297,7 +305,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
-        uint16_t addr = lo | (hi << 8);
+        uint16_t addr = toWord(hi, lo);
         state.registers.pc += 2;
         bus->write8(addr, state.registers.sp & BYTE_MASK);
         cycle(1);
@@ -397,7 +405,7 @@ void CPU::step() {
         uint8_t u = state.registers.a;
         uint8_t cf = flagC();
         uint8_t c = (u >> 7) & 1;
-        state.registers.a = (u << 1) | cf;
+        state.registers.a = static_cast<uint8_t>((u << 1) | cf);
         setFlags(0, 0, 0, c);
       } break;
 
@@ -567,7 +575,7 @@ void CPU::step() {
       } break;
 
       case 0x2F: { /* CPL */
-        state.registers.a = ~state.registers.a;
+        state.registers.a = static_cast<uint8_t>(~state.registers.a);
         setFlags(-1, 1, 1, -1);
       } break;
 
@@ -586,7 +594,7 @@ void CPU::step() {
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
-        state.registers.sp = lo | (hi << 8);
+        state.registers.sp = toWord(hi, lo);
       } break;
 
       case 0x32: { /* LD (HL-),A */
@@ -1368,7 +1376,7 @@ void CPU::step() {
           cycle(1);
           uint16_t hi = stackPop8();
           cycle(1);
-          state.registers.pc = (hi << 8) | lo;
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1378,7 +1386,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.setBc((hi << 8) | lo);
+        state.registers.setBc(toWord(hi, lo));
       } break;
 
       case 0xC2: { /* JP NZ,a16 */
@@ -1388,7 +1396,7 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (!flagZ()) {
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1398,7 +1406,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
-        state.registers.pc = lo | (hi << 8);
+        state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
 
@@ -1413,16 +1421,16 @@ void CPU::step() {
           stackPush8((state.registers.pc >> 8) & BYTE_MASK);
           cycle(1);
           stackPush8(state.registers.pc & BYTE_MASK);
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
 
       case 0xC5: { /* PUSH BC */
-        uint16_t hi = (state.registers.bc() >> 8) & BYTE_MASK;
+        auto hi = static_cast<uint8_t>(state.registers.bc() >> 8);
         cycle(1);
         stackPush8(hi);
-        uint16_t lo = state.registers.bc() & BYTE_MASK;
+        auto lo = static_cast<uint8_t>(state.registers.bc() & BYTE_MASK);
         cycle(1);
         stackPush8(lo);
         cycle(1);
@@ -1454,7 +1462,7 @@ void CPU::step() {
           cycle(1);
           uint16_t hi = stackPop8();
           cycle(1);
-          state.registers.pc = (hi << 8) | lo;
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1464,7 +1472,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.pc = (hi << 8) | lo;
+        state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
 
@@ -1475,7 +1483,7 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (flagZ()) {
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1495,7 +1503,7 @@ void CPU::step() {
           stackPush8((state.registers.pc >> 8) & BYTE_MASK);
           cycle(1);
           stackPush8(state.registers.pc & BYTE_MASK);
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1510,7 +1518,7 @@ void CPU::step() {
         stackPush8((state.registers.pc >> 8) & BYTE_MASK);
         cycle(1);
         stackPush8(state.registers.pc & BYTE_MASK);
-        state.registers.pc = lo | (hi << 8);
+        state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
 
@@ -1541,7 +1549,7 @@ void CPU::step() {
           cycle(1);
           uint16_t hi = stackPop8();
           cycle(1);
-          state.registers.pc = (hi << 8) | lo;
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1551,7 +1559,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.setDe((hi << 8) | lo);
+        state.registers.setDe(toWord(hi, lo));
       } break;
 
       case 0xD2: { /* JP NC,a16 */
@@ -1561,7 +1569,7 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (!flagC()) {
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1581,16 +1589,16 @@ void CPU::step() {
           stackPush8((state.registers.pc >> 8) & BYTE_MASK);
           cycle(1);
           stackPush8(state.registers.pc & BYTE_MASK);
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
 
       case 0xD5: { /* PUSH DE */
-        uint16_t hi = (state.registers.de() >> 8) & BYTE_MASK;
+        auto hi = static_cast<uint8_t>(state.registers.de() >> 8);
         cycle(1);
         stackPush8(hi);
-        uint16_t lo = state.registers.de() & BYTE_MASK;
+        auto lo = static_cast<uint8_t>(state.registers.de() & BYTE_MASK);
         cycle(1);
         stackPush8(lo);
         cycle(1);
@@ -1621,7 +1629,7 @@ void CPU::step() {
           cycle(1);
           uint16_t hi = stackPop8();
           cycle(1);
-          state.registers.pc = (hi << 8) | lo;
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1632,7 +1640,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.pc = (hi << 8) | lo;
+        state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
 
@@ -1643,7 +1651,7 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         if (flagC()) {
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1663,7 +1671,7 @@ void CPU::step() {
           stackPush8((state.registers.pc >> 8) & BYTE_MASK);
           cycle(1);
           stackPush8(state.registers.pc & BYTE_MASK);
-          state.registers.pc = lo | (hi << 8);
+          state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
       } break;
@@ -1704,7 +1712,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.setHl((hi << 8) | lo);
+        state.registers.setHl(toWord(hi, lo));
       } break;
 
       case 0xE2: { /* LD (C),A */
@@ -1718,10 +1726,10 @@ void CPU::step() {
       } break;
 
       case 0xE5: { /* PUSH HL */
-        uint16_t hi = (state.registers.hl() >> 8) & BYTE_MASK;
+        auto hi = static_cast<uint8_t>(state.registers.hl() >> 8);
         cycle(1);
         stackPush8(hi);
-        uint16_t lo = state.registers.hl() & BYTE_MASK;
+        auto lo = static_cast<uint8_t>(state.registers.hl() & BYTE_MASK);
         cycle(1);
         stackPush8(lo);
         cycle(1);
@@ -1766,7 +1774,7 @@ void CPU::step() {
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
-        bus->write8(lo | (hi << 8), state.registers.a);
+        bus->write8(toWord(hi, lo), state.registers.a);
         cycle(1);
       } break;
 
@@ -1804,7 +1812,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = stackPop8();
         cycle(1);
-        state.registers.setAf((hi << 8) | (lo & HIGH_NIBBLE_MASK));
+        state.registers.setAf(toWord(hi, lo & HIGH_NIBBLE_MASK));
       } break;
 
       case 0xF2: { /* LD A,(C) */
@@ -1822,10 +1830,10 @@ void CPU::step() {
       } break;
 
       case 0xF5: { /* PUSH AF */
-        uint16_t hi = (state.registers.af() >> 8) & BYTE_MASK;
+        auto hi = static_cast<uint8_t>(state.registers.af() >> 8);
         cycle(1);
         stackPush8(hi);
-        uint16_t lo = state.registers.af() & BYTE_MASK;
+        auto lo = static_cast<uint8_t>(state.registers.af() & BYTE_MASK);
         cycle(1);
         stackPush8(lo);
         cycle(1);
@@ -1870,7 +1878,7 @@ void CPU::step() {
         cycle(1);
         uint16_t hi = bus->read8(state.registers.pc + 1);
         cycle(1);
-        state.registers.a = bus->read8(lo | (hi << 8));
+        state.registers.a = bus->read8(toWord(hi, lo));
         cycle(1);
         state.registers.pc += 2;
       } break;

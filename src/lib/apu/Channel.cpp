@@ -27,7 +27,8 @@ void SquareChannel::reset() {
   }
   envelopeEnabled = true;
 
-  sweepShadowFreq = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  sweepShadowFreq = static_cast<uint16_t>(
+      ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3);
   uint8_t period = (nrx0 & SWEEP_PERIOD_MASK) >> SWEEP_PERIOD_SHIFT;
   uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
   sweepTimer = period ? period : 8;
@@ -52,7 +53,7 @@ bool SquareChannel::lengthTimerAction() {
 
 uint8_t SquareChannel::getSample() const {
   uint8_t sample = duties[((nrx1 & DUTY_MASK) >> DUTY_SHIFT)][duty];
-  return sample * envelopeVolume * enabled;
+  return static_cast<uint8_t>(sample * envelopeVolume * enabled);
 }
 
 void Channel::envelopeAction() {
@@ -122,7 +123,8 @@ int SquareChannel::advanceTimer(int ticks) {
     return 0;
   }
 
-  uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  auto wavelen = static_cast<uint16_t>(
+      ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3);
   int period = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
 
   int fires = 0;
@@ -188,7 +190,8 @@ int WaveChannel::advanceTimer(int ticks) {
     return 0;
   }
 
-  uint16_t wavelen = ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3;
+  auto wavelen = static_cast<uint16_t>(
+      ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3);
   int period = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
 
   int fires = 0;
@@ -249,7 +252,8 @@ bool NoiseChannel::lengthTimerAction() {
 }
 
 uint8_t NoiseChannel::getSample() const {
-  return (~lfsr & LFSR_BIT0_MASK) * envelopeVolume * enabled;
+  return static_cast<uint8_t>((~lfsr & LFSR_BIT0_MASK) * envelopeVolume *
+                              enabled);
 }
 
 int NoiseChannel::advanceTimer(int ticks) {
@@ -277,7 +281,7 @@ int NoiseChannel::advanceTimer(int ticks) {
   {
     uint8_t xorRes =
         (lfsr & LFSR_BIT0_MASK) ^ ((lfsr & LFSR_BIT1_MASK) >> LFSR_BIT1_SHIFT);
-    lfsr = (lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT);
+    lfsr = static_cast<uint16_t>((lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT));
     if (narrow) {
       lfsr &= ~(1 << LFSR_7BIT_TAP);
       lfsr |= (xorRes << LFSR_7BIT_TAP);
@@ -292,7 +296,7 @@ int NoiseChannel::advanceTimer(int ticks) {
     for (int i = 0; i < remainingFires; i++) {
       uint8_t xorRes = (lfsr & LFSR_BIT0_MASK) ^
                        ((lfsr & LFSR_BIT1_MASK) >> LFSR_BIT1_SHIFT);
-      lfsr = (lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT);
+      lfsr = static_cast<uint16_t>((lfsr >> 1) | (xorRes << LFSR_FEEDBACK_BIT));
       if (narrow) {
         lfsr &= ~(1 << LFSR_7BIT_TAP);
         lfsr |= (xorRes << LFSR_7BIT_TAP);

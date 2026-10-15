@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 
 #include "Common.h"
@@ -11,7 +12,7 @@
 #include "Logger.h"
 #include "OamTypes.h"
 
-PPU::PPU(InterruptSink &interruptSink)
+PPU::PPU(InterruptSink& interruptSink)
     : interruptSink(interruptSink),
       pipeline(
           [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
@@ -21,11 +22,11 @@ PPU::PPU(InterruptSink &interruptSink)
 
 void PPU::init() { lcd->setLcdMode(LCD::MODE::OAM); }
 
-const std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getVideoBuffer() const {
+const std::array<uint32_t, PPU::BUFFER_SIZE>& PPU::getVideoBuffer() const {
   return videoBuffers[readBufferIndex.load(std::memory_order_acquire)];
 }
 
-std::array<uint32_t, PPU::BUFFER_SIZE> &PPU::getWriteBuffer() {
+std::array<uint32_t, PPU::BUFFER_SIZE>& PPU::getWriteBuffer() {
   return videoBuffers[1 - readBufferIndex.load(std::memory_order_relaxed)];
 }
 
@@ -83,7 +84,7 @@ void PPU::oamWrite(uint16_t address, uint8_t value) {
   if (address >= 0xA0) {
     return;
   }
-  auto *p = reinterpret_cast<uint8_t *>(state.oamRam.data());
+  auto* p = reinterpret_cast<uint8_t*>(state.oamRam.data());
   p[address] = value;
 }
 
@@ -94,7 +95,7 @@ uint8_t PPU::oamRead(uint16_t address) const {
   if (address >= 0xA0) {
     return 0xFF;
   }
-  const auto *p = reinterpret_cast<const uint8_t *>(state.oamRam.data());
+  const auto* p = reinterpret_cast<const uint8_t*>(state.oamRam.data());
   return p[address];
 }
 
@@ -134,7 +135,7 @@ void PPU::loadLineSprites() {
 
   uint8_t spriteHeight = lcd->getObjHeight();
 
-  for (int i = 0; i < 40; i++) {
+  for (std::size_t i = 0; i < 40; i++) {
     OAM_ENTRY entry = state.oamRam[i];
 
     if (state.lineSpritesCount >= 10) {
@@ -267,17 +268,17 @@ void PPU::setCurrentFrame(uint32_t frame) {
   currentFrame.store(frame, std::memory_order_relaxed);
 }
 
-void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer) {
+void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE>& buffer) {
   videoBuffers[0] = buffer;
   videoBuffers[1] = buffer;
 }
 
 PPU::State PPU::getState() const { return state; }
 
-void PPU::setState(const State &state) { this->state = state; };
+void PPU::setState(const State& newState) { state = newState; };
 
 Pipeline::State PPU::getPipelineState() const { return pipeline.getState(); }
 
-void PPU::setPipelineState(const Pipeline::State &state) {
-  pipeline.setState(state);
+void PPU::setPipelineState(const Pipeline::State& newState) {
+  pipeline.setState(newState);
 };

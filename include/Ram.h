@@ -15,7 +15,7 @@ class RAM {
   [[nodiscard]] uint8_t readHRAM(uint16_t address) const;
   void writeHRAM(uint16_t address, uint8_t value);
   [[nodiscard]] RAM::State getState() const;
-  void setState(const State &state);
+  void setState(const State& newState);
 
  private:
   State state;

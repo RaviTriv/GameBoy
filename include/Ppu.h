@@ -27,40 +27,40 @@ class PPU {
     std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };
-  explicit PPU(InterruptSink &interruptSink);
+  explicit PPU(InterruptSink& interruptSink);
   void init();
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
   void setCurrentFrame(uint32_t frame);
-  void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE> &buffer);
+  void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE>& buffer);
 
   void oamWrite(uint16_t addr, uint8_t value);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
   [[nodiscard]] uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 
-  void setMemRead(IMemRead &memRead) { this->memRead = &memRead; }
-  void setLcd(LCD *lcd) { this->lcd = lcd; }
-  [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE> &getVideoBuffer() const;
+  void setMemRead(IMemRead& reader) { memRead = &reader; }
+  void setLcd(LCD* newLcd) { lcd = newLcd; }
+  [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE>& getVideoBuffer() const;
 
   [[nodiscard]] PPU::State getState() const;
-  void setState(const State &state);
+  void setState(const State& newState);
 
   [[nodiscard]] Pipeline::State getPipelineState() const;
-  [[nodiscard]] Pipeline *getPipeline() { return &pipeline; }
-  void setPipelineState(const Pipeline::State &state);
+  [[nodiscard]] Pipeline* getPipeline() { return &pipeline; }
+  void setPipelineState(const Pipeline::State& newState);
 
  private:
   State state;
-  InterruptSink &interruptSink;
-  IMemRead *memRead = nullptr;
-  LCD *lcd = nullptr;
+  InterruptSink& interruptSink;
+  IMemRead* memRead = nullptr;
+  LCD* lcd = nullptr;
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};
 
   std::array<uint32_t, BUFFER_SIZE> videoBuffers[2]{};
   std::atomic<int> readBufferIndex{0};
-  std::array<uint32_t, BUFFER_SIZE> &getWriteBuffer();
+  std::array<uint32_t, BUFFER_SIZE>& getWriteBuffer();
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;

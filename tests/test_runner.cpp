@@ -35,7 +35,7 @@ constexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ULL;
 constexpr uint64_t FNV_PRIME = 0x100000001b3ULL;
 
 template <std::size_t N>
-uint64_t hashFramebuffer(const std::array<uint32_t, N> &buffer) {
+uint64_t hashFramebuffer(const std::array<uint32_t, N>& buffer) {
   uint64_t hash = FNV_OFFSET_BASIS;
   for (uint32_t pixel : buffer) {
     for (int shift = 0; shift < 32; shift += 8) {
@@ -47,8 +47,8 @@ uint64_t hashFramebuffer(const std::array<uint32_t, N> &buffer) {
 }
 
 template <std::size_t N>
-void dumpFramebuffer(const std::string &path,
-                     const std::array<uint32_t, N> &buffer) {
+void dumpFramebuffer(const std::string& path,
+                     const std::array<uint32_t, N>& buffer) {
   std::ofstream out(path, std::ios::binary);
   out << "P6\n" << XRES << ' ' << YRES << "\n255\n";
   for (uint32_t pixel : buffer) {
@@ -74,7 +74,7 @@ constexpr uint8_t MEMORY_PASS_CODE = 0x00;
 
 class TestRunner {
  public:
-  TestRunner(const std::string &romPath, Protocol protocol)
+  TestRunner(const std::string& romPath, Protocol protocol)
       : protocol(protocol) {
     Logger::Disable();
     cartridge = std::make_unique<Cartridge>(romPath);
@@ -127,13 +127,13 @@ class TestRunner {
     }
   }
 
-  [[nodiscard]] const auto &videoBuffer() const {
+  [[nodiscard]] const auto& videoBuffer() const {
     return ppu->getVideoBuffer();
   }
 
  private:
-  static void cycleTrampoline(void *self, int cycles) {
-    static_cast<TestRunner *>(self)->cycle(cycles);
+  static void cycleTrampoline(void* self, int cycles) {
+    static_cast<TestRunner*>(self)->cycle(cycles);
   }
 
   void cycle(int cycles) {
@@ -201,7 +201,8 @@ class TestRunner {
       return;
     }
     std::cout << "serial:";
-    for (unsigned char byte : serialLog) {
+    for (char ch : serialLog) {
+      auto byte = static_cast<unsigned char>(ch);
       std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0')
                 << static_cast<int>(byte);
     }
@@ -230,7 +231,7 @@ class TestRunner {
 
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   try {
     std::string romPath;
     uint64_t budget = DEFAULT_BUDGET_MCYCLES;
@@ -282,7 +283,7 @@ int main(int argc, char **argv) {
     }
 
     return runner.run(budget);
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     std::cerr << "ERROR: " << e.what() << "\n";
     return 3;
   }

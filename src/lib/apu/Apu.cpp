@@ -214,24 +214,24 @@ void APU::flushChannelTimers() {
   if (state.channel1.enabled) {
     int fires = state.channel1.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel1.duty =
-          (state.channel1.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
+      state.channel1.duty = static_cast<uint8_t>(
+          (state.channel1.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS);
     }
   }
 
   if (state.channel2.enabled) {
     int fires = state.channel2.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel2.duty =
-          (state.channel2.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS;
+      state.channel2.duty = static_cast<uint8_t>(
+          (state.channel2.duty + fires) % SquareChannel::DUTY_CYCLE_STEPS);
     }
   }
 
   if (state.channel3.enabled) {
     int fires = state.channel3.advanceTimer(ticks);
     if (fires > 0) {
-      state.channel3.sample =
-          (state.channel3.sample + fires) % WAVE_SAMPLE_COUNT;
+      state.channel3.sample = static_cast<uint8_t>(
+          (state.channel3.sample + fires) % WAVE_SAMPLE_COUNT);
     }
   }
 
@@ -312,6 +312,6 @@ void APU::tick() {
   }
 }
 
-std::size_t APU::popSamples(StereoSample *out, std::size_t count) {
+std::size_t APU::popSamples(StereoSample* out, std::size_t count) {
   return sampleQueue.pop_n(out, count);
 }

@@ -9,8 +9,8 @@
 #include "Lcd.h"
 #include "Timer.h"
 
-IO::IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad,
-       APU &apu)
+IO::IO(InterruptRegs interruptRegs, Timer& timer, LCD& lcd, Gamepad& gamepad,
+       APU& apu)
     : interruptRegs(interruptRegs),
       apu(apu),
       timer(timer),
@@ -24,11 +24,11 @@ uint8_t IO::read(uint16_t address) const {
   }
 
   if (address == SERIAL_DATA_REGISTER) {
-    return serialData[SERIAL_DATA_INDEX];
+    return static_cast<uint8_t>(serialData[SERIAL_DATA_INDEX]);
   }
 
   if (address == SERIAL_CONTROL_REGISTER) {
-    return serialData[SERIAL_CONTROL_INDEX];
+    return static_cast<uint8_t>(serialData[SERIAL_CONTROL_INDEX]);
   }
 
   if ((address >= TIMER_START) && (address <= TIMER_END)) {

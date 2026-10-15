@@ -1,6 +1,7 @@
 #include "Lcd.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <utility>
@@ -19,7 +20,7 @@ LCD::LCD(std::function<void(uint8_t)> onDmaStart)
   state.palettes[PaletteType::OBP1].palette = 0xFF;
   state.windowX = 0;
   state.windowY = 0;
-  for (int i = 0; i < 4; i++) {
+  for (std::size_t i = 0; i < 4; i++) {
     state.bgColors[i] = defaultColors[i];
     state.ob1Colors[i] = defaultColors[i];
     state.ob2Colors[i] = defaultColors[i];
@@ -139,7 +140,7 @@ bool LCD::getBit(uint8_t value, int bit) const {
   return (value & (1 << bit)) != 0;
 }
 
-void LCD::setBit(uint8_t &value, int bit, bool set) {
+void LCD::setBit(uint8_t& value, int bit, bool set) {
   if (set) {
     value |= (1 << bit);
   } else {
@@ -192,7 +193,7 @@ LCD::EnableTransition LCD::consumeEnableTransition() {
 
 LCD::State LCD::getState() const { return state; }
 
-void LCD::setState(const State &state) { this->state = state; }
+void LCD::setState(const State& newState) { state = newState; }
 
 uint8_t LCD::getLy() const { return state.ly; }
 
@@ -210,14 +211,14 @@ uint8_t LCD::getWindowX() const { return state.windowX; }
 
 uint8_t LCD::getWindowY() const { return state.windowY; }
 
-const std::array<uint32_t, 4> &LCD::getBgColors() const {
+const std::array<uint32_t, 4>& LCD::getBgColors() const {
   return state.bgColors;
 }
 
-const std::array<uint32_t, 4> &LCD::getOb1Colors() const {
+const std::array<uint32_t, 4>& LCD::getOb1Colors() const {
   return state.ob1Colors;
 }
 
-const std::array<uint32_t, 4> &LCD::getOb2Colors() const {
+const std::array<uint32_t, 4>& LCD::getOb2Colors() const {
   return state.ob2Colors;
 }

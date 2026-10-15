@@ -17,7 +17,8 @@ endif()
 enable_testing()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(GB_WARNINGS -Wall -Wextra -Wpedantic -Werror)
+    set(GB_WARNINGS -Wall -Wextra -Wpedantic -Wshadow -Wimplicit-fallthrough
+        -Wconversion -Wsign-conversion -Werror)
 endif()
 
 if(GB_SANITIZE)

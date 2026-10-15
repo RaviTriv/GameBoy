@@ -66,7 +66,7 @@ class LCD {
   [[nodiscard]] bool isLcdEnabled() const;
   EnableTransition consumeEnableTransition();
   [[nodiscard]] LCD::State getState() const;
-  void setState(const State &state);
+  void setState(const State& newState);
 
   [[nodiscard]] uint8_t getLy() const;
   void setLy(uint8_t value);
@@ -76,9 +76,9 @@ class LCD {
   [[nodiscard]] uint8_t getScrollY() const;
   [[nodiscard]] uint8_t getWindowX() const;
   [[nodiscard]] uint8_t getWindowY() const;
-  [[nodiscard]] const std::array<uint32_t, 4> &getBgColors() const;
-  [[nodiscard]] const std::array<uint32_t, 4> &getOb1Colors() const;
-  [[nodiscard]] const std::array<uint32_t, 4> &getOb2Colors() const;
+  [[nodiscard]] const std::array<uint32_t, 4>& getBgColors() const;
+  [[nodiscard]] const std::array<uint32_t, 4>& getOb1Colors() const;
+  [[nodiscard]] const std::array<uint32_t, 4>& getOb2Colors() const;
 
  private:
   State state;
@@ -88,5 +88,5 @@ class LCD {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
   bool getBit(uint8_t value, int bit) const;
-  void setBit(uint8_t &value, int bit, bool set);
+  void setBit(uint8_t& value, int bit, bool set);
 };

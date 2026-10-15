@@ -30,18 +30,18 @@ std::streamsize streamSize(std::size_t bytes) {
 
 }  // namespace
 
-StateSerializer::StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd)
+StateSerializer::StateSerializer(CPU& cpu, RAM& ram, PPU& ppu, LCD& lcd)
     : cpu(cpu), ram(ram), ppu(ppu), lcd(lcd) {}
 
-bool StateSerializer::save(std::ostream &out, const std::string &label) {
+bool StateSerializer::save(std::ostream& out, const std::string& label) {
   try {
     std::time_t currentTime = std::time(nullptr);
     std::stringstream headerStream;
     headerStream << label << "_" << currentTime;
     std::string headerStr = headerStream.str();
 
-    uint32_t headerLength = headerStr.length();
-    out.write(reinterpret_cast<const char *>(&headerLength),
+    auto headerLength = static_cast<uint32_t>(headerStr.length());
+    out.write(reinterpret_cast<const char*>(&headerLength),
               sizeof(headerLength));
     out.write(headerStr.c_str(), streamSize(headerStr.length()));
     saveCPUState(out);
@@ -49,130 +49,130 @@ bool StateSerializer::save(std::ostream &out, const std::string &label) {
     savePPUState(out);
     saveLCDState(out);
     return out.good();
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     Logger::GetLogger()->error("Error saving state: {}", e.what());
     return false;
   }
 }
 
-void StateSerializer::saveCPUState(std::ostream &file) {
-  const char *cpuMarker = "CPU_STATE";
+void StateSerializer::saveCPUState(std::ostream& file) {
+  const char* cpuMarker = "CPU_STATE";
   file.write(cpuMarker, 9);
 
   CPU::State state = cpu.getState();
-  file.write(reinterpret_cast<const char *>(&state), sizeof(state));
+  file.write(reinterpret_cast<const char*>(&state), sizeof(state));
 }
 
-void StateSerializer::saveRAMState(std::ostream &file) {
-  const char *ramMarker = "RAM_STATE";
+void StateSerializer::saveRAMState(std::ostream& file) {
+  const char* ramMarker = "RAM_STATE";
   file.write(ramMarker, 9);
 
   RAM::State state = ram.getState();
-  file.write(reinterpret_cast<const char *>(&state), sizeof(state));
+  file.write(reinterpret_cast<const char*>(&state), sizeof(state));
 }
 
-void StateSerializer::savePPUState(std::ostream &file) {
-  const char *ppuMarker = "PPU_STATE";
+void StateSerializer::savePPUState(std::ostream& file) {
+  const char* ppuMarker = "PPU_STATE";
   file.write(ppuMarker, 9);
 
-  const PPU::State &ppuState = ppu.getState();
+  const PPU::State& ppuState = ppu.getState();
 
   uint32_t frame = ppu.getCurrentFrame();
-  file.write(reinterpret_cast<const char *>(&frame), sizeof(frame));
-  file.write(reinterpret_cast<const char *>(&ppuState.lineTicks),
+  file.write(reinterpret_cast<const char*>(&frame), sizeof(frame));
+  file.write(reinterpret_cast<const char*>(&ppuState.lineTicks),
              sizeof(ppuState.lineTicks));
-  file.write(reinterpret_cast<const char *>(&ppuState.windowLine),
+  file.write(reinterpret_cast<const char*>(&ppuState.windowLine),
              sizeof(ppuState.windowLine));
-  file.write(reinterpret_cast<const char *>(&ppuState.lineSpritesCount),
+  file.write(reinterpret_cast<const char*>(&ppuState.lineSpritesCount),
              sizeof(ppuState.lineSpritesCount));
-  file.write(reinterpret_cast<const char *>(ppuState.vram.data()),
+  file.write(reinterpret_cast<const char*>(ppuState.vram.data()),
              streamSize(ppuState.vram.size()));
-  file.write(reinterpret_cast<const char *>(ppuState.oamRam.data()),
+  file.write(reinterpret_cast<const char*>(ppuState.oamRam.data()),
              streamSize(ppuState.oamRam.size() * sizeof(OAM_ENTRY)));
-  const auto &videoBuffer = ppu.getVideoBuffer();
-  file.write(reinterpret_cast<const char *>(videoBuffer.data()),
+  const auto& videoBuffer = ppu.getVideoBuffer();
+  file.write(reinterpret_cast<const char*>(videoBuffer.data()),
              streamSize(videoBuffer.size() * sizeof(uint32_t)));
 
-  const Pipeline::State &pipelineState = ppu.getPipelineState();
-  const PixelFifo *pixelFifo = ppu.getPipeline()->getPixelFifo();
+  const Pipeline::State& pipelineState = ppu.getPipelineState();
+  const PixelFifo* pixelFifo = ppu.getPipeline()->getPixelFifo();
 
-  file.write(reinterpret_cast<const char *>(&pipelineState.fetchState),
+  file.write(reinterpret_cast<const char*>(&pipelineState.fetchState),
              sizeof(pipelineState.fetchState));
 
-  file.write(reinterpret_cast<const char *>(pixelFifo->getBuffer().data()),
+  file.write(reinterpret_cast<const char*>(pixelFifo->getBuffer().data()),
              streamSize(pixelFifo->getBuffer().size() * sizeof(uint32_t)));
   size_t head = pixelFifo->getHead();
   size_t tail = pixelFifo->getTail();
   size_t count = pixelFifo->getCount();
-  file.write(reinterpret_cast<const char *>(&head), sizeof(head));
-  file.write(reinterpret_cast<const char *>(&tail), sizeof(tail));
-  file.write(reinterpret_cast<const char *>(&count), sizeof(count));
-  file.write(reinterpret_cast<const char *>(&pipelineState.fifoX),
+  file.write(reinterpret_cast<const char*>(&head), sizeof(head));
+  file.write(reinterpret_cast<const char*>(&tail), sizeof(tail));
+  file.write(reinterpret_cast<const char*>(&count), sizeof(count));
+  file.write(reinterpret_cast<const char*>(&pipelineState.fifoX),
              sizeof(pipelineState.fifoX));
-  file.write(reinterpret_cast<const char *>(&pipelineState.lineX),
+  file.write(reinterpret_cast<const char*>(&pipelineState.lineX),
              sizeof(pipelineState.lineX));
-  file.write(reinterpret_cast<const char *>(&pipelineState.pushedCount),
+  file.write(reinterpret_cast<const char*>(&pipelineState.pushedCount),
              sizeof(pipelineState.pushedCount));
-  file.write(reinterpret_cast<const char *>(&pipelineState.fetchX),
+  file.write(reinterpret_cast<const char*>(&pipelineState.fetchX),
              sizeof(pipelineState.fetchX));
-  file.write(reinterpret_cast<const char *>(pipelineState.bgwBuffer.data()),
+  file.write(reinterpret_cast<const char*>(pipelineState.bgwBuffer.data()),
              streamSize(pipelineState.bgwBuffer.size() * sizeof(uint8_t)));
-  file.write(reinterpret_cast<const char *>(pipelineState.objectBuffer.data()),
+  file.write(reinterpret_cast<const char*>(pipelineState.objectBuffer.data()),
              streamSize(pipelineState.objectBuffer.size() * sizeof(uint8_t)));
   file.write(
-      reinterpret_cast<const char *>(pipelineState.fetchedEntries.data()),
+      reinterpret_cast<const char*>(pipelineState.fetchedEntries.data()),
       streamSize(pipelineState.fetchedEntries.size() * sizeof(OAM_ENTRY)));
-  file.write(reinterpret_cast<const char *>(&pipelineState.mapX),
+  file.write(reinterpret_cast<const char*>(&pipelineState.mapX),
              sizeof(pipelineState.mapX));
-  file.write(reinterpret_cast<const char *>(&pipelineState.mapY),
+  file.write(reinterpret_cast<const char*>(&pipelineState.mapY),
              sizeof(pipelineState.mapY));
-  file.write(reinterpret_cast<const char *>(&pipelineState.tileX),
+  file.write(reinterpret_cast<const char*>(&pipelineState.tileX),
              sizeof(pipelineState.tileX));
-  file.write(reinterpret_cast<const char *>(&pipelineState.tileY),
+  file.write(reinterpret_cast<const char*>(&pipelineState.tileY),
              sizeof(pipelineState.tileY));
-  file.write(reinterpret_cast<const char *>(&pipelineState.entryCount),
+  file.write(reinterpret_cast<const char*>(&pipelineState.entryCount),
              sizeof(pipelineState.entryCount));
 }
 
-void StateSerializer::saveLCDState(std::ostream &file) {
-  const char *lcdMarker = "LCD_STATE";
+void StateSerializer::saveLCDState(std::ostream& file) {
+  const char* lcdMarker = "LCD_STATE";
   file.write(lcdMarker, 9);
 
-  const LCD::State &state = lcd.getState();
+  const LCD::State& state = lcd.getState();
 
-  file.write(reinterpret_cast<const char *>(&state.lcdc), sizeof(state.lcdc));
-  file.write(reinterpret_cast<const char *>(&state.lcds), sizeof(state.lcds));
-  file.write(reinterpret_cast<const char *>(&state.scrollX),
+  file.write(reinterpret_cast<const char*>(&state.lcdc), sizeof(state.lcdc));
+  file.write(reinterpret_cast<const char*>(&state.lcds), sizeof(state.lcds));
+  file.write(reinterpret_cast<const char*>(&state.scrollX),
              sizeof(state.scrollX));
-  file.write(reinterpret_cast<const char *>(&state.scrollY),
+  file.write(reinterpret_cast<const char*>(&state.scrollY),
              sizeof(state.scrollY));
-  file.write(reinterpret_cast<const char *>(&state.ly), sizeof(state.ly));
-  file.write(reinterpret_cast<const char *>(&state.lyCompare),
+  file.write(reinterpret_cast<const char*>(&state.ly), sizeof(state.ly));
+  file.write(reinterpret_cast<const char*>(&state.lyCompare),
              sizeof(state.lyCompare));
-  file.write(reinterpret_cast<const char *>(&state.dma), sizeof(state.dma));
+  file.write(reinterpret_cast<const char*>(&state.dma), sizeof(state.dma));
 
-  file.write(reinterpret_cast<const char *>(&state.bgp), sizeof(state.bgp));
+  file.write(reinterpret_cast<const char*>(&state.bgp), sizeof(state.bgp));
 
-  file.write(reinterpret_cast<const char *>(state.palettes.data()),
+  file.write(reinterpret_cast<const char*>(state.palettes.data()),
              streamSize(state.palettes.size() * sizeof(LCD::PaletteRegister)));
 
-  file.write(reinterpret_cast<const char *>(&state.windowX),
+  file.write(reinterpret_cast<const char*>(&state.windowX),
              sizeof(state.windowX));
-  file.write(reinterpret_cast<const char *>(&state.windowY),
+  file.write(reinterpret_cast<const char*>(&state.windowY),
              sizeof(state.windowY));
 
-  file.write(reinterpret_cast<const char *>(state.bgColors.data()),
+  file.write(reinterpret_cast<const char*>(state.bgColors.data()),
              streamSize(state.bgColors.size() * sizeof(uint32_t)));
-  file.write(reinterpret_cast<const char *>(state.ob1Colors.data()),
+  file.write(reinterpret_cast<const char*>(state.ob1Colors.data()),
              streamSize(state.ob1Colors.size() * sizeof(uint32_t)));
-  file.write(reinterpret_cast<const char *>(state.ob2Colors.data()),
+  file.write(reinterpret_cast<const char*>(state.ob2Colors.data()),
              streamSize(state.ob2Colors.size() * sizeof(uint32_t)));
 }
 
-bool StateSerializer::load(std::istream &in) {
+bool StateSerializer::load(std::istream& in) {
   try {
     uint32_t headerLength = 0;
-    in.read(reinterpret_cast<char *>(&headerLength), sizeof(headerLength));
+    in.read(reinterpret_cast<char*>(&headerLength), sizeof(headerLength));
 
     if (!in.good() || headerLength > MAX_HEADER_LENGTH) {
       throw std::runtime_error("Invalid save state header");
@@ -185,13 +185,13 @@ bool StateSerializer::load(std::istream &in) {
     loadPPUState(in);
     loadLCDState(in);
     return true;
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     Logger::GetLogger()->error("Error loading state: {}", e.what());
     return false;
   }
 }
 
-void StateSerializer::loadCPUState(std::istream &file) {
+void StateSerializer::loadCPUState(std::istream& file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -201,11 +201,11 @@ void StateSerializer::loadCPUState(std::istream &file) {
   }
 
   CPU::State state;
-  file.read(reinterpret_cast<char *>(&state), sizeof(state));
+  file.read(reinterpret_cast<char*>(&state), sizeof(state));
   cpu.setState(state);
 }
 
-void StateSerializer::loadRAMState(std::istream &file) {
+void StateSerializer::loadRAMState(std::istream& file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -215,11 +215,11 @@ void StateSerializer::loadRAMState(std::istream &file) {
   }
 
   RAM::State state;
-  file.read(reinterpret_cast<char *>(&state), sizeof(state));
+  file.read(reinterpret_cast<char*>(&state), sizeof(state));
   ram.setState(state);
 }
 
-void StateSerializer::loadPPUState(std::istream &file) {
+void StateSerializer::loadPPUState(std::istream& file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -231,59 +231,58 @@ void StateSerializer::loadPPUState(std::istream &file) {
   PPU::State state = ppu.getState();
 
   uint32_t frame = 0;
-  file.read(reinterpret_cast<char *>(&frame), sizeof(frame));
-  file.read(reinterpret_cast<char *>(&state.lineTicks),
-            sizeof(state.lineTicks));
-  file.read(reinterpret_cast<char *>(&state.windowLine),
+  file.read(reinterpret_cast<char*>(&frame), sizeof(frame));
+  file.read(reinterpret_cast<char*>(&state.lineTicks), sizeof(state.lineTicks));
+  file.read(reinterpret_cast<char*>(&state.windowLine),
             sizeof(state.windowLine));
-  file.read(reinterpret_cast<char *>(&state.lineSpritesCount),
+  file.read(reinterpret_cast<char*>(&state.lineSpritesCount),
             sizeof(state.lineSpritesCount));
-  file.read(reinterpret_cast<char *>(state.vram.data()), state.vram.size());
-  file.read(reinterpret_cast<char *>(state.oamRam.data()),
+  file.read(reinterpret_cast<char*>(state.vram.data()), state.vram.size());
+  file.read(reinterpret_cast<char*>(state.oamRam.data()),
             state.oamRam.size() * sizeof(OAM_ENTRY));
   std::array<uint32_t, static_cast<std::size_t>(XRES) * YRES> videoBuffer;
-  file.read(reinterpret_cast<char *>(videoBuffer.data()),
+  file.read(reinterpret_cast<char*>(videoBuffer.data()),
             videoBuffer.size() * sizeof(uint32_t));
 
   Pipeline::State pipelineState = ppu.getPipelineState();
 
-  file.read(reinterpret_cast<char *>(&pipelineState.fetchState),
+  file.read(reinterpret_cast<char*>(&pipelineState.fetchState),
             sizeof(pipelineState.fetchState));
 
-  PixelFifo *pixelFifo = ppu.getPipeline()->getPixelFifo();
+  PixelFifo* pixelFifo = ppu.getPipeline()->getPixelFifo();
   std::array<uint32_t, FIFO_CAPACITY> fifoBuffer;
-  file.read(reinterpret_cast<char *>(fifoBuffer.data()),
+  file.read(reinterpret_cast<char*>(fifoBuffer.data()),
             fifoBuffer.size() * sizeof(uint32_t));
   size_t fifoHead = 0;
   size_t fifoTail = 0;
   size_t fifoCount = 0;
-  file.read(reinterpret_cast<char *>(&fifoHead), sizeof(fifoHead));
-  file.read(reinterpret_cast<char *>(&fifoTail), sizeof(fifoTail));
-  file.read(reinterpret_cast<char *>(&fifoCount), sizeof(fifoCount));
+  file.read(reinterpret_cast<char*>(&fifoHead), sizeof(fifoHead));
+  file.read(reinterpret_cast<char*>(&fifoTail), sizeof(fifoTail));
+  file.read(reinterpret_cast<char*>(&fifoCount), sizeof(fifoCount));
 
-  file.read(reinterpret_cast<char *>(&pipelineState.fifoX),
+  file.read(reinterpret_cast<char*>(&pipelineState.fifoX),
             sizeof(pipelineState.fifoX));
-  file.read(reinterpret_cast<char *>(&pipelineState.lineX),
+  file.read(reinterpret_cast<char*>(&pipelineState.lineX),
             sizeof(pipelineState.lineX));
-  file.read(reinterpret_cast<char *>(&pipelineState.pushedCount),
+  file.read(reinterpret_cast<char*>(&pipelineState.pushedCount),
             sizeof(pipelineState.pushedCount));
-  file.read(reinterpret_cast<char *>(&pipelineState.fetchX),
+  file.read(reinterpret_cast<char*>(&pipelineState.fetchX),
             sizeof(pipelineState.fetchX));
-  file.read(reinterpret_cast<char *>(pipelineState.bgwBuffer.data()),
+  file.read(reinterpret_cast<char*>(pipelineState.bgwBuffer.data()),
             pipelineState.bgwBuffer.size() * sizeof(uint8_t));
-  file.read(reinterpret_cast<char *>(pipelineState.objectBuffer.data()),
+  file.read(reinterpret_cast<char*>(pipelineState.objectBuffer.data()),
             pipelineState.objectBuffer.size() * sizeof(uint8_t));
-  file.read(reinterpret_cast<char *>(pipelineState.fetchedEntries.data()),
+  file.read(reinterpret_cast<char*>(pipelineState.fetchedEntries.data()),
             pipelineState.fetchedEntries.size() * sizeof(OAM_ENTRY));
-  file.read(reinterpret_cast<char *>(&pipelineState.mapX),
+  file.read(reinterpret_cast<char*>(&pipelineState.mapX),
             sizeof(pipelineState.mapX));
-  file.read(reinterpret_cast<char *>(&pipelineState.mapY),
+  file.read(reinterpret_cast<char*>(&pipelineState.mapY),
             sizeof(pipelineState.mapY));
-  file.read(reinterpret_cast<char *>(&pipelineState.tileX),
+  file.read(reinterpret_cast<char*>(&pipelineState.tileX),
             sizeof(pipelineState.tileX));
-  file.read(reinterpret_cast<char *>(&pipelineState.tileY),
+  file.read(reinterpret_cast<char*>(&pipelineState.tileY),
             sizeof(pipelineState.tileY));
-  file.read(reinterpret_cast<char *>(&pipelineState.entryCount),
+  file.read(reinterpret_cast<char*>(&pipelineState.entryCount),
             sizeof(pipelineState.entryCount));
 
   if (!file) {
@@ -301,7 +300,7 @@ void StateSerializer::loadPPUState(std::istream &file) {
   pixelFifo->setState(fifoBuffer, fifoHead, fifoTail, fifoCount);
 }
 
-void StateSerializer::loadLCDState(std::istream &file) {
+void StateSerializer::loadLCDState(std::istream& file) {
   char marker[10];
   file.read(marker, 9);
   marker[9] = '\0';
@@ -312,28 +311,27 @@ void StateSerializer::loadLCDState(std::istream &file) {
 
   LCD::State state = lcd.getState();
 
-  file.read(reinterpret_cast<char *>(&state.lcdc), sizeof(state.lcdc));
-  file.read(reinterpret_cast<char *>(&state.lcds), sizeof(state.lcds));
-  file.read(reinterpret_cast<char *>(&state.scrollX), sizeof(state.scrollX));
-  file.read(reinterpret_cast<char *>(&state.scrollY), sizeof(state.scrollY));
-  file.read(reinterpret_cast<char *>(&state.ly), sizeof(state.ly));
-  file.read(reinterpret_cast<char *>(&state.lyCompare),
-            sizeof(state.lyCompare));
-  file.read(reinterpret_cast<char *>(&state.dma), sizeof(state.dma));
+  file.read(reinterpret_cast<char*>(&state.lcdc), sizeof(state.lcdc));
+  file.read(reinterpret_cast<char*>(&state.lcds), sizeof(state.lcds));
+  file.read(reinterpret_cast<char*>(&state.scrollX), sizeof(state.scrollX));
+  file.read(reinterpret_cast<char*>(&state.scrollY), sizeof(state.scrollY));
+  file.read(reinterpret_cast<char*>(&state.ly), sizeof(state.ly));
+  file.read(reinterpret_cast<char*>(&state.lyCompare), sizeof(state.lyCompare));
+  file.read(reinterpret_cast<char*>(&state.dma), sizeof(state.dma));
 
-  file.read(reinterpret_cast<char *>(&state.bgp), sizeof(state.bgp));
+  file.read(reinterpret_cast<char*>(&state.bgp), sizeof(state.bgp));
 
-  file.read(reinterpret_cast<char *>(state.palettes.data()),
+  file.read(reinterpret_cast<char*>(state.palettes.data()),
             state.palettes.size() * sizeof(LCD::PaletteRegister));
 
-  file.read(reinterpret_cast<char *>(&state.windowX), sizeof(state.windowX));
-  file.read(reinterpret_cast<char *>(&state.windowY), sizeof(state.windowY));
+  file.read(reinterpret_cast<char*>(&state.windowX), sizeof(state.windowX));
+  file.read(reinterpret_cast<char*>(&state.windowY), sizeof(state.windowY));
 
-  file.read(reinterpret_cast<char *>(state.bgColors.data()),
+  file.read(reinterpret_cast<char*>(state.bgColors.data()),
             state.bgColors.size() * sizeof(uint32_t));
-  file.read(reinterpret_cast<char *>(state.ob1Colors.data()),
+  file.read(reinterpret_cast<char*>(state.ob1Colors.data()),
             state.ob1Colors.size() * sizeof(uint32_t));
-  file.read(reinterpret_cast<char *>(state.ob2Colors.data()),
+  file.read(reinterpret_cast<char*>(state.ob2Colors.data()),
             state.ob2Colors.size() * sizeof(uint32_t));
 
   lcd.setState(state);

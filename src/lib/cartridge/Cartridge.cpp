@@ -33,13 +33,17 @@ void Cartridge::loadCartridge(std::string_view romPath) {
     throw std::runtime_error("Failed to open cartridge.");
   }
 
-  state.romSize = cartridge.tellg();
+  const std::streamoff size = cartridge.tellg();
+  if (size < 0) {
+    throw std::runtime_error("Failed to read cartridge size.");
+  }
+  state.romSize = static_cast<std::size_t>(size);
 
   cartridge.seekg(0, std::ios::beg);
 
   state.romData.resize(state.romSize);
 
-  if (!cartridge.read(reinterpret_cast<char *>(state.romData.data()),
+  if (!cartridge.read(reinterpret_cast<char*>(state.romData.data()),
                       static_cast<std::streamsize>(state.romSize))) {
     throw std::runtime_error("Failed to load cartridge data.");
   };
@@ -62,7 +66,7 @@ void Cartridge::initFromRom() {
 
   state.header = std::make_unique<RomHeader>();
 
-  const uint8_t *rom = state.romData.data();
+  const uint8_t* rom = state.romData.data();
 
   std::copy_n(rom + ROM_HEADER_OFFSET, 4, state.header->entry.begin());
 
@@ -70,8 +74,8 @@ void Cartridge::initFromRom() {
 
   std::copy_n(rom + ROM_HEADER_OFFSET + 0x34, 16, state.header->title.begin());
 
-  state.header->newLicenseeCode =
-      (rom[ROM_HEADER_OFFSET + 0x44] << 8) | rom[ROM_HEADER_OFFSET + 0x45];
+  state.header->newLicenseeCode = static_cast<uint16_t>(
+      (rom[ROM_HEADER_OFFSET + 0x44] << 8) | rom[ROM_HEADER_OFFSET + 0x45]);
   state.header->sgbFlag = rom[ROM_HEADER_OFFSET + 0x46];
   state.header->type =
       static_cast<CartridgeType>(rom[ROM_HEADER_OFFSET + 0x47]);
@@ -81,8 +85,8 @@ void Cartridge::initFromRom() {
   state.header->licenseeCode = rom[ROM_HEADER_OFFSET + 0x4B];
   state.header->version = rom[ROM_HEADER_OFFSET + 0x4C];
   state.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
-  state.header->globalChecksum =
-      (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F];
+  state.header->globalChecksum = static_cast<uint16_t>(
+      (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F]);
 
   int romBanks = std::max(2, static_cast<int>(state.romSize / 0x4000));
   int ramBanks = getRamBanksCount(state.romData.at(0x149));
@@ -192,9 +196,9 @@ std::string_view Cartridge::cartridgeType(CartridgeType type) {
 }
 
 std::string Cartridge::getTitle() const {
-  const auto &title = state.header->title;
+  const auto& title = state.header->title;
   std::string result(title.begin(), std::ranges::find(title, '\0'));
-  for (char &c : result) {
+  for (char& c : result) {
     if (c < 0x20 || c > 0x7E) {
       c = '_';
     }

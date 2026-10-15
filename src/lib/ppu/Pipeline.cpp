@@ -11,7 +11,7 @@
 Pipeline::Pipeline(ReadFn readFn, WritePixelFn writePixelFn)
     : readFn(std::move(readFn)), writePixelFn(std::move(writePixelFn)) {}
 
-void Pipeline::beginScanline(const ScanlineContext &scanlineCtx) {
+void Pipeline::beginScanline(const ScanlineContext& scanlineCtx) {
   ctx = &scanlineCtx;
 }
 
@@ -95,7 +95,7 @@ bool Pipeline::processTile() {
   for (int i = 0; i < PIXEL_TILE_DIMENSION; i++) {
     int bit = 7 - i;
     uint8_t hi = !!(state.bgwBuffer[1] & (1 << bit));
-    uint8_t lo = !!(state.bgwBuffer[2] & (1 << bit)) << 1;
+    auto lo = static_cast<uint8_t>(!!(state.bgwBuffer[2] & (1 << bit)) << 1);
     uint32_t color = ctx->bgColors[(hi | lo)];
 
     if (!ctx->bgWindowEnabled) {
@@ -128,7 +128,7 @@ void Pipeline::pushPixel() {
 }
 
 uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
-  for (int i = 0; std::cmp_less(i, state.entryCount); i++) {
+  for (std::size_t i = 0; i < state.entryCount; i++) {
     int spriteX = (state.fetchedEntries[i].x - 8) + (ctx->scrollX % 8);
 
     if ((spriteX + 8) < static_cast<int>(state.fifoX)) {
@@ -147,11 +147,9 @@ uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
       bit = offset;
     }
 
-    uint8_t hi =
-        !!(state.objectBuffer[static_cast<std::size_t>(i) * 2] & (1 << bit));
-    uint8_t lo = !!(state.objectBuffer[(static_cast<std::size_t>(i) * 2) + 1] &
-                    (1 << bit))
-                 << 1;
+    uint8_t hi = !!(state.objectBuffer[i * 2] & (1 << bit));
+    bool loSet = state.objectBuffer[(i * 2) + 1] & (1 << bit);
+    auto lo = static_cast<uint8_t>(loSet << 1);
 
     bool bgPriority = state.fetchedEntries[i].bits.bgp;
 
@@ -194,7 +192,7 @@ void Pipeline::loadWindowTile() {
 
 void Pipeline::loadSpriteTile() {
   for (uint8_t s = 0; s < ctx->spriteCount; s++) {
-    const auto &entry = ctx->sprites[s];
+    const auto& entry = ctx->sprites[s];
     int spriteX = (entry.x - 8) + (ctx->scrollX % 8);
     if ((std::cmp_greater_equal(spriteX, state.fetchX) &&
          spriteX < state.fetchX + 8) ||
@@ -212,8 +210,9 @@ void Pipeline::loadSpriteData(uint8_t offset) {
   int curY = ctx->ly;
   uint8_t spriteHeight = ctx->objHeight;
 
-  for (int i = 0; std::cmp_less(i, state.entryCount); i++) {
-    uint8_t tileY = ((curY + 16) - state.fetchedEntries[i].y) * 2;
+  for (std::size_t i = 0; i < state.entryCount; i++) {
+    auto tileY =
+        static_cast<uint8_t>(((curY + 16) - state.fetchedEntries[i].y) * 2);
 
     if (state.fetchedEntries[i].bits.yFlip) {
       tileY = ((spriteHeight * 2) - 2) - tileY;

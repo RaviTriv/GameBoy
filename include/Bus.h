@@ -24,7 +24,7 @@ enum class RegionType : uint8_t {
 
 constexpr std::array<RegionType, 256> buildPageTable() {
   std::array<RegionType, 256> table{};
-  for (int page = 0; page < 256; ++page) {
+  for (std::size_t page = 0; page < 256; ++page) {
     auto base = static_cast<uint16_t>(page << 8);
     if (base <= 0x7F00) {
       table[page] = RegionType::CartROM;
@@ -49,19 +49,19 @@ inline constexpr auto PAGE_TABLE = buildPageTable();
 
 class Bus : public IMemAccess {
  public:
-  Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
-      PPU &ppu, RAM &ram);
+  Bus(Cartridge& cartridge, InterruptRegs interruptRegs, DMA& dma, IO& io,
+      PPU& ppu, RAM& ram);
   [[nodiscard]] uint8_t read8(uint16_t address) override;
   void write8(uint16_t address, uint8_t value) override;
   void write16(uint16_t address, uint16_t value) override;
 
  private:
-  Cartridge &cartridge;
+  Cartridge& cartridge;
   InterruptRegs interruptRegs;
-  DMA &dma;
-  IO &io;
-  PPU &ppu;
-  RAM &ram;
+  DMA& dma;
+  IO& io;
+  PPU& ppu;
+  RAM& ram;
 
   [[nodiscard]] uint8_t readPageFE(uint16_t address);
   [[nodiscard]] uint8_t readPageFF(uint16_t address);
