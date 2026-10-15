@@ -19,6 +19,7 @@ Checks: >
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
   -bugprone-easily-swappable-parameters,
+  -bugprone-signed-bitwise,
   -portability-avoid-pragma-once,
   -performance-enum-size,
   -modernize-use-nodiscard,
