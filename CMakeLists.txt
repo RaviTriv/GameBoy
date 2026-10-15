@@ -54,7 +54,7 @@ target_include_directories(gameboy_core PUBLIC include src)
 
 target_link_libraries(gameboy_core PUBLIC spdlog::spdlog)
 
-target_compile_features(gameboy_core PUBLIC cxx_std_20)
+target_compile_features(gameboy_core PUBLIC cxx_std_23)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(gameboy_core PRIVATE ${GB_WARNINGS})
