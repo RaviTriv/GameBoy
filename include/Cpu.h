@@ -49,14 +49,14 @@ class CPU : public InterruptSink {
 
   State state;
 
-  inline void cycle(int n) { cycleCallback(cycleCallbackCtx, n); }
+  void cycle(int n) { cycleCallback(cycleCallbackCtx, n); }
 
-  inline int flagZ() const { return (state.registers.f >> 7) & 1; }
-  inline int flagN() const { return (state.registers.f >> 6) & 1; }
-  inline int flagH() const { return (state.registers.f >> 5) & 1; }
-  inline int flagC() const { return (state.registers.f >> 4) & 1; }
+  int flagZ() const { return (state.registers.f >> 7) & 1; }
+  int flagN() const { return (state.registers.f >> 6) & 1; }
+  int flagH() const { return (state.registers.f >> 5) & 1; }
+  int flagC() const { return (state.registers.f >> 4) & 1; }
 
-  inline void setFlags(int z, int n, int h, int c) {
+  void setFlags(int z, int n, int h, int c) {
     if (z != -1) {
       if (z) {
         state.registers.f |= (1 << 7);

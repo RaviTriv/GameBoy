@@ -10,7 +10,7 @@
 
 std::string StateSerializer::removeSpaces(const std::string &str) const {
   std::string result = str;
-  result.erase(std::remove(result.begin(), result.end(), ' '), result.end());
+  result.erase(std::ranges::remove(result,, ' ').begin(), result.end());
   return result;
 }
 

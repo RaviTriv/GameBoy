@@ -118,7 +118,7 @@ void Pipeline::pushPixel() {
   if (pixelFifo.size() > 8) {
     uint32_t pixel = pixelFifo.pop();
 
-    if (state.lineX >= (ctx->scrollX) % 8) {
+    if (state.lineX >= ctx->scrollX % 8) {
       writePixelFn(bufferIndex(), pixel);
       state.pushedCount++;
     }
@@ -183,14 +183,14 @@ void Pipeline::loadWindowTile() {
 
   uint8_t windowY = ctx->windowY;
 
-  if (state.fetchX + 7 >= ctx->windowX &&
-      state.fetchX + 7 < ctx->windowX + YRES + 14) {
-    if (ctx->ly >= windowY && ctx->ly < windowY + XRES) {
+  if ((state.fetchX + 7 >= ctx->windowX &&
+      state.fetchX + 7 < ctx->windowX + YRES + 14) && (ctx->ly >= windowY && ctx->ly < windowY + XRES)) 
+    {
       uint8_t wTileY = (ctx->windowLine / PIXEL_TILE_DIMENSION);
 
       state.bgwBuffer[0] = readFn(windowTileReadAddress(wTileY));
     }
-  }
+  
 }
 
 void Pipeline::loadSpriteTile() {
@@ -223,7 +223,7 @@ void Pipeline::loadSpriteData(uint8_t offset) {
     uint8_t tileIdx = state.fetchedEntries[i].tile;
 
     if (spriteHeight == 16) {
-      tileIdx &= ~(1);
+      tileIdx &= ~1;
     }
 
     state.objectBuffer[(i * 2) + offset] =
@@ -261,7 +261,7 @@ uint32_t Pipeline::bufferIndex() const {
 
 uint16_t Pipeline::bgw0ReadAddress() const {
   return ctx->bgMapArea + (state.mapX / PIXEL_TILE_DIMENSION) +
-         (((state.mapY / PIXEL_TILE_DIMENSION)) * BACKGROUND_MAP_DIMENSION);
+         ((state.mapY / PIXEL_TILE_DIMENSION) * BACKGROUND_MAP_DIMENSION);
 }
 
 uint16_t Pipeline::bgw1ReadAddress() const {

@@ -49,7 +49,7 @@ class LCD {
     std::array<uint32_t, 4> ob2Colors{};
   };
 
-  LCD(std::function<void(uint8_t)> onDmaStart);
+  explicit LCD(std::function<void(uint8_t)> onDmaStart);
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] bool isLcdStatIntEnabled(uint8_t source) const;

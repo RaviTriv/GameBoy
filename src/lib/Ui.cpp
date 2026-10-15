@@ -27,8 +27,8 @@ UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback,
     : apu(apu),
       ppu(ppu),
       gamepad(gamepad),
-      onClose(closeCallback),
-      onSaveState(saveStateCallback) {}
+      onClose(std::move(std::move(closeCallback))),
+      onSaveState(std::move(std::move(saveStateCallback))) {}
 
 void UI::init() {
   SDL_Init(SDL_INIT_VIDEO);
@@ -43,7 +43,7 @@ void UI::init() {
                                  SCREEN_HEIGHT);
 
   SDL_InitSubSystem(SDL_INIT_AUDIO);
-  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, apu.audioFreq};
+  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, APU::audioFreq};
   SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(
       SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
@@ -108,9 +108,9 @@ void UI::update() {
     }
   }
 
-  SDL_UpdateTexture(sdlTexture, NULL, screen->pixels, screen->pitch);
+  SDL_UpdateTexture(sdlTexture, nullptr, screen->pixels, screen->pitch);
   SDL_RenderClear(renderer);
-  SDL_RenderTexture(renderer, sdlTexture, NULL, NULL);
+  SDL_RenderTexture(renderer, sdlTexture, nullptr, nullptr);
   SDL_RenderPresent(renderer);
 }
 

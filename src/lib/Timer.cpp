@@ -20,7 +20,7 @@ void Timer::tick() {
 
   bool updateTimer = false;
 
-  switch (state.tac & (FREQUENCY_BITS_MASK)) {
+  switch (state.tac & FREQUENCY_BITS_MASK) {
     case 0b00:
       updateTimer = (prevDivider & (1 << 9)) && (!(state.div & (1 << 9)));
       break;

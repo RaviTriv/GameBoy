@@ -13,7 +13,7 @@ class DMA {
   };
 
  public:
-  DMA(std::function<void(uint16_t, uint8_t)> oamWrite);
+  explicit DMA(std::function<void(uint16_t, uint8_t)> oamWrite);
   void start(uint8_t start);
   void tick();
   [[nodiscard]] bool isTransferring() const;

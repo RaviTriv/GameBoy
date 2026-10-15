@@ -198,14 +198,14 @@ class Queue<T, Capacity, MemoryType::Shared> {
                               "shm_open failed!");
     }
 
-    if (is_creator) {
-      if (ftruncate(shm_fd_, total_size) == -1) {
+    if (is_creator && (ftruncate(shm_fd_, total_size) == -1)) 
+      {
         close(shm_fd_);
         shm_unlink(shm_name_.c_str());
         throw std::system_error(errno, std::system_category(),
                                 "ftruncate failed!");
       }
-    }
+    
 
     mapped_region_ = mmap(nullptr, total_size, PROT_READ | PROT_WRITE,
                           MAP_SHARED, shm_fd_, 0);

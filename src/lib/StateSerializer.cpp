@@ -254,7 +254,9 @@ void StateSerializer::loadPPUState(std::istream &file) {
   std::array<uint32_t, FIFO_CAPACITY> fifoBuffer;
   file.read(reinterpret_cast<char *>(fifoBuffer.data()),
             fifoBuffer.size() * sizeof(uint32_t));
-  size_t fifoHead, fifoTail, fifoCount;
+  size_t fifoHead;
+  size_t fifoTail;
+  size_t fifoCount;
   file.read(reinterpret_cast<char *>(&fifoHead), sizeof(fifoHead));
   file.read(reinterpret_cast<char *>(&fifoTail), sizeof(fifoTail));
   file.read(reinterpret_cast<char *>(&fifoCount), sizeof(fifoCount));

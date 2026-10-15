@@ -51,8 +51,8 @@ class Cartridge {
     std::vector<uint8_t> ramData;
     std::unique_ptr<RomHeader> header;
   };
-  Cartridge(std::string_view romPath);
-  Cartridge(std::vector<uint8_t> rom);
+  explicit Cartridge(std::string_view romPath);
+  explicit Cartridge(std::vector<uint8_t> rom);
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] std::string getTitle() const;

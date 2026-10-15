@@ -27,7 +27,7 @@ class PPU {
     std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };
-  PPU(InterruptSink &interruptSink);
+  explicit PPU(InterruptSink &interruptSink);
   void init();
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;

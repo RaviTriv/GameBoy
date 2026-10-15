@@ -54,8 +54,8 @@ void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
       },
       this, nullptr);
   ppu = std::make_unique<PPU>(*cpu);
-  ui = std::make_unique<UI>([this]() { state.isRunning.store(false); },
-                            [this]() { this->saveState(); }, *ppu, *gamepad,
+  ui = std::make_unique<UI>([this] { state.isRunning.store(false); },
+                            [this] { this->saveState(); }, *ppu, *gamepad,
                             *apu);
   timer = std::make_unique<Timer>(*cpu);
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
@@ -67,11 +67,11 @@ void GameBoy::init(const std::string &romPath, bool trace, bool loadSave,
   ppu->setMemRead(*bus);
   ppu->setLcd(lcd.get());
   framePacer =
-      std::make_unique<FramePacer>([this]() { return ui->getTicks(); },
+      std::make_unique<FramePacer>([this] { return ui->getTicks(); },
                                    [this](uint32_t ms) { ui->delay(ms); });
   framePacer->setFastForward(fastForward);
   ui->setToggleFastForward(
-      [this]() { framePacer->setFastForward(!framePacer->isFastForward()); });
+      [this] { framePacer->setFastForward(!framePacer->isFastForward()); });
   stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
   state.isRunning.store(true);
   this->trace = trace;
@@ -90,12 +90,12 @@ void GameBoy::run() {
   ppu->init();
   ui->init();
 
-  if (loadSave) {
-    if (!stateSerializer->loadState(cartridge->getTitle())) {
+  if (loadSave && (!stateSerializer->loadState(cartridge->getTitle()))) 
+    {
       Logger::GetLogger()->error("Failed to load save state for: {}",
                                  cartridge->getTitle());
     }
-  }
+  
 
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
 
@@ -153,5 +153,5 @@ void GameBoy::displayBootArt() {
   ⢀⡉⠀⠀⣀⣤⣄⢈⣿⣿⣿⣿⣿⣿⣿⣿⣿⢀⣤⣤⣄⠀⠀⣴⡄      ⣿⣾⢰⣷⢻⡉⠉⠉⣷⣿⣾⡀⠀⡇
   ⠘⢇⠀⠰⣿⣿⢟⢼⣿⣿⣿⣿⣿⣿⣿⣿⡿⢜⠿⠿⠿⠀⡀⠀⠀
   ⠀⠀⠁⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠈⠀
-  )" << std::endl;
+  )" << '\n';
 }

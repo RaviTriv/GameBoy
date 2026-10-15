@@ -13,7 +13,7 @@ class Timer {
   };
 
  public:
-  Timer(InterruptSink &interruptSink);
+  explicit Timer(InterruptSink &interruptSink);
   void tick();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
