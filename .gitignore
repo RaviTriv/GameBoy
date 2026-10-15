@@ -45,3 +45,4 @@ build-test
 logs
 /roms
 saves
+.cache/
