@@ -1,4 +1,5 @@
 #include "Io.h"
+
 #include <cstdint>
 
 #include "Apu.h"
@@ -106,6 +107,7 @@ void IO::write(uint16_t address, uint8_t value) {
 
   if ((address >= LCD_START) && (address <= LCD_END)) {
     // Lcd
-    return lcd.write(address, value);
+    lcd.write(address, value);
+    return;
   }
 }

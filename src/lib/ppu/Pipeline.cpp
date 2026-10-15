@@ -184,13 +184,12 @@ void Pipeline::loadWindowTile() {
   uint8_t windowY = ctx->windowY;
 
   if ((state.fetchX + 7 >= ctx->windowX &&
-      state.fetchX + 7 < ctx->windowX + YRES + 14) && (ctx->ly >= windowY && ctx->ly < windowY + XRES)) 
-    {
-      uint8_t wTileY = (ctx->windowLine / PIXEL_TILE_DIMENSION);
+       state.fetchX + 7 < ctx->windowX + YRES + 14) &&
+      (ctx->ly >= windowY && ctx->ly < windowY + XRES)) {
+    uint8_t wTileY = (ctx->windowLine / PIXEL_TILE_DIMENSION);
 
-      state.bgwBuffer[0] = readFn(windowTileReadAddress(wTileY));
-    }
-  
+    state.bgwBuffer[0] = readFn(windowTileReadAddress(wTileY));
+  }
 }
 
 void Pipeline::loadSpriteTile() {

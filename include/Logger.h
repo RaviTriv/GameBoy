@@ -34,6 +34,9 @@ class Logger {
       logger->flush_on(spdlog::level::trace);
 
       static struct LoggerCleanup {
+        LoggerCleanup() = default;
+        LoggerCleanup(const LoggerCleanup &) = delete;
+        LoggerCleanup &operator=(const LoggerCleanup &) = delete;
         ~LoggerCleanup() { spdlog::shutdown(); }
       } cleanup;
     }

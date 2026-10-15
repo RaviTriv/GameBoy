@@ -162,7 +162,7 @@ int Cartridge::getRamBanksCount(uint8_t type) const {
   }
 }
 
-std::string Cartridge::cartridgeType(CartridgeType type) {
+std::string_view Cartridge::cartridgeType(CartridgeType type) {
   switch (type) {
     case CartridgeType::ROM_ONLY:
       return "ROM ONLY";

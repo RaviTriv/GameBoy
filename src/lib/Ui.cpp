@@ -1,4 +1,5 @@
 #include "Ui.h"
+
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
@@ -43,7 +44,8 @@ void UI::init() {
                                  SCREEN_HEIGHT);
 
   SDL_InitSubSystem(SDL_INIT_AUDIO);
-  const SDL_AudioSpec spec = {SDL_AUDIO_U8, 2, APU::audioFreq};
+  const SDL_AudioSpec spec = {
+      .format = SDL_AUDIO_U8, .channels = 2, .freq = APU::audioFreq};
   SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(
       SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
@@ -149,6 +151,8 @@ void UI::onKey(bool isDown, SDL_Keycode keyCode) {
       if (isDown && onToggleFastForward) {
         onToggleFastForward();
       }
+      break;
+    default:
       break;
   }
 }

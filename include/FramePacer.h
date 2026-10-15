@@ -16,7 +16,7 @@ class FramePacer {
   std::function<uint32_t()> getTicksFn;
   std::function<void(uint32_t)> delayFn;
   uint32_t targetFrameTime;
-  long prevFrameTime = 0;
-  long startTimer = 0;
+  uint32_t prevFrameTime = 0;
+  uint32_t startTimer = 0;
   bool fastForward = false;
 };

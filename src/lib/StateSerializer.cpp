@@ -230,7 +230,7 @@ void StateSerializer::loadPPUState(std::istream &file) {
 
   PPU::State state = ppu.getState();
 
-  uint32_t frame;
+  uint32_t frame = 0;
   file.read(reinterpret_cast<char *>(&frame), sizeof(frame));
   file.read(reinterpret_cast<char *>(&state.lineTicks),
             sizeof(state.lineTicks));
@@ -254,9 +254,9 @@ void StateSerializer::loadPPUState(std::istream &file) {
   std::array<uint32_t, FIFO_CAPACITY> fifoBuffer;
   file.read(reinterpret_cast<char *>(fifoBuffer.data()),
             fifoBuffer.size() * sizeof(uint32_t));
-  size_t fifoHead;
-  size_t fifoTail;
-  size_t fifoCount;
+  size_t fifoHead = 0;
+  size_t fifoTail = 0;
+  size_t fifoCount = 0;
   file.read(reinterpret_cast<char *>(&fifoHead), sizeof(fifoHead));
   file.read(reinterpret_cast<char *>(&fifoTail), sizeof(fifoTail));
   file.read(reinterpret_cast<char *>(&fifoCount), sizeof(fifoCount));
@@ -285,6 +285,14 @@ void StateSerializer::loadPPUState(std::istream &file) {
             sizeof(pipelineState.tileY));
   file.read(reinterpret_cast<char *>(&pipelineState.entryCount),
             sizeof(pipelineState.entryCount));
+
+  if (!file) {
+    throw std::runtime_error("Truncated PPU state in save file");
+  }
+  if (fifoHead >= fifoBuffer.size() || fifoTail >= fifoBuffer.size() ||
+      fifoCount > fifoBuffer.size()) {
+    throw std::runtime_error("Invalid pixel FIFO state in save file");
+  }
 
   ppu.setState(state);
   ppu.setCurrentFrame(frame);

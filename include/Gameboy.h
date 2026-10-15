@@ -29,6 +29,8 @@ class GameBoy {
     uint64_t ticks = 0;
   };
   GameBoy();
+  GameBoy(const GameBoy &) = delete;
+  GameBoy &operator=(const GameBoy &) = delete;
   ~GameBoy();
   void init(const std::string &romPath, bool trace, bool loadSave,
             bool fastForward);

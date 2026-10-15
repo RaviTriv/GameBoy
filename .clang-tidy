@@ -45,3 +45,4 @@ WarningsAsErrors: '*'
 CheckOptions:
   misc-include-cleaner.IgnoreHeaders: '/_.*'
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  cppcoreguidelines-special-member-functions.AllowMissingMoveFunctionsWhenCopyIsDeleted: true

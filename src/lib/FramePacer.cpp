@@ -1,4 +1,5 @@
 #include "FramePacer.h"
+
 #include <cstdint>
 #include <functional>
 #include <utility>

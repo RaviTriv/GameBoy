@@ -67,7 +67,7 @@ class Cartridge {
   static constexpr std::size_t MIN_ROM_SIZE = 0x150;
 
   [[nodiscard]] int getRamBanksCount(uint8_t type) const;
-  [[nodiscard]] static std::string cartridgeType(CartridgeType type);
+  [[nodiscard]] static std::string_view cartridgeType(CartridgeType type);
 
   void outputCartridgeInfo();
 };

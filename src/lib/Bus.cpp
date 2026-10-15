@@ -1,4 +1,5 @@
 #include "Bus.h"
+
 #include <cstdint>
 
 #include "Cartridge.h"

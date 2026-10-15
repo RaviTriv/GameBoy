@@ -21,6 +21,8 @@ class UI {
   using ToggleFastForwardCallback = std::function<void()>;
   UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu,
      Gamepad &gamepad, APU &apu);
+  UI(const UI &) = delete;
+  UI &operator=(const UI &) = delete;
   void init();
   void handleEvents();
   void update();

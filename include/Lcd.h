@@ -84,7 +84,7 @@ class LCD {
   State state;
   bool lcdWasEnabled = true;
   std::function<void(uint8_t)> onDmaStart;
-  static constexpr std::array<unsigned long, 4> defaultColors = {
+  static constexpr std::array<uint32_t, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);
   bool getBit(uint8_t value, int bit) const;

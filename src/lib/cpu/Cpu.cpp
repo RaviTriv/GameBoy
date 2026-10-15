@@ -1,4 +1,5 @@
 #include "Cpu.h"
+
 #include <cstdint>
 #include <stdexcept>
 
@@ -233,7 +234,7 @@ void CPU::step() {
       state.halted = false;
     }
   } else {
-    uint8_t opcode;
+    uint8_t opcode = 0;
     if (state.haltBug) {
       opcode = bus->read8(state.registers.pc);
       state.haltBug = false;

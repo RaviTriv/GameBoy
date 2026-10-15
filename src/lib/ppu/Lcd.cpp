@@ -1,4 +1,5 @@
 #include "Lcd.h"
+
 #include <array>
 #include <cstdint>
 #include <functional>
