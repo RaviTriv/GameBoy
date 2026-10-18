@@ -1,4 +1,7 @@
+#include <algorithm>
 #include <array>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -6,8 +9,11 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "Apu.h"
 #include "Bus.h"
@@ -26,6 +32,26 @@
 namespace {
 
 constexpr uint64_t DEFAULT_BUDGET_MCYCLES = 300'000'000ULL;
+
+constexpr uint64_t MCYCLES_PER_FRAME = 17'556;
+constexpr uint32_t DEFAULT_BENCH_FRAMES = 3'600;
+constexpr uint32_t DEFAULT_BENCH_RUNS = 10;
+constexpr uint32_t DEFAULT_BENCH_WARMUP = 2;
+constexpr uint32_t MAX_BENCH_RUNS = 10'000;
+constexpr double MAX_RELATIVE_STDDEV = 0.03;
+constexpr std::size_t AUDIO_DRAIN_CHUNK = 1024;
+
+#ifdef __OPTIMIZE__
+constexpr bool OPTIMIZED_BUILD = true;
+#else
+constexpr bool OPTIMIZED_BUILD = false;
+#endif
+
+#ifdef NDEBUG
+constexpr bool ASSERTS_DISABLED = true;
+#else
+constexpr bool ASSERTS_DISABLED = false;
+#endif
 
 enum class Result { Running, Pass, Fail };
 
@@ -127,6 +153,12 @@ class TestRunner {
     }
   }
 
+  void runCycles(uint64_t mcycles) {
+    while (totalCycles < mcycles) {
+      cpu->step();
+    }
+  }
+
   [[nodiscard]] const auto& videoBuffer() const {
     return ppu->getVideoBuffer();
   }
@@ -146,11 +178,19 @@ class TestRunner {
         if (prevFrame != ppu->getCurrentFrame()) {
           frameDirty = true;
           framesElapsed++;
+          drainAudio();
         }
         apu->tick();
       }
       dma->tick();
     }
+  }
+
+  void drainAudio() {
+    std::size_t popped = 0;
+    do {
+      popped = apu->popSamples(audioScratch.data(), audioScratch.size());
+    } while (popped == audioScratch.size());
   }
 
   Result checkResult() {
@@ -227,7 +267,106 @@ class TestRunner {
   bool frameDirty = false;
   uint64_t totalCycles = 0;
   uint32_t framesElapsed = 0;
+  std::array<StereoSample, AUDIO_DRAIN_CHUNK> audioScratch{};
 };
+
+struct BenchOptions {
+  uint32_t frames = DEFAULT_BENCH_FRAMES;
+  uint32_t runs = DEFAULT_BENCH_RUNS;
+  uint32_t warmup = DEFAULT_BENCH_WARMUP;
+};
+
+struct BenchSample {
+  double seconds = 0.0;
+  uint64_t hash = 0;
+};
+
+std::string formatHash(uint64_t hash) {
+  std::ostringstream out;
+  out << std::hex << std::setfill('0') << std::setw(16) << hash;
+  return out.str();
+}
+
+BenchSample timeOneRun(const std::string& romPath, uint64_t mcycles) {
+  TestRunner runner(romPath, Protocol::Blargg);
+  const auto start = std::chrono::steady_clock::now();
+  runner.runCycles(mcycles);
+  const auto stop = std::chrono::steady_clock::now();
+  return {.seconds = std::chrono::duration<double>(stop - start).count(),
+          .hash = hashFramebuffer(runner.videoBuffer())};
+}
+
+int runBenchmark(const std::string& romPath, const BenchOptions& options) {
+  const uint64_t mcycles =
+      static_cast<uint64_t>(options.frames) * MCYCLES_PER_FRAME;
+  const auto fps = [&options](double seconds) {
+    return static_cast<double>(options.frames) / seconds;
+  };
+
+  std::cout << std::fixed;
+  uint64_t expectedHash = 0;
+  std::vector<double> times;
+  times.reserve(options.runs);
+  const uint32_t total = options.warmup + options.runs;
+  for (uint32_t i = 0; i < total; i++) {
+    const BenchSample sample = timeOneRun(romPath, mcycles);
+    if (i == 0) {
+      expectedHash = sample.hash;
+    } else if (sample.hash != expectedHash) {
+      std::cerr << "ERROR: framebuffer hash changed between runs ("
+                << formatHash(expectedHash) << " vs " << formatHash(sample.hash)
+                << ")\n";
+      return 1;
+    }
+
+    const bool isWarmup = i < options.warmup;
+    const uint32_t label = isWarmup ? i + 1 : i - options.warmup + 1;
+    std::cout << (isWarmup ? "warmup " : "run    ") << std::setw(2) << label
+              << ": " << std::setprecision(1) << std::setw(10)
+              << fps(sample.seconds) << " fps  (" << std::setprecision(4)
+              << sample.seconds << " s)  hash " << formatHash(sample.hash)
+              << '\n';
+    if (!isWarmup) {
+      times.push_back(sample.seconds);
+    }
+  }
+
+  std::ranges::sort(times);
+  const auto discard = static_cast<std::size_t>(
+      std::sqrt(static_cast<double>(times.size())) / 2.0);
+  const std::span<const double> kept =
+      std::span(times).subspan(discard, times.size() - (2 * discard));
+
+  double sum = 0.0;
+  for (double t : kept) {
+    sum += t;
+  }
+  const double mean = sum / static_cast<double>(kept.size());
+  double squares = 0.0;
+  for (double t : kept) {
+    squares += (t - mean) * (t - mean);
+  }
+  const double relativeStddev =
+      std::sqrt(squares / static_cast<double>(kept.size())) / mean;
+
+  const std::size_t mid = times.size() / 2;
+  const double median =
+      times.size() % 2 == 0 ? (times[mid - 1] + times[mid]) / 2.0 : times[mid];
+
+  std::cout << "\nframes " << options.frames << ", runs " << options.runs
+            << " (dropped " << discard << " from each end), warmup "
+            << options.warmup << '\n'
+            << "median        " << std::setprecision(1) << fps(median)
+            << " fps\n"
+            << "trimmed mean  " << fps(mean) << " fps  +/- "
+            << std::setprecision(2) << relativeStddev * 100.0 << "%\n";
+
+  if (relativeStddev > MAX_RELATIVE_STDDEV) {
+    std::cerr << "WARNING: stddev above 3%; close other apps or raise "
+                 "--bench-runs\n";
+  }
+  return 0;
+}
 
 }  // namespace
 
@@ -240,6 +379,9 @@ int main(int argc, char** argv) {
     bool frameMode = false;
     bool printHash = false;
     std::string dumpPath;
+    bool benchMode = false;
+    bool allowUnoptimized = false;
+    BenchOptions bench;
 
     for (int i = 1; i < argc; i++) {
       const std::string arg = argv[i];
@@ -254,6 +396,16 @@ int main(int argc, char** argv) {
         frames = static_cast<uint32_t>(std::stoul(argv[++i]));
       } else if (arg == "--dump") {
         dumpPath = argv[++i];
+      } else if (arg == "--bench") {
+        benchMode = true;
+      } else if (arg == "--bench-frames") {
+        bench.frames = static_cast<uint32_t>(std::stoul(argv[++i]));
+      } else if (arg == "--bench-runs") {
+        bench.runs = static_cast<uint32_t>(std::stoul(argv[++i]));
+      } else if (arg == "--bench-warmup") {
+        bench.warmup = static_cast<uint32_t>(std::stoul(argv[++i]));
+      } else if (arg == "--allow-unoptimized") {
+        allowUnoptimized = true;
       } else if (romPath.empty()) {
         romPath = arg;
       } else {
@@ -264,8 +416,30 @@ int main(int argc, char** argv) {
     if (romPath.empty()) {
       std::cerr << "Usage: test_runner <rom_path> [max_million_cycles] "
                    "[--mooneye] [--memory] [--frames N] [--hash] "
-                   "[--dump path]\n";
+                   "[--dump path] [--bench [--bench-frames N] "
+                   "[--bench-runs R] [--bench-warmup W] "
+                   "[--allow-unoptimized]]\n";
       return 3;
+    }
+
+    if (benchMode) {
+      if (bench.frames == 0 || bench.runs == 0 || bench.runs > MAX_BENCH_RUNS ||
+          bench.warmup > MAX_BENCH_RUNS) {
+        std::cerr << "ERROR: --bench-frames must be > 0, --bench-runs 1-"
+                  << MAX_BENCH_RUNS << ", --bench-warmup 0-" << MAX_BENCH_RUNS
+                  << '\n';
+        return 3;
+      }
+      if (!allowUnoptimized && !OPTIMIZED_BUILD) {
+        std::cerr << "ERROR: built without optimizations; configure with "
+                     "-DCMAKE_BUILD_TYPE=Release or pass "
+                     "--allow-unoptimized\n";
+        return 3;
+      }
+      if (!ASSERTS_DISABLED) {
+        std::cerr << "WARNING: NDEBUG is not defined; assertions are on\n";
+      }
+      return runBenchmark(romPath, bench);
     }
 
     TestRunner runner(romPath, protocol);
