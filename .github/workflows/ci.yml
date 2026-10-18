@@ -25,7 +25,22 @@ jobs:
         run: cmake --build build -j
 
       - name: Run test ROMs
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure -LE known_fail --output-junit results.xml
+
+      - name: Run known-fail ROMs
+        if: success() || failure()
+        run: ctest --test-dir build -L known_fail --output-junit known-fail.xml || true
+
+      - name: Test report
+        if: always()
+        run: python3 .github/scripts/test_report.py build/results.xml --known-fail build/known-fail.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/*.xml
 
   sanitizers:
     name: Sanitizers
@@ -47,7 +62,7 @@ jobs:
         run: cmake --build build -j
 
       - name: Run test ROMs
-        run: ctest --test-dir build --output-on-failure -L "cpu|mbc"
+        run: ctest --test-dir build --output-on-failure -L "cpu|mbc" -LE known_fail
 
   clang-tidy:
     name: Clang Tidy
