@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "./Instructions.h"
 #include "./Registers.h"
 #include "Common.h"
 #include "InterruptRegs.h"
@@ -14,7 +13,6 @@ class CPU : public InterruptSink {
  public:
   struct State {
     struct Registers registers;
-    Instruction instruction{};
     uint8_t opcode = 0;
     uint16_t opValue = 0;
     bool isMemoryOp = false;
