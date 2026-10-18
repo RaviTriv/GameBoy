@@ -38,7 +38,7 @@ uint8_t IO::read(uint16_t address) const {
 
   if (address == IF_REGISTER) {
     // Interrupt flags
-    return interruptRegs.intf;
+    return interruptRegs.intf | IF_UNUSED_BITS;
   }
 
   if ((address >= APU_START) && (address <= APU_END)) {

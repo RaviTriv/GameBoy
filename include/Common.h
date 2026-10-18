@@ -54,6 +54,7 @@ constexpr uint16_t TIMER_START = TIMER_DIV_REGISTER;
 constexpr uint16_t TIMER_END = TIMER_CONTROL_REGISTER;
 
 constexpr uint16_t IF_REGISTER = 0xFF0F;
+constexpr uint8_t IF_UNUSED_BITS = 0xE0;
 
 constexpr uint16_t APU_START = 0xFF10;
 constexpr uint16_t APU_END = 0xFF26;

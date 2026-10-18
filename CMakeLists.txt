@@ -161,9 +161,13 @@ if(BUILD_TESTS)
         add_mooneye_mbc_test(mbc2/rom_1Mb.gb)
         add_mooneye_mbc_test(mbc2/rom_2Mb.gb)
 
+        set(HALT_BUG_PASS_HASH 5c09de1ce5732c7c)
+        add_test(NAME blargg.halt_bug
+                 COMMAND gameboy_tests "${BLARGG_DIR}/halt_bug.gb" --frames 180 --hash)
+        set_tests_properties(blargg.halt_bug PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS cpu
+                             PASS_REGULAR_EXPRESSION "^${HALT_BUG_PASS_HASH}")
+
         # Not yet passing -- uncomment as each is fixed.
-        # halt_bug: no serial output, times out
-        # add_rom_test(blargg.halt_bug      "${BLARGG_DIR}/halt_bug.gb"                 cpu)
         add_rom_test(blargg.instr_timing  "${BLARGG_DIR}/instr_timing/instr_timing.gb" cpu)
         add_rom_test(blargg.mem_timing    "${BLARGG_DIR}/mem_timing/mem_timing.gb"     cpu)
         # add_rom_test(blargg.mem_timing_2  "${BLARGG_DIR}/mem_timing-2/mem_timing.gb"   cpu)
