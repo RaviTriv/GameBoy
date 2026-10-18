@@ -58,9 +58,9 @@ inline uint16_t CPU::stackPop16() {
 void CPU::interruptHandle(uint16_t address) {
   cycle(2);
   cycle(1);
-  stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+  stackPush8(highByte(state.registers.pc));
   cycle(1);
-  stackPush8(state.registers.pc & BYTE_MASK);
+  stackPush8(lowByte(state.registers.pc));
   state.registers.pc = address;
   cycle(1);
 }
@@ -69,7 +69,7 @@ bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
   if (state.intf & static_cast<int>(type) &&
       state.ie & static_cast<int>(type)) {
     interruptHandle(address);
-    state.intf &= ~static_cast<int>(type);
+    state.intf &= static_cast<uint8_t>(~static_cast<int>(type));
     state.halted = false;
     state.ime = false;
     return true;
@@ -173,7 +173,7 @@ void CPU::executeCB() {
       switch (bit_num) {
         case 0: { /* RLC */
           bool setC = (val & BIT7_MASK) != 0;
-          uint8_t result = ((val << 1) & BYTE_MASK) | (setC ? 1 : 0);
+          uint8_t result = toU8((val << 1) | (setC ? 1 : 0));
           cbWrite(reg_idx, result);
           setFlags(result == 0, 0, 0, setC);
         } break;
@@ -225,7 +225,7 @@ void CPU::executeCB() {
       setFlags(!(val & (1 << bit_num)), 0, 1, -1);
     } break;
     case 2: { /* RES */
-      cbWrite(reg_idx, val & ~(1 << bit_num));
+      cbWrite(reg_idx, toU8(val & ~(1 << bit_num)));
     } break;
     case 3: { /* SET */
       cbWrite(reg_idx, static_cast<uint8_t>(val | (1 << bit_num)));
@@ -307,9 +307,10 @@ void CPU::step() {
         cycle(1);
         uint16_t addr = toWord(hi, lo);
         state.registers.pc += 2;
-        bus_->write8(addr, state.registers.sp & BYTE_MASK);
+        bus_->write8(addr, lowByte(state.registers.sp));
         cycle(1);
-        bus_->write8(addr + 1, (state.registers.sp >> 8) & BYTE_MASK);
+        bus_->write8(static_cast<uint16_t>(addr + 1),
+                     highByte(state.registers.sp));
         cycle(1);
       } break;
 
@@ -355,7 +356,7 @@ void CPU::step() {
       case 0x0F: { /* RRCA */
         uint8_t b = state.registers.a & 1;
         state.registers.a >>= 1;
-        state.registers.a |= (b << 7);
+        state.registers.a |= toU8(b << 7);
         setFlags(0, 0, 0, b);
       } break;
 
@@ -412,7 +413,7 @@ void CPU::step() {
       case 0x18: { /* JR r8 */
         auto rel = static_cast<int8_t>(bus_->read8(state.registers.pc++));
         cycle(1);
-        state.registers.pc += rel;
+        state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
         cycle(1);
       } break;
 
@@ -459,7 +460,7 @@ void CPU::step() {
         uint8_t carry = flagC();
         uint8_t new_c = state.registers.a & 1;
         state.registers.a >>= 1;
-        state.registers.a |= (carry << 7);
+        state.registers.a |= toU8(carry << 7);
         setFlags(0, 0, 0, new_c);
       } break;
 
@@ -467,7 +468,7 @@ void CPU::step() {
         auto rel = static_cast<int8_t>(bus_->read8(state.registers.pc++));
         cycle(1);
         if (!flagZ()) {
-          state.registers.pc += rel;
+          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
           cycle(1);
         }
       } break;
@@ -521,7 +522,7 @@ void CPU::step() {
           u |= 0x60;
           c = 1;
         }
-        state.registers.a += flagN() ? -u : u;
+        state.registers.a = toU8(state.registers.a + (flagN() ? -u : u));
         setFlags(state.registers.a == 0, -1, 0, c);
       } break;
 
@@ -529,7 +530,7 @@ void CPU::step() {
         auto rel = static_cast<int8_t>(bus_->read8(state.registers.pc++));
         cycle(1);
         if (flagZ()) {
-          state.registers.pc += rel;
+          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
           cycle(1);
         }
       } break;
@@ -583,7 +584,7 @@ void CPU::step() {
         auto rel = static_cast<int8_t>(bus_->read8(state.registers.pc++));
         cycle(1);
         if (!flagC()) {
-          state.registers.pc += rel;
+          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
           cycle(1);
         }
       } break;
@@ -644,7 +645,7 @@ void CPU::step() {
         auto rel = static_cast<int8_t>(bus_->read8(state.registers.pc++));
         cycle(1);
         if (flagC()) {
-          state.registers.pc += rel;
+          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
           cycle(1);
         }
       } break;
@@ -911,7 +912,7 @@ void CPU::step() {
       case 0x80: { /* ADD A,B */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.b;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -919,7 +920,7 @@ void CPU::step() {
       case 0x81: { /* ADD A,C */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.c;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -927,7 +928,7 @@ void CPU::step() {
       case 0x82: { /* ADD A,D */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.d;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -935,7 +936,7 @@ void CPU::step() {
       case 0x83: { /* ADD A,E */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.e;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -943,7 +944,7 @@ void CPU::step() {
       case 0x84: { /* ADD A,H */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.h;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -951,7 +952,7 @@ void CPU::step() {
       case 0x85: { /* ADD A,L */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.l;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -960,7 +961,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = bus_->read8(state.registers.hl());
         cycle(1);
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -968,7 +969,7 @@ void CPU::step() {
       case 0x87: { /* ADD A,A */
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.a;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -979,7 +980,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.b;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -988,7 +989,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.c;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -997,7 +998,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.d;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1006,7 +1007,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.e;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1015,7 +1016,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.h;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1024,7 +1025,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.l;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1034,7 +1035,7 @@ void CPU::step() {
         uint16_t val = bus_->read8(state.registers.hl());
         cycle(1);
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1043,7 +1044,7 @@ void CPU::step() {
         uint16_t a = state.registers.a;
         uint16_t val = state.registers.a;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1053,42 +1054,42 @@ void CPU::step() {
       case 0x90: { /* SUB B */
         int a = state.registers.a;
         int val = state.registers.b;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x91: { /* SUB C */
         int a = state.registers.a;
         int val = state.registers.c;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x92: { /* SUB D */
         int a = state.registers.a;
         int val = state.registers.d;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x93: { /* SUB E */
         int a = state.registers.a;
         int val = state.registers.e;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x94: { /* SUB H */
         int a = state.registers.a;
         int val = state.registers.h;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x95: { /* SUB L */
         int a = state.registers.a;
         int val = state.registers.l;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
@@ -1096,14 +1097,14 @@ void CPU::step() {
         int a = state.registers.a;
         int val = bus_->read8(state.registers.hl());
         cycle(1);
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
       case 0x97: { /* SUB A */
         int a = state.registers.a;
         int val = state.registers.a;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
@@ -1113,7 +1114,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.b;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1122,7 +1123,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.c;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1131,7 +1132,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.d;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1140,7 +1141,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.e;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1149,7 +1150,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.h;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1158,7 +1159,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.l;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1168,7 +1169,7 @@ void CPU::step() {
         int val = bus_->read8(state.registers.hl());
         cycle(1);
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1177,7 +1178,7 @@ void CPU::step() {
         int a = state.registers.a;
         int val = state.registers.a;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1418,9 +1419,9 @@ void CPU::step() {
         state.registers.pc += 2;
         if (!flagZ()) {
           cycle(1);
-          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          stackPush8(highByte(state.registers.pc));
           cycle(1);
-          stackPush8(state.registers.pc & BYTE_MASK);
+          stackPush8(lowByte(state.registers.pc));
           state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
@@ -1440,7 +1441,7 @@ void CPU::step() {
         uint16_t val = bus_->read8(state.registers.pc++);
         cycle(1);
         uint16_t a = state.registers.a;
-        state.registers.a = (a + val) & BYTE_MASK;
+        state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
                  a + val > BYTE_MASK);
@@ -1448,9 +1449,9 @@ void CPU::step() {
 
       case 0xC7: { /* RST 00H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x00;
         cycle(1);
       } break;
@@ -1500,9 +1501,9 @@ void CPU::step() {
         state.registers.pc += 2;
         if (flagZ()) {
           cycle(1);
-          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          stackPush8(highByte(state.registers.pc));
           cycle(1);
-          stackPush8(state.registers.pc & BYTE_MASK);
+          stackPush8(lowByte(state.registers.pc));
           state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
@@ -1515,9 +1516,9 @@ void CPU::step() {
         cycle(1);
         state.registers.pc += 2;
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
@@ -1527,7 +1528,7 @@ void CPU::step() {
         cycle(1);
         uint16_t a = state.registers.a;
         uint16_t c = flagC();
-        state.registers.a = (a + val + c) & BYTE_MASK;
+        state.registers.a = toU8(a + val + c);
         setFlags(state.registers.a == 0, 0,
                  (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
                  a + val + c > BYTE_MASK);
@@ -1535,9 +1536,9 @@ void CPU::step() {
 
       case 0xCF: { /* RST 08H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x08;
         cycle(1);
       } break;
@@ -1586,9 +1587,9 @@ void CPU::step() {
         state.registers.pc += 2;
         if (!flagC()) {
           cycle(1);
-          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          stackPush8(highByte(state.registers.pc));
           cycle(1);
-          stackPush8(state.registers.pc & BYTE_MASK);
+          stackPush8(lowByte(state.registers.pc));
           state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
@@ -1608,16 +1609,16 @@ void CPU::step() {
         uint8_t val = bus_->read8(state.registers.pc++);
         cycle(1);
         int a = state.registers.a;
-        state.registers.a = (a - val) & BYTE_MASK;
+        state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
       } break;
 
       case 0xD7: { /* RST 10H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x10;
         cycle(1);
       } break;
@@ -1668,9 +1669,9 @@ void CPU::step() {
         state.registers.pc += 2;
         if (flagC()) {
           cycle(1);
-          stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+          stackPush8(highByte(state.registers.pc));
           cycle(1);
-          stackPush8(state.registers.pc & BYTE_MASK);
+          stackPush8(lowByte(state.registers.pc));
           state.registers.pc = toWord(hi, lo);
           cycle(1);
         }
@@ -1685,7 +1686,7 @@ void CPU::step() {
         cycle(1);
         int a = state.registers.a;
         int c = flagC();
-        state.registers.a = (a - val - c) & BYTE_MASK;
+        state.registers.a = toU8(a - val - c);
         setFlags(state.registers.a == 0, 1,
                  (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
                  a - val - c < 0);
@@ -1693,9 +1694,9 @@ void CPU::step() {
 
       case 0xDF: { /* RST 18H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x18;
         cycle(1);
       } break;
@@ -1744,9 +1745,9 @@ void CPU::step() {
 
       case 0xE7: { /* RST 20H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x20;
         cycle(1);
       } break;
@@ -1793,9 +1794,9 @@ void CPU::step() {
 
       case 0xEF: { /* RST 28H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x28;
         cycle(1);
       } break;
@@ -1848,9 +1849,9 @@ void CPU::step() {
 
       case 0xF7: { /* RST 30H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x30;
         cycle(1);
       } break;
@@ -1905,9 +1906,9 @@ void CPU::step() {
 
       case 0xFF: { /* RST 38H */
         cycle(1);
-        stackPush8((state.registers.pc >> 8) & BYTE_MASK);
+        stackPush8(highByte(state.registers.pc));
         cycle(1);
-        stackPush8(state.registers.pc & BYTE_MASK);
+        stackPush8(lowByte(state.registers.pc));
         state.registers.pc = 0x38;
         cycle(1);
       } break;

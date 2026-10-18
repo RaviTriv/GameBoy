@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "Common.h"
 #include "InterruptSink.h"
 
 Timer::Timer(InterruptSink &interruptSink) : interruptSink_(interruptSink) {
@@ -72,7 +73,7 @@ void Timer::write(uint16_t address, uint8_t value) {
 uint8_t Timer::read(uint16_t address) const {
   switch (address) {
     case DIV_REGISTER:
-      return state.div >> 8;
+      return highByte(state.div);
     case TIMA_REGISTER:
       return state.tima;
     case TMA_REGISTER:

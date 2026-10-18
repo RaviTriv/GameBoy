@@ -61,28 +61,28 @@ class CPU : public InterruptSink {
       if (z) {
         state.registers.f |= (1 << 7);
       } else {
-        state.registers.f &= ~(1 << 7);
+        state.registers.f &= static_cast<uint8_t>(~(1 << 7));
       }
     }
     if (n != -1) {
       if (n) {
         state.registers.f |= (1 << 6);
       } else {
-        state.registers.f &= ~(1 << 6);
+        state.registers.f &= static_cast<uint8_t>(~(1 << 6));
       }
     }
     if (h != -1) {
       if (h) {
         state.registers.f |= (1 << 5);
       } else {
-        state.registers.f &= ~(1 << 5);
+        state.registers.f &= static_cast<uint8_t>(~(1 << 5));
       }
     }
     if (c != -1) {
       if (c) {
         state.registers.f |= (1 << 4);
       } else {
-        state.registers.f &= ~(1 << 4);
+        state.registers.f &= static_cast<uint8_t>(~(1 << 4));
       }
     }
   }

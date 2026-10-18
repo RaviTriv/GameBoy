@@ -152,7 +152,7 @@ uint8_t APU::getChannel3CurrentSample() {
           ? ((state.channel3.nrx2 >> WAVE_VOLUME_SHIFT_POS) & 0x03) - 1
           : 4;
 
-  sample >>= shiftVol;
+  sample = static_cast<uint8_t>(sample >> shiftVol);
 
   return state.channel3.getSample(sample);
 }
@@ -197,8 +197,8 @@ StereoSample APU::mixSample() {
   uint8_t leftVol = (nr50 >> NR50_LEFT_VOLUME_SHIFT) & NR50_VOLUME_MASK;
   uint8_t rightVol = nr50 & NR50_VOLUME_MASK;
 
-  left = left * (leftVol + 1) / 8;
-  right = right * (rightVol + 1) / 8;
+  left = static_cast<uint8_t>(left * (leftVol + 1) / 8);
+  right = static_cast<uint8_t>(right * (rightVol + 1) / 8);
 
   return {.left = left, .right = right};
 }

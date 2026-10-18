@@ -142,9 +142,9 @@ bool LCD::getBit(uint8_t value, int bit) const {
 
 void LCD::setBit(uint8_t& value, int bit, bool set) {
   if (set) {
-    value |= (1 << bit);
+    value |= static_cast<uint8_t>(1 << bit);
   } else {
-    value &= ~(1 << bit);
+    value &= static_cast<uint8_t>(~(1 << bit));
   }
 }
 
@@ -171,7 +171,7 @@ uint16_t LCD::getWindowMapArea() const {
 int LCD::getLcdMode() const { return static_cast<MODE>(state.lcds & 0b11); }
 
 void LCD::setLcdMode(MODE mode) {
-  state.lcds &= ~0b11;
+  state.lcds &= static_cast<uint8_t>(~0b11);
   state.lcds |= static_cast<uint8_t>(mode);
 }
 

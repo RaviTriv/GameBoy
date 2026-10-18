@@ -26,7 +26,8 @@ void DMA::tick() {
     return;
   }
 
-  oamWrite_(state.byte, memRead->read8((state.value * 0x100) + state.byte));
+  oamWrite_(state.byte, memRead->read8(static_cast<uint16_t>(
+                            (state.value * 0x100) + state.byte)));
   state.byte++;
   state.isActive = state.byte < 0xA0;
 }

@@ -34,6 +34,14 @@ constexpr uint8_t NIBBLE_MASK = 0xF;
 constexpr uint8_t HIGH_NIBBLE_MASK = 0xF0;
 constexpr uint8_t BYTE_MASK = 0xFF;
 constexpr uint8_t BYTE_BITS = 8;
+
+constexpr uint8_t lowByte(uint16_t v) {
+  return static_cast<uint8_t>(v & BYTE_MASK);
+}
+constexpr uint8_t highByte(uint16_t v) {
+  return static_cast<uint8_t>(v >> BYTE_BITS);
+}
+constexpr uint8_t toU8(int v) { return static_cast<uint8_t>(v & BYTE_MASK); }
 constexpr uint8_t BIT7_MASK = 0x80;
 constexpr uint8_t BIT0_MASK = 0x01;
 constexpr uint16_t WORD_MASK = 0xFFFF;

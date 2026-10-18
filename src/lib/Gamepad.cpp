@@ -105,31 +105,31 @@ uint8_t Gamepad::getOutput() const {
 
   if (!actionSel()) {
     if (btns & BTN_START) {
-      output &= ~(1 << 3);
+      output &= static_cast<uint8_t>(~(1 << 3));
     }
     if (btns & BTN_SELECT) {
-      output &= ~(1 << 2);
+      output &= static_cast<uint8_t>(~(1 << 2));
     }
     if (btns & BTN_A) {
-      output &= ~(1 << 0);
+      output &= static_cast<uint8_t>(~(1 << 0));
     }
     if (btns & BTN_B) {
-      output &= ~(1 << 1);
+      output &= static_cast<uint8_t>(~(1 << 1));
     }
   }
 
   if (!directionSel()) {
     if (btns & BTN_LEFT) {
-      output &= ~(1 << 1);
+      output &= static_cast<uint8_t>(~(1 << 1));
     }
     if (btns & BTN_RIGHT) {
-      output &= ~(1 << 0);
+      output &= static_cast<uint8_t>(~(1 << 0));
     }
     if (btns & BTN_UP) {
-      output &= ~(1 << 2);
+      output &= static_cast<uint8_t>(~(1 << 2));
     }
     if (btns & BTN_DOWN) {
-      output &= ~(1 << 3);
+      output &= static_cast<uint8_t>(~(1 << 3));
     }
   }
 

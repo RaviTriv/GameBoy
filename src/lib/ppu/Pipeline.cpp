@@ -215,17 +215,17 @@ void Pipeline::loadSpriteData(uint8_t offset) {
         static_cast<uint8_t>(((curY + 16) - state.fetchedEntries[i].y) * 2);
 
     if (state.fetchedEntries[i].bits.yFlip) {
-      tileY = ((spriteHeight * 2) - 2) - tileY;
+      tileY = static_cast<uint8_t>(((spriteHeight * 2) - 2) - tileY);
     }
 
     uint8_t tileIdx = state.fetchedEntries[i].tile;
 
     if (spriteHeight == 16) {
-      tileIdx &= ~1;
+      tileIdx &= static_cast<uint8_t>(~1);
     }
 
-    state.objectBuffer[(i * 2) + offset] =
-        readFn_(0x8000 + (tileIdx * 16) + tileY + offset);
+    state.objectBuffer[(i * 2) + offset] = readFn_(
+        static_cast<uint16_t>(0x8000 + (tileIdx * 16) + tileY + offset));
   }
 }
 
@@ -254,21 +254,24 @@ uint8_t Pipeline::calculateTileY() const {
 */
 
 uint32_t Pipeline::bufferIndex() const {
-  return state.pushedCount + ctx->ly * XRES;
+  return static_cast<uint32_t>(state.pushedCount + ctx->ly * XRES);
 }
 
 uint16_t Pipeline::bgw0ReadAddress() const {
-  return ctx->bgMapArea + (state.mapX / PIXEL_TILE_DIMENSION) +
-         ((state.mapY / PIXEL_TILE_DIMENSION) * BACKGROUND_MAP_DIMENSION);
+  return static_cast<uint16_t>(
+      ctx->bgMapArea + (state.mapX / PIXEL_TILE_DIMENSION) +
+      ((state.mapY / PIXEL_TILE_DIMENSION) * BACKGROUND_MAP_DIMENSION));
 }
 
 uint16_t Pipeline::bgw1ReadAddress() const {
-  return ctx->bgWinDataArea + (state.bgwBuffer[0] * 16) + state.tileY;
+  return static_cast<uint16_t>(ctx->bgWinDataArea + (state.bgwBuffer[0] * 16) +
+                               state.tileY);
 }
 
 uint16_t Pipeline::windowTileReadAddress(uint8_t wTileY) const {
-  return ctx->winMapArea + ((state.fetchX + 7 - ctx->windowX) / 8) +
-         (wTileY * BACKGROUND_MAP_DIMENSION);
+  return static_cast<uint16_t>(ctx->winMapArea +
+                               ((state.fetchX + 7 - ctx->windowX) / 8) +
+                               (wTileY * BACKGROUND_MAP_DIMENSION));
 }
 /*
 <--- CALCULATE-ADDRESS-END --->
