@@ -20,7 +20,7 @@ class Timer {
 
  private:
   State state;
-  InterruptSink &interruptSink;
+  InterruptSink &interruptSink_;
   static constexpr uint16_t INITIAL_DIV_VALUE = 0xAC00;
   static constexpr uint16_t DIV_REGISTER = 0xFF04;
   static constexpr uint16_t TIMA_REGISTER = 0xFF05;

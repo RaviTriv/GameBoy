@@ -43,13 +43,13 @@ class CPU : public InterruptSink {
   void setState(const State& state);
 
  private:
-  CycleCallbackFn cycleCallback;
-  void* cycleCallbackCtx;
-  Bus* bus;
+  CycleCallbackFn cycleCallback_;
+  void* cycleCallbackCtx_;
+  Bus* bus_;
 
   State state;
 
-  void cycle(int n) { cycleCallback(cycleCallbackCtx, n); }
+  void cycle(int n) { cycleCallback_(cycleCallbackCtx_, n); }
 
   uint8_t flagZ() const { return (state.registers.f >> 7) & 1; }
   uint8_t flagN() const { return (state.registers.f >> 6) & 1; }

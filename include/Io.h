@@ -24,9 +24,9 @@ class IO {
  private:
   std::array<char, 2> serialData{};
   std::function<void(uint8_t)> serialSink;
-  InterruptRegs interruptRegs;
-  APU &apu;
-  Timer &timer;
-  LCD &lcd;
-  Gamepad &gamepad;
+  InterruptRegs interruptRegs_;
+  APU &apu_;
+  Timer &timer_;
+  LCD &lcd_;
+  Gamepad &gamepad_;
 };

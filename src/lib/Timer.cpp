@@ -4,7 +4,7 @@
 
 #include "InterruptSink.h"
 
-Timer::Timer(InterruptSink &interruptSink) : interruptSink(interruptSink) {
+Timer::Timer(InterruptSink &interruptSink) : interruptSink_(interruptSink) {
   state.div = INITIAL_DIV_VALUE;
 }
 
@@ -12,7 +12,7 @@ void Timer::tick() {
   if (state.reloadPending) {
     state.reloadPending = false;
     state.tima = state.tma;
-    interruptSink.requestInterrupt(InterruptType::TIMER);
+    interruptSink_.requestInterrupt(InterruptType::TIMER);
   }
 
   uint16_t prevDivider = state.div;

@@ -13,8 +13,8 @@ class FramePacer {
   [[nodiscard]] bool isFastForward() const;
 
  private:
-  std::function<uint32_t()> getTicksFn;
-  std::function<void(uint32_t)> delayFn;
+  std::function<uint32_t()> getTicksFn_;
+  std::function<void(uint32_t)> delayFn_;
   uint32_t targetFrameTime;
   uint32_t prevFrameTime = 0;
   uint32_t startTimer = 0;

@@ -9,7 +9,7 @@
 #include "Logger.h"
 
 LCD::LCD(std::function<void(uint8_t)> onDmaStart)
-    : onDmaStart(std::move(onDmaStart)) {
+    : onDmaStart_(std::move(onDmaStart)) {
   state.lcdc = 0x91;
   state.scrollX = 0;
   state.scrollY = 0;
@@ -80,7 +80,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       state.lyCompare = value;
       break;
     case 0xFF46:
-      onDmaStart(value);
+      onDmaStart_(value);
       break;
     case 0xFF47:
       updatePalettes(PaletteType::BGP, value);

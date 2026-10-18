@@ -12,25 +12,25 @@
 
 Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
          PPU &ppu, RAM &ram)
-    : cartridge(cartridge),
-      interruptRegs(interruptRegs),
-      dma(dma),
-      io(io),
-      ppu(ppu),
-      ram(ram) {}
+    : cartridge_(cartridge),
+      interruptRegs_(interruptRegs),
+      dma_(dma),
+      io_(io),
+      ppu_(ppu),
+      ram_(ram) {}
 
 uint8_t Bus::read8(uint16_t address) {
   switch (PAGE_TABLE[address >> 8]) {
     case RegionType::CartROM:
-      return cartridge.read(address);
+      return cartridge_.read(address);
     case RegionType::VRAM:
-      return ppu.vramRead(address);
+      return ppu_.vramRead(address);
     case RegionType::CartRAM:
-      return cartridge.read(address);
+      return cartridge_.read(address);
     case RegionType::WRAM:
-      return ram.readWRAM(address);
+      return ram_.readWRAM(address);
     case RegionType::EchoRAM:
-      return ram.readWRAM(address - 0x2000);
+      return ram_.readWRAM(address - 0x2000);
     case RegionType::MixedFE:
       return readPageFE(address);
     case RegionType::MixedFF:
@@ -41,40 +41,40 @@ uint8_t Bus::read8(uint16_t address) {
 
 uint8_t Bus::readPageFE(uint16_t address) {
   if (address <= OAM_END) {
-    if (dma.isTransferring()) {
+    if (dma_.isTransferring()) {
       return 0xFF;
     }
-    return ppu.oamRead(address);
+    return ppu_.oamRead(address);
   }
   return 0;
 }
 
 uint8_t Bus::readPageFF(uint16_t address) {
   if (address <= IO_REGISTERS_END) {
-    return io.read(address);
+    return io_.read(address);
   }
   if (address == IE_REGISTER) {
-    return interruptRegs.ie;
+    return interruptRegs_.ie;
   }
-  return ram.readHRAM(address);
+  return ram_.readHRAM(address);
 }
 
 void Bus::write8(uint16_t address, uint8_t value) {
   switch (PAGE_TABLE[address >> 8]) {
     case RegionType::CartROM:
-      cartridge.write(address, value);
+      cartridge_.write(address, value);
       return;
     case RegionType::VRAM:
-      ppu.vramWrite(address, value);
+      ppu_.vramWrite(address, value);
       return;
     case RegionType::CartRAM:
-      cartridge.write(address, value);
+      cartridge_.write(address, value);
       return;
     case RegionType::WRAM:
-      ram.writeWRAM(address, value);
+      ram_.writeWRAM(address, value);
       return;
     case RegionType::EchoRAM:
-      ram.writeWRAM(address - 0x2000, value);
+      ram_.writeWRAM(address - 0x2000, value);
       return;
     case RegionType::MixedFE:
       writePageFE(address, value);
@@ -87,20 +87,20 @@ void Bus::write8(uint16_t address, uint8_t value) {
 
 void Bus::writePageFE(uint16_t address, uint8_t value) {
   if (address <= OAM_END) {
-    if (dma.isTransferring()) {
+    if (dma_.isTransferring()) {
       return;
     }
-    ppu.oamWrite(address, value);
+    ppu_.oamWrite(address, value);
   }
 }
 
 void Bus::writePageFF(uint16_t address, uint8_t value) {
   if (address <= IO_REGISTERS_END) {
-    io.write(address, value);
+    io_.write(address, value);
   } else if (address == IE_REGISTER) {
-    interruptRegs.ie = value;
+    interruptRegs_.ie = value;
   } else {
-    ram.writeHRAM(address, value);
+    ram_.writeHRAM(address, value);
   }
 }
 

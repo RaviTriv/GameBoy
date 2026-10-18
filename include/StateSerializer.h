@@ -18,10 +18,10 @@ class StateSerializer {
   [[nodiscard]] bool loadState(const std::string &title);
 
  private:
-  CPU &cpu;
-  RAM &ram;
-  PPU &ppu;
-  LCD &lcd;
+  CPU &cpu_;
+  RAM &ram_;
+  PPU &ppu_;
+  LCD &lcd_;
 
   void saveCPUState(std::ostream &file);
   void saveRAMState(std::ostream &file);

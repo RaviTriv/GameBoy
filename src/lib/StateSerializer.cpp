@@ -31,7 +31,7 @@ std::streamsize streamSize(std::size_t bytes) {
 }  // namespace
 
 StateSerializer::StateSerializer(CPU& cpu, RAM& ram, PPU& ppu, LCD& lcd)
-    : cpu(cpu), ram(ram), ppu(ppu), lcd(lcd) {}
+    : cpu_(cpu), ram_(ram), ppu_(ppu), lcd_(lcd) {}
 
 bool StateSerializer::save(std::ostream& out, const std::string& label) {
   try {
@@ -59,7 +59,7 @@ void StateSerializer::saveCPUState(std::ostream& file) {
   const char* cpuMarker = "CPU_STATE";
   file.write(cpuMarker, 9);
 
-  CPU::State state = cpu.getState();
+  CPU::State state = cpu_.getState();
   file.write(reinterpret_cast<const char*>(&state), sizeof(state));
 }
 
@@ -67,7 +67,7 @@ void StateSerializer::saveRAMState(std::ostream& file) {
   const char* ramMarker = "RAM_STATE";
   file.write(ramMarker, 9);
 
-  RAM::State state = ram.getState();
+  RAM::State state = ram_.getState();
   file.write(reinterpret_cast<const char*>(&state), sizeof(state));
 }
 
@@ -75,9 +75,9 @@ void StateSerializer::savePPUState(std::ostream& file) {
   const char* ppuMarker = "PPU_STATE";
   file.write(ppuMarker, 9);
 
-  const PPU::State& ppuState = ppu.getState();
+  const PPU::State& ppuState = ppu_.getState();
 
-  uint32_t frame = ppu.getCurrentFrame();
+  uint32_t frame = ppu_.getCurrentFrame();
   file.write(reinterpret_cast<const char*>(&frame), sizeof(frame));
   file.write(reinterpret_cast<const char*>(&ppuState.lineTicks),
              sizeof(ppuState.lineTicks));
@@ -89,12 +89,12 @@ void StateSerializer::savePPUState(std::ostream& file) {
              streamSize(ppuState.vram.size()));
   file.write(reinterpret_cast<const char*>(ppuState.oamRam.data()),
              streamSize(ppuState.oamRam.size() * sizeof(OAM_ENTRY)));
-  const auto& videoBuffer = ppu.getVideoBuffer();
+  const auto& videoBuffer = ppu_.getVideoBuffer();
   file.write(reinterpret_cast<const char*>(videoBuffer.data()),
              streamSize(videoBuffer.size() * sizeof(uint32_t)));
 
-  const Pipeline::State& pipelineState = ppu.getPipelineState();
-  const PixelFifo* pixelFifo = ppu.getPipeline()->getPixelFifo();
+  const Pipeline::State& pipelineState = ppu_.getPipelineState();
+  const PixelFifo* pixelFifo = ppu_.getPipeline()->getPixelFifo();
 
   file.write(reinterpret_cast<const char*>(&pipelineState.fetchState),
              sizeof(pipelineState.fetchState));
@@ -138,7 +138,7 @@ void StateSerializer::saveLCDState(std::ostream& file) {
   const char* lcdMarker = "LCD_STATE";
   file.write(lcdMarker, 9);
 
-  const LCD::State& state = lcd.getState();
+  const LCD::State& state = lcd_.getState();
 
   file.write(reinterpret_cast<const char*>(&state.lcdc), sizeof(state.lcdc));
   file.write(reinterpret_cast<const char*>(&state.lcds), sizeof(state.lcds));
@@ -202,7 +202,7 @@ void StateSerializer::loadCPUState(std::istream& file) {
 
   CPU::State state;
   file.read(reinterpret_cast<char*>(&state), sizeof(state));
-  cpu.setState(state);
+  cpu_.setState(state);
 }
 
 void StateSerializer::loadRAMState(std::istream& file) {
@@ -216,7 +216,7 @@ void StateSerializer::loadRAMState(std::istream& file) {
 
   RAM::State state;
   file.read(reinterpret_cast<char*>(&state), sizeof(state));
-  ram.setState(state);
+  ram_.setState(state);
 }
 
 void StateSerializer::loadPPUState(std::istream& file) {
@@ -228,7 +228,7 @@ void StateSerializer::loadPPUState(std::istream& file) {
     throw std::runtime_error("Invalid PPU state marker in save file");
   }
 
-  PPU::State state = ppu.getState();
+  PPU::State state = ppu_.getState();
 
   uint32_t frame = 0;
   file.read(reinterpret_cast<char*>(&frame), sizeof(frame));
@@ -244,12 +244,12 @@ void StateSerializer::loadPPUState(std::istream& file) {
   file.read(reinterpret_cast<char*>(videoBuffer.data()),
             videoBuffer.size() * sizeof(uint32_t));
 
-  Pipeline::State pipelineState = ppu.getPipelineState();
+  Pipeline::State pipelineState = ppu_.getPipelineState();
 
   file.read(reinterpret_cast<char*>(&pipelineState.fetchState),
             sizeof(pipelineState.fetchState));
 
-  PixelFifo* pixelFifo = ppu.getPipeline()->getPixelFifo();
+  PixelFifo* pixelFifo = ppu_.getPipeline()->getPixelFifo();
   std::array<uint32_t, FIFO_CAPACITY> fifoBuffer;
   file.read(reinterpret_cast<char*>(fifoBuffer.data()),
             fifoBuffer.size() * sizeof(uint32_t));
@@ -293,10 +293,10 @@ void StateSerializer::loadPPUState(std::istream& file) {
     throw std::runtime_error("Invalid pixel FIFO state in save file");
   }
 
-  ppu.setState(state);
-  ppu.setCurrentFrame(frame);
-  ppu.setVideoBuffer(videoBuffer);
-  ppu.setPipelineState(pipelineState);
+  ppu_.setState(state);
+  ppu_.setCurrentFrame(frame);
+  ppu_.setVideoBuffer(videoBuffer);
+  ppu_.setPipelineState(pipelineState);
   pixelFifo->setState(fifoBuffer, fifoHead, fifoTail, fifoCount);
 }
 
@@ -309,7 +309,7 @@ void StateSerializer::loadLCDState(std::istream& file) {
     throw std::runtime_error("Invalid LCD state marker in save file");
   }
 
-  LCD::State state = lcd.getState();
+  LCD::State state = lcd_.getState();
 
   file.read(reinterpret_cast<char*>(&state.lcdc), sizeof(state.lcdc));
   file.read(reinterpret_cast<char*>(&state.lcds), sizeof(state.lcds));
@@ -334,5 +334,5 @@ void StateSerializer::loadLCDState(std::istream& file) {
   file.read(reinterpret_cast<char*>(state.ob2Colors.data()),
             state.ob2Colors.size() * sizeof(uint32_t));
 
-  lcd.setState(state);
+  lcd_.setState(state);
 }

@@ -7,8 +7,8 @@
 FramePacer::FramePacer(std::function<uint32_t()> getTicksFn,
                        std::function<void(uint32_t)> delayFn,
                        uint32_t targetFps)
-    : getTicksFn(std::move(getTicksFn)),
-      delayFn(std::move(delayFn)),
+    : getTicksFn_(std::move(getTicksFn)),
+      delayFn_(std::move(delayFn)),
       targetFrameTime(1000 / targetFps) {}
 
 void FramePacer::onFrameComplete() {
@@ -16,16 +16,16 @@ void FramePacer::onFrameComplete() {
     return;
   }
 
-  uint32_t end = getTicksFn();
+  uint32_t end = getTicksFn_();
   uint32_t frameTime = end - prevFrameTime;
   if (frameTime < targetFrameTime) {
-    delayFn(targetFrameTime - frameTime);
+    delayFn_(targetFrameTime - frameTime);
   }
   if (end - startTimer >= 1000) {
     startTimer = end;
   }
 
-  prevFrameTime = getTicksFn();
+  prevFrameTime = getTicksFn_();
 }
 
 void FramePacer::setFastForward(bool ff) { fastForward = ff; }

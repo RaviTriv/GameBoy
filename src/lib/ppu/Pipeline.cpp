@@ -9,7 +9,7 @@
 #include "ScanlineContext.h"
 
 Pipeline::Pipeline(ReadFn readFn, WritePixelFn writePixelFn)
-    : readFn(std::move(readFn)), writePixelFn(std::move(writePixelFn)) {}
+    : readFn_(std::move(readFn)), writePixelFn_(std::move(writePixelFn)) {}
 
 void Pipeline::beginScanline(const ScanlineContext& scanlineCtx) {
   ctx = &scanlineCtx;
@@ -56,7 +56,7 @@ void Pipeline::fetchTile() {
   state.entryCount = 0;
 
   if (ctx->bgWindowEnabled) {
-    state.bgwBuffer[0] = readFn(bgw0ReadAddress());
+    state.bgwBuffer[0] = readFn_(bgw0ReadAddress());
 
     loadWindowTile();
 
@@ -74,13 +74,13 @@ void Pipeline::fetchTile() {
 }
 
 void Pipeline::fetchDataLow() {
-  state.bgwBuffer[1] = readFn(bgw1ReadAddress());
+  state.bgwBuffer[1] = readFn_(bgw1ReadAddress());
   loadSpriteData(0);
   state.fetchState = FETCH_STATE::DATA1;
 }
 
 void Pipeline::fetchDataHigh() {
-  state.bgwBuffer[2] = readFn(bgw1ReadAddress() + 1);
+  state.bgwBuffer[2] = readFn_(bgw1ReadAddress() + 1);
   loadSpriteData(1);
   state.fetchState = FETCH_STATE::IDLE;
 }
@@ -119,7 +119,7 @@ void Pipeline::pushPixel() {
     uint32_t pixel = pixelFifo.pop();
 
     if (state.lineX >= ctx->scrollX % 8) {
-      writePixelFn(bufferIndex(), pixel);
+      writePixelFn_(bufferIndex(), pixel);
       state.pushedCount++;
     }
 
@@ -186,7 +186,7 @@ void Pipeline::loadWindowTile() {
       (ctx->ly >= windowY && ctx->ly < windowY + XRES)) {
     uint8_t wTileY = (ctx->windowLine / PIXEL_TILE_DIMENSION);
 
-    state.bgwBuffer[0] = readFn(windowTileReadAddress(wTileY));
+    state.bgwBuffer[0] = readFn_(windowTileReadAddress(wTileY));
   }
 }
 
@@ -225,7 +225,7 @@ void Pipeline::loadSpriteData(uint8_t offset) {
     }
 
     state.objectBuffer[(i * 2) + offset] =
-        readFn(0x8000 + (tileIdx * 16) + tileY + offset);
+        readFn_(0x8000 + (tileIdx * 16) + tileY + offset);
   }
 }
 

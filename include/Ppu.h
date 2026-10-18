@@ -52,7 +52,7 @@ class PPU {
 
  private:
   State state;
-  InterruptSink& interruptSink;
+  InterruptSink& interruptSink_;
   IMemRead* memRead = nullptr;
   LCD* lcd = nullptr;
   Pipeline pipeline;

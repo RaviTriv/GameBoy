@@ -75,7 +75,7 @@ constexpr uint8_t MEMORY_PASS_CODE = 0x00;
 class TestRunner {
  public:
   TestRunner(const std::string& romPath, Protocol protocol)
-      : protocol(protocol) {
+      : protocol_(protocol) {
     Logger::Disable();
     cartridge = std::make_unique<Cartridge>(romPath);
     dma = std::make_unique<DMA>(
@@ -154,7 +154,7 @@ class TestRunner {
   }
 
   Result checkResult() {
-    if (protocol == Protocol::Memory) {
+    if (protocol_ == Protocol::Memory) {
       if (!frameDirty) {
         return Result::Running;
       }
@@ -168,9 +168,9 @@ class TestRunner {
     serialDirty = false;
 
     const std::string_view pass =
-        protocol == Protocol::Mooneye ? MOONEYE_PASS : PASS_MARKER;
+        protocol_ == Protocol::Mooneye ? MOONEYE_PASS : PASS_MARKER;
     const std::string_view fail =
-        protocol == Protocol::Mooneye ? MOONEYE_FAIL : FAIL_MARKER;
+        protocol_ == Protocol::Mooneye ? MOONEYE_FAIL : FAIL_MARKER;
 
     if (serialLog.contains(pass)) {
       return Result::Pass;
@@ -196,7 +196,7 @@ class TestRunner {
   }
 
   void report() const {
-    if (protocol != Protocol::Mooneye) {
+    if (protocol_ != Protocol::Mooneye) {
       std::cout << serialLog << '\n';
       return;
     }
@@ -221,7 +221,7 @@ class TestRunner {
   std::unique_ptr<IO> io;
   std::unique_ptr<Bus> bus;
 
-  Protocol protocol = Protocol::Blargg;
+  Protocol protocol_ = Protocol::Blargg;
   std::string serialLog;
   bool serialDirty = false;
   bool frameDirty = false;

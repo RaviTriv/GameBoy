@@ -83,7 +83,7 @@ class LCD {
  private:
   State state;
   bool lcdWasEnabled = true;
-  std::function<void(uint8_t)> onDmaStart;
+  std::function<void(uint8_t)> onDmaStart_;
   static constexpr std::array<uint32_t, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);

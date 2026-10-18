@@ -56,12 +56,12 @@ class Bus : public IMemAccess {
   void write16(uint16_t address, uint16_t value) override;
 
  private:
-  Cartridge& cartridge;
-  InterruptRegs interruptRegs;
-  DMA& dma;
-  IO& io;
-  PPU& ppu;
-  RAM& ram;
+  Cartridge& cartridge_;
+  InterruptRegs interruptRegs_;
+  DMA& dma_;
+  IO& io_;
+  PPU& ppu_;
+  RAM& ram_;
 
   [[nodiscard]] uint8_t readPageFE(uint16_t address);
   [[nodiscard]] uint8_t readPageFF(uint16_t address);

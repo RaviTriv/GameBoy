@@ -22,5 +22,5 @@ class DMA {
  private:
   State state;
   IMemRead* memRead = nullptr;
-  std::function<void(uint16_t, uint8_t)> oamWrite;
+  std::function<void(uint16_t, uint8_t)> oamWrite_;
 };

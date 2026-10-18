@@ -47,8 +47,8 @@ class Pipeline {
 
  private:
   State state;
-  ReadFn readFn;
-  WritePixelFn writePixelFn;
+  ReadFn readFn_;
+  WritePixelFn writePixelFn_;
   const ScanlineContext *ctx = nullptr;
   PixelFifo pixelFifo;
   void fetch();

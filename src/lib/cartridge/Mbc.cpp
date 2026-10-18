@@ -71,7 +71,7 @@ uint8_t MBC2::read(uint16_t address) const {
     if (!ramEnabled) {
       return 0xFF;
     }
-    return 0xF0 | ram[address & 0x1FF];
+    return 0xF0 | ram_[address & 0x1FF];
   }
   return 0xFF;
 }
@@ -90,7 +90,7 @@ void MBC2::write(uint16_t address, uint8_t value) {
       romBank %= romBanksCount;
     }
   } else if ((address >= 0xA000 && address < 0xC000) && ramEnabled) {
-    ram[address & 0x1FF] = value & 0x0F;
+    ram_[address & 0x1FF] = value & 0x0F;
   }
 }
 

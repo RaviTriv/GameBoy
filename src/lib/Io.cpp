@@ -11,16 +11,16 @@
 
 IO::IO(InterruptRegs interruptRegs, Timer& timer, LCD& lcd, Gamepad& gamepad,
        APU& apu)
-    : interruptRegs(interruptRegs),
-      apu(apu),
-      timer(timer),
-      lcd(lcd),
-      gamepad(gamepad) {}
+    : interruptRegs_(interruptRegs),
+      apu_(apu),
+      timer_(timer),
+      lcd_(lcd),
+      gamepad_(gamepad) {}
 
 uint8_t IO::read(uint16_t address) const {
   if (address == JOYPAD_REGISTER) {
     // Gamepad
-    return gamepad.getOutput();
+    return gamepad_.getOutput();
   }
 
   if (address == SERIAL_DATA_REGISTER) {
@@ -33,27 +33,27 @@ uint8_t IO::read(uint16_t address) const {
 
   if ((address >= TIMER_START) && (address <= TIMER_END)) {
     // Timer
-    return timer.read(address);
+    return timer_.read(address);
   }
 
   if (address == IF_REGISTER) {
     // Interrupt flags
-    return interruptRegs.intf | IF_UNUSED_BITS;
+    return interruptRegs_.intf | IF_UNUSED_BITS;
   }
 
   if ((address >= APU_START) && (address <= APU_END)) {
     // Apu
-    return apu.read(address);
+    return apu_.read(address);
   }
 
   if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END)) {
     // Apu
-    return apu.read(address);
+    return apu_.read(address);
   }
 
   if ((address >= LCD_START) && (address <= LCD_END)) {
     // Lcd
-    return lcd.read(address);
+    return lcd_.read(address);
   }
 
   return 0;
@@ -62,7 +62,7 @@ uint8_t IO::read(uint16_t address) const {
 void IO::write(uint16_t address, uint8_t value) {
   if (address == JOYPAD_REGISTER) {
     // Gamepad
-    gamepad.setSel(value);
+    gamepad_.setSel(value);
     return;
   }
 
@@ -83,31 +83,31 @@ void IO::write(uint16_t address, uint8_t value) {
 
   if ((address >= TIMER_START) && (address <= TIMER_END)) {
     // Timer
-    timer.write(address, value);
+    timer_.write(address, value);
     return;
   }
 
   if (address == IF_REGISTER) {
     // Interrupt flags
-    interruptRegs.intf = value;
+    interruptRegs_.intf = value;
     return;
   }
 
   if ((address >= APU_START) && (address <= APU_END)) {
     // Apu
-    apu.write(address, value);
+    apu_.write(address, value);
     return;
   }
 
   if ((address >= WAVE_RAM_START) && (address <= WAVE_RAM_END)) {
     // Apu
-    apu.write(address, value);
+    apu_.write(address, value);
     return;
   }
 
   if ((address >= LCD_START) && (address <= LCD_END)) {
     // Lcd
-    lcd.write(address, value);
+    lcd_.write(address, value);
     return;
   }
 }

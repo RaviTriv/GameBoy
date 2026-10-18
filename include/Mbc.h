@@ -55,7 +55,7 @@ class MBC2 : public MBC {
  private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
-  std::array<uint8_t, 512> ram{};
+  std::array<uint8_t, 512> ram_{};
 
  public:
   MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,

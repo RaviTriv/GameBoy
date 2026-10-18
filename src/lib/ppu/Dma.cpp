@@ -7,7 +7,7 @@
 #include "IMemRead.h"
 
 DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite)
-    : oamWrite(std::move(oamWrite)) {}
+    : oamWrite_(std::move(oamWrite)) {}
 
 void DMA::start(uint8_t start) {
   state.isActive = true;
@@ -26,7 +26,7 @@ void DMA::tick() {
     return;
   }
 
-  oamWrite(state.byte, memRead->read8((state.value * 0x100) + state.byte));
+  oamWrite_(state.byte, memRead->read8((state.value * 0x100) + state.byte));
   state.byte++;
   state.isActive = state.byte < 0xA0;
 }

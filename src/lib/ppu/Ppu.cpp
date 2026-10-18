@@ -13,7 +13,7 @@
 #include "OamTypes.h"
 
 PPU::PPU(InterruptSink& interruptSink)
-    : interruptSink(interruptSink),
+    : interruptSink_(interruptSink),
       pipeline(
           [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
           [this](uint32_t idx, uint32_t color) {
@@ -123,7 +123,7 @@ void PPU::incrementLY() {
     lcd->setLycFlag(true);
 
     if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
-      interruptSink.requestInterrupt(InterruptType::LCD_STAT);
+      interruptSink_.requestInterrupt(InterruptType::LCD_STAT);
     }
   } else {
     lcd->setLycFlag(false);
@@ -213,7 +213,7 @@ void PPU::drawingMode() {
 
     if (lcd->isLcdStatIntEnabled(
             static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK))) {
-      interruptSink.requestInterrupt(InterruptType::LCD_STAT);
+      interruptSink_.requestInterrupt(InterruptType::LCD_STAT);
     }
   }
 }
@@ -225,11 +225,11 @@ void PPU::hBlankMode() {
     if (lcd->getLy() >= YRES) {
       lcd->setLcdMode(LCD::MODE::VBLANK);
 
-      interruptSink.requestInterrupt(InterruptType::VBLANK);
+      interruptSink_.requestInterrupt(InterruptType::VBLANK);
 
       if (lcd->isLcdStatIntEnabled(
               static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK))) {
-        interruptSink.requestInterrupt(InterruptType::LCD_STAT);
+        interruptSink_.requestInterrupt(InterruptType::LCD_STAT);
       }
 
       currentFrame.fetch_add(1, std::memory_order_relaxed);
