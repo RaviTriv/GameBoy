@@ -120,8 +120,8 @@ class TestRunner {
     lcd = std::make_unique<LCD>([this](uint8_t value) { dma->start(value); });
     apu = std::make_unique<APU>();
     cpu = std::make_unique<CPU>(&TestRunner::cycleTrampoline, this, nullptr);
-    ppu = std::make_unique<PPU>(*cpu);
-    timer = std::make_unique<Timer>(*cpu);
+    ppu = std::make_unique<PPU>(cpu->getInterruptRegs());
+    timer = std::make_unique<Timer>(cpu->getInterruptRegs());
     io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
                               *apu);
     bus = std::make_unique<Bus>(*cartridge, cpu->getInterruptRegs(), *dma, *io,

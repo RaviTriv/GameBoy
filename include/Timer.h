@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
+#include "InterruptRegs.h"
 #include "Serializable.h"
 
-class InterruptSink;
 class Timer : public Serializable {
   struct State {
     uint16_t div = 0;
@@ -15,7 +15,7 @@ class Timer : public Serializable {
   };
 
  public:
-  explicit Timer(InterruptSink &interruptSink);
+  explicit Timer(InterruptRegs interruptRegs);
   void tick();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
@@ -24,7 +24,7 @@ class Timer : public Serializable {
 
  private:
   State state;
-  InterruptSink &interruptSink_;
+  InterruptRegs interruptRegs_;
   static constexpr uint16_t INITIAL_DIV_VALUE = 0xAC00;
   static constexpr uint16_t DIV_REGISTER = 0xFF04;
   static constexpr uint16_t TIMA_REGISTER = 0xFF05;

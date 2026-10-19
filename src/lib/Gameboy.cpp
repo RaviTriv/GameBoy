@@ -63,11 +63,11 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
         static_cast<GameBoy*>(self)->cycle(cycles);
       },
       this, nullptr);
-  ppu = std::make_unique<PPU>(*cpu);
+  ppu = std::make_unique<PPU>(cpu->getInterruptRegs());
   ui = std::make_unique<UI>([this] { state.isRunning.store(false); },
                             [this] { pushCommand(SaveStateCommand{}); }, *ppu,
                             *gamepad, *apu);
-  timer = std::make_unique<Timer>(*cpu);
+  timer = std::make_unique<Timer>(cpu->getInterruptRegs());
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
                             *apu);
   bus = std::make_unique<Bus>(*cartridge, cpu->getInterruptRegs(), *dma, *io,

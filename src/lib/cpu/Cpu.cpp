@@ -8,7 +8,6 @@
 #include "Bus.h"
 #include "Common.h"
 #include "InterruptRegs.h"
-#include "InterruptSink.h"
 #include "Serializable.h"
 
 namespace {
@@ -88,10 +87,6 @@ void CPU::handleInterrupts() {
   } else if (checkInterrupt(0x58, InterruptType::SERIAL)) {
   } else if (checkInterrupt(0x60, InterruptType::JOYPAD)) {
   }
-}
-
-void CPU::requestInterrupt(InterruptType type) {
-  state.intf |= static_cast<uint8_t>(type);
 }
 
 void CPU::setInterruptEnable(uint8_t value) { state.ie = value; }

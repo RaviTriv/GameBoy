@@ -5,13 +5,13 @@
 #include <cstdint>
 
 #include "./Common.h"
+#include "./InterruptRegs.h"
 #include "./OamTypes.h"
 #include "./Pipeline.h"
 #include "./ScanlineContext.h"
 #include "./Serializable.h"
 
 class IMemRead;
-class InterruptSink;
 class LCD;
 class PPU : public Serializable {
   static constexpr int BUFFER_SIZE = XRES * YRES;
@@ -28,7 +28,7 @@ class PPU : public Serializable {
     std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };
-  explicit PPU(InterruptSink& interruptSink);
+  explicit PPU(InterruptRegs interruptRegs);
   void init();
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
@@ -47,7 +47,7 @@ class PPU : public Serializable {
 
  private:
   State state;
-  InterruptSink& interruptSink_;
+  InterruptRegs interruptRegs_;
   IMemRead* memRead = nullptr;
   LCD* lcd = nullptr;
   Pipeline pipeline;

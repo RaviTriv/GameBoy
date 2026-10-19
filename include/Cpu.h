@@ -6,11 +6,10 @@
 #include "./Registers.h"
 #include "Common.h"
 #include "InterruptRegs.h"
-#include "InterruptSink.h"
 #include "Serializable.h"
 
 class Bus;
-class CPU : public InterruptSink, public Serializable {
+class CPU : public Serializable {
  public:
   struct State {
     struct Registers registers;
@@ -32,7 +31,6 @@ class CPU : public InterruptSink, public Serializable {
 
   void step();
   void setBus(Bus* bus);
-  void requestInterrupt(InterruptType type) override;
   [[nodiscard]] uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
   [[nodiscard]] uint8_t getInterruptFlags() const;
