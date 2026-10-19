@@ -21,17 +21,28 @@ PPU::PPU(InterruptRegs interruptRegs)
       pipeline(
           [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
           [this](uint32_t idx, uint32_t color) {
-            getWriteBuffer()[idx] = color;
+            frames[backIndex][idx] = color;
           }) {}
 
 void PPU::init() { lcd->setLcdMode(LCD::MODE::OAM); }
 
-const std::array<uint32_t, PPU::BUFFER_SIZE>& PPU::getVideoBuffer() const {
-  return videoBuffers[readBufferIndex.load(std::memory_order_acquire)];
+const PPU::Frame& PPU::acquireFrontFrame() {
+  if ((readyIndex.load(std::memory_order_relaxed) & FRAME_FRESH_BIT) != 0) {
+    frontIndex = readyIndex.exchange(frontIndex, std::memory_order_acq_rel) &
+                 FRAME_INDEX_MASK;
+  }
+  return frames[frontIndex];
 }
 
-std::array<uint32_t, PPU::BUFFER_SIZE>& PPU::getWriteBuffer() {
-  return videoBuffers[1 - readBufferIndex.load(std::memory_order_relaxed)];
+const PPU::Frame& PPU::getPublishedFrame() const {
+  return frames[publishedIndex];
+}
+
+void PPU::publishFrame() {
+  publishedIndex = backIndex;
+  backIndex = readyIndex.exchange(backIndex | FRAME_FRESH_BIT,
+                                  std::memory_order_acq_rel) &
+              FRAME_INDEX_MASK;
 }
 
 void PPU::tick() {
@@ -42,10 +53,9 @@ void PPU::tick() {
       pipeline.reset();
       state.lineTicks = 0;
       state.windowLine = 0;
-      getWriteBuffer().fill(0xFFFFFFFF);
+      frames[backIndex].fill(0xFFFFFFFF);
+      publishFrame();
       currentFrame.fetch_add(1, std::memory_order_relaxed);
-      readBufferIndex.store(1 - readBufferIndex.load(std::memory_order_relaxed),
-                            std::memory_order_release);
       return;
     case LCD::TURNED_ON:
       lcd->setLy(0);
@@ -236,9 +246,8 @@ void PPU::hBlankMode() {
         interruptRegs_.request(InterruptType::LCD_STAT);
       }
 
+      publishFrame();
       currentFrame.fetch_add(1, std::memory_order_relaxed);
-      readBufferIndex.store(1 - readBufferIndex.load(std::memory_order_relaxed),
-                            std::memory_order_release);
     } else {
       lcd->setLcdMode(LCD::MODE::OAM);
     }
@@ -274,7 +283,7 @@ void PPU::save(std::ostream& out) const {
   saved.scanlineCtx.lineTicks = nullptr;
   serial::write(out, saved);
   serial::write(out, getCurrentFrame());
-  serial::write(out, getVideoBuffer());
+  serial::write(out, getPublishedFrame());
   pipeline.save(out);
 }
 
@@ -291,8 +300,9 @@ void PPU::load(std::istream& in) {
   serial::read(in, frame);
   currentFrame.store(frame, std::memory_order_relaxed);
 
-  serial::read(in, videoBuffers[0]);
-  videoBuffers[1] = videoBuffers[0];
+  serial::read(in, frames[backIndex]);
+  publishFrame();
+  frames[backIndex] = getPublishedFrame();
 
   pipeline.load(in);
   pipeline.beginScanline(state.scanlineCtx);

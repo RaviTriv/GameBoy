@@ -17,6 +17,8 @@ class PPU : public Serializable {
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
  public:
+  using Frame = std::array<uint32_t, BUFFER_SIZE>;
+
   struct State {
     std::array<OAM_ENTRY, 40> oamRam{};
     std::array<uint8_t, 0x2000> vram{};
@@ -40,7 +42,8 @@ class PPU : public Serializable {
 
   void setMemRead(IMemRead& reader) { memRead = &reader; }
   void setLcd(LCD* newLcd) { lcd = newLcd; }
-  [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE>& getVideoBuffer() const;
+  [[nodiscard]] const Frame& acquireFrontFrame();
+  [[nodiscard]] const Frame& getPublishedFrame() const;
 
   void save(std::ostream& out) const override;
   void load(std::istream& in) override;
@@ -53,15 +56,20 @@ class PPU : public Serializable {
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};
 
-  std::array<uint32_t, BUFFER_SIZE> videoBuffers[2]{};
-  std::atomic<int> readBufferIndex{0};
-  std::array<uint32_t, BUFFER_SIZE>& getWriteBuffer();
+  std::array<Frame, 3> frames{};
+  uint8_t backIndex = 0;
+  uint8_t publishedIndex = 1;
+  std::atomic<uint8_t> readyIndex{1};
+  uint8_t frontIndex = 2;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
+  static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
+  static constexpr uint8_t FRAME_FRESH_BIT = 0x4;
 
+  void publishFrame();
   void incrementLY();
   void loadLineSprites();
   void buildScanlineContext();

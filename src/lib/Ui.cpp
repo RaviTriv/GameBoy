@@ -97,7 +97,7 @@ void UI::update() {
   rect.w = SCALE;
   rect.h = SCALE;
 
-  const auto& videoBuffer = ppu.getVideoBuffer();
+  const auto& videoBuffer = ppu.acquireFrontFrame();
 
   for (int i = 0; i < YRES; i++) {
     for (int j = 0; j < XRES; j++) {

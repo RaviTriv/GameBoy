@@ -195,7 +195,7 @@ class TestRunner {
   }
 
   [[nodiscard]] const auto& videoBuffer() const {
-    return ppu->getVideoBuffer();
+    return ppu->getPublishedFrame();
   }
 
   [[nodiscard]] StateSerializer& serializer() { return *stateSerializer; }
