@@ -48,14 +48,14 @@ void PixelFifo::reset() {
   count = 0;
 }
 
-void PixelFifo::save(std::ostream &out) const {
+void PixelFifo::save(std::ostream& out) const {
   serial::write(out, buffer);
   serial::write(out, head);
   serial::write(out, tail);
   serial::write(out, count);
 }
 
-void PixelFifo::load(std::istream &in) {
+void PixelFifo::load(std::istream& in) {
   std::array<uint32_t, FIFO_CAPACITY> newBuffer{};
   size_t newHead = 0;
   size_t newTail = 0;

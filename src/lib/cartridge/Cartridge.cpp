@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "EnumName.h"
 #include "Logger.h"
 #include "Mbc.h"
 #include "Serializable.h"
@@ -133,8 +134,7 @@ void Cartridge::initFromRom() {
 void Cartridge::outputCartridgeInfo() {
   Logger::GetLogger()->info("Cartridge Loaded");
   Logger::GetLogger()->info("Title: {}", state.header->title.data());
-  Logger::GetLogger()->info("Cartridge Type: {}",
-                            cartridgeType(state.header->type));
+  Logger::GetLogger()->info("Cartridge Type: {}", enumName(state.header->type));
   Logger::GetLogger()->info("Rom Size: {} bytes", state.romSize);
   Logger::GetLogger()->info("Ram Size: {} bytes", state.ramData.size());
 }
@@ -166,35 +166,6 @@ int Cartridge::getRamBanksCount(uint8_t type) const {
       Logger::GetLogger()->error("Unknown RAM size for cartridge type: {}",
                                  static_cast<int>(type));
       return 0;
-  }
-}
-
-std::string_view Cartridge::cartridgeType(CartridgeType type) {
-  switch (type) {
-    case CartridgeType::ROM_ONLY:
-      return "ROM ONLY";
-    case CartridgeType::MBC1:
-      return "MBC1";
-    case CartridgeType::MBC1_RAM:
-      return "MBC1+RAM";
-    case CartridgeType::MBC1_RAM_BATTERY:
-      return "MBC1+RAM+BATTERY";
-    case CartridgeType::MBC2:
-      return "MBC2";
-    case CartridgeType::MBC2_BATTERY:
-      return "MBC2+BATTERY";
-    case CartridgeType::MBC3_TIMER_BATTERY:
-      return "MBC3+TIMER+BATTERY";
-    case CartridgeType::MBC3_TIMER_RAM_BATTERY:
-      return "MBC3+TIMER+RAM+BATTERY";
-    case CartridgeType::MBC3:
-      return "MBC3";
-    case CartridgeType::MBC3_RAM:
-      return "MBC3+RAM";
-    case CartridgeType::MBC3_RAM_BATTERY:
-      return "MBC3+RAM+BATTERY";
-    default:
-      return "UNKNOWN";
   }
 }
 

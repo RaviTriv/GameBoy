@@ -8,13 +8,13 @@
 #include "Logger.h"
 #include "StateSerializer.h"
 
-std::string StateSerializer::removeSpaces(const std::string &str) const {
+std::string StateSerializer::removeSpaces(const std::string& str) const {
   std::string result = str;
   result.erase(std::ranges::remove(result, ' ').begin(), result.end());
   return result;
 }
 
-bool StateSerializer::saveState(const std::string &title) {
+bool StateSerializer::saveState(const std::string& title) {
   std::string saveTitle = removeSpaces(title);
   std::filesystem::path savesDir = "../saves";
 
@@ -46,7 +46,7 @@ bool StateSerializer::saveState(const std::string &title) {
   return true;
 }
 
-bool StateSerializer::loadState(const std::string &title) {
+bool StateSerializer::loadState(const std::string& title) {
   std::string saveTitle = removeSpaces(title);
   std::filesystem::path savesDir = "../saves";
   std::filesystem::path saveFile = savesDir / (saveTitle + ".sav");

@@ -19,10 +19,10 @@ class UI {
   using CloseCallback = std::function<void()>;
   using SaveStateCallback = std::function<void()>;
   using ToggleFastForwardCallback = std::function<void()>;
-  UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU &ppu,
-     Gamepad &gamepad, APU &apu);
-  UI(const UI &) = delete;
-  UI &operator=(const UI &) = delete;
+  UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback, PPU& ppu,
+     Gamepad& gamepad, APU& apu);
+  UI(const UI&) = delete;
+  UI& operator=(const UI&) = delete;
   void init();
   void handleEvents();
   void update();
@@ -30,18 +30,18 @@ class UI {
   void delay(uint32_t ms);
   void setToggleFastForward(ToggleFastForwardCallback fn);
   ~UI();
-  APU &apu;
+  APU& apu;
 
  private:
-  PPU &ppu;
-  Gamepad &gamepad;
+  PPU& ppu;
+  Gamepad& gamepad;
   static constexpr int SCREEN_WIDTH = 640;
   static constexpr int SCREEN_HEIGHT = 576;
   static constexpr int SCALE = 4;
-  SDL_Window *window = nullptr;
-  SDL_Renderer *renderer = nullptr;
-  SDL_Surface *screen = nullptr;
-  SDL_Texture *sdlTexture = nullptr;
+  SDL_Window* window = nullptr;
+  SDL_Renderer* renderer = nullptr;
+  SDL_Surface* screen = nullptr;
+  SDL_Texture* sdlTexture = nullptr;
   CloseCallback onClose;
   SaveStateCallback onSaveState;
   ToggleFastForwardCallback onToggleFastForward;
@@ -49,5 +49,5 @@ class UI {
   void onKey(bool isDown, SDL_Keycode keyCode);
 };
 
-void audioCallback(void *sound, SDL_AudioStream *stream, int additionalAmount,
+void audioCallback(void* sound, SDL_AudioStream* stream, int additionalAmount,
                    int totalAmount);

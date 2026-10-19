@@ -10,8 +10,8 @@
 #include "Ppu.h"
 #include "Ram.h"
 
-Bus::Bus(Cartridge &cartridge, InterruptRegs interruptRegs, DMA &dma, IO &io,
-         PPU &ppu, RAM &ram)
+Bus::Bus(Cartridge& cartridge, InterruptRegs interruptRegs, DMA& dma, IO& io,
+         PPU& ppu, RAM& ram)
     : cartridge_(cartridge),
       interruptRegs_(interruptRegs),
       dma_(dma),

@@ -35,20 +35,20 @@ class Pipeline : public Serializable {
     uint8_t entryCount = 0;
   };
   Pipeline(ReadFn readFn, WritePixelFn writePixelFn);
-  void beginScanline(const ScanlineContext &ctx);
+  void beginScanline(const ScanlineContext& ctx);
   void process();
   void reset();
   void oamReset();
   [[nodiscard]] bool isWindowVisible() const;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
  private:
   State state;
   ReadFn readFn_;
   WritePixelFn writePixelFn_;
-  const ScanlineContext *ctx = nullptr;
+  const ScanlineContext* ctx = nullptr;
   PixelFifo pixelFifo;
   void fetch();
   void fetchTile();

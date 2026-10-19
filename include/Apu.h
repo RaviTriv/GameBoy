@@ -37,9 +37,9 @@ class APU : public Serializable {
 
   void tick();
 
-  std::size_t popSamples(StereoSample *out, std::size_t count);
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  std::size_t popSamples(StereoSample* out, std::size_t count);
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
   static constexpr int audioFreq = 44100;
 

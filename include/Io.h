@@ -12,8 +12,8 @@ class LCD;
 class Gamepad;
 class IO {
  public:
-  IO(InterruptRegs interruptRegs, Timer &timer, LCD &lcd, Gamepad &gamepad,
-     APU &apu);
+  IO(InterruptRegs interruptRegs, Timer& timer, LCD& lcd, Gamepad& gamepad,
+     APU& apu);
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
 
@@ -25,8 +25,8 @@ class IO {
   std::array<char, 2> serialData{};
   std::function<void(uint8_t)> serialSink;
   InterruptRegs interruptRegs_;
-  APU &apu_;
-  Timer &timer_;
-  LCD &lcd_;
-  Gamepad &gamepad_;
+  APU& apu_;
+  Timer& timer_;
+  LCD& lcd_;
+  Gamepad& gamepad_;
 };

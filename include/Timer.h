@@ -19,8 +19,8 @@ class Timer : public Serializable {
   void tick();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   State state;

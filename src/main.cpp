@@ -5,7 +5,7 @@
 
 #include "Gameboy.h"
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   try {
     if (argc < 2) {
       throw std::invalid_argument(
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     gameboy.init(romPath, trace, loadSave, fastForward);
     gameboy.run();
     return 0;
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     std::cerr << "Failed to load ROM: " << e.what() << '\n';
     return 1;
   }

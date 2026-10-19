@@ -9,8 +9,8 @@
 
 class Logger {
  public:
-  Logger(const Logger &) = delete;
-  Logger &operator=(const Logger &) = delete;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
 
   static std::shared_ptr<spdlog::logger> GetLogger() {
     static std::shared_ptr<spdlog::logger> logger = nullptr;
@@ -35,8 +35,8 @@ class Logger {
 
       static struct LoggerCleanup {
         LoggerCleanup() = default;
-        LoggerCleanup(const LoggerCleanup &) = delete;
-        LoggerCleanup &operator=(const LoggerCleanup &) = delete;
+        LoggerCleanup(const LoggerCleanup&) = delete;
+        LoggerCleanup& operator=(const LoggerCleanup&) = delete;
         ~LoggerCleanup() { spdlog::shutdown(); }
       } cleanup;
     }

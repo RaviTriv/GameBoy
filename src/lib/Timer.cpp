@@ -87,6 +87,6 @@ uint8_t Timer::read(uint16_t address) const {
       return 0;
   }
 }
-void Timer::save(std::ostream &out) const { serial::write(out, state); }
+void Timer::save(std::ostream& out) const { serial::write(out, state); }
 
-void Timer::load(std::istream &in) { serial::read(in, state); }
+void Timer::load(std::istream& in) { serial::read(in, state); }

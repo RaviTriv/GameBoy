@@ -11,10 +11,8 @@ enum class InterruptType : uint8_t {
 };
 
 struct InterruptRegs {
-  uint8_t &ie;
-  uint8_t &intf;
+  uint8_t& ie;
+  uint8_t& intf;
 
-  void request(InterruptType type) const {
-    intf |= static_cast<uint8_t>(type);
-  }
+  void request(InterruptType type) const { intf |= static_cast<uint8_t>(type); }
 };

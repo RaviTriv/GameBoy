@@ -8,21 +8,22 @@
 #include <string_view>
 #include <vector>
 
+#include "./EnumName.h"
 #include "./Mbc.h"
 #include "./Serializable.h"
 
 enum class CartridgeType : uint8_t {
-  ROM_ONLY = 0x00,
+  ROM_ONLY[[= EnumLabel("ROM ONLY")]] = 0x00,
   MBC1 = 0x01,
-  MBC1_RAM = 0x02,
-  MBC1_RAM_BATTERY = 0x03,
+  MBC1_RAM[[= EnumLabel("MBC1+RAM")]] = 0x02,
+  MBC1_RAM_BATTERY[[= EnumLabel("MBC1+RAM+BATTERY")]] = 0x03,
   MBC2 = 0x05,
-  MBC2_BATTERY = 0x06,
-  MBC3_TIMER_BATTERY = 0x0F,
-  MBC3_TIMER_RAM_BATTERY = 0x10,
+  MBC2_BATTERY[[= EnumLabel("MBC2+BATTERY")]] = 0x06,
+  MBC3_TIMER_BATTERY[[= EnumLabel("MBC3+TIMER+BATTERY")]] = 0x0F,
+  MBC3_TIMER_RAM_BATTERY[[= EnumLabel("MBC3+TIMER+RAM+BATTERY")]] = 0x10,
   MBC3 = 0x11,
-  MBC3_RAM = 0x12,
-  MBC3_RAM_BATTERY = 0x13,
+  MBC3_RAM[[= EnumLabel("MBC3+RAM")]] = 0x12,
+  MBC3_RAM_BATTERY[[= EnumLabel("MBC3+RAM+BATTERY")]] = 0x13,
 };
 
 struct RomHeader {
@@ -70,7 +71,6 @@ class Cartridge : public Serializable {
   static constexpr std::size_t MIN_ROM_SIZE = 0x150;
 
   [[nodiscard]] int getRamBanksCount(uint8_t type) const;
-  [[nodiscard]] static std::string_view cartridgeType(CartridgeType type);
 
   void outputCartridgeInfo();
 };

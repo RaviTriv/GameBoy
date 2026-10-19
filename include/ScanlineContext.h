@@ -28,8 +28,8 @@ struct ScanlineContext {
   std::array<uint32_t, 4> ob1Colors{};
   std::array<uint32_t, 4> ob2Colors{};
 
-  const OAM_ENTRY *sprites = nullptr;
+  const OAM_ENTRY* sprites = nullptr;
   uint8_t spriteCount = 0;
 
-  const uint32_t *lineTicks = nullptr;
+  const uint32_t* lineTicks = nullptr;
 };

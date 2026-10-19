@@ -11,8 +11,8 @@ class MBC : public Serializable {
   ~MBC() override = default;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
-  explicit MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {}
-  MBC(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+  explicit MBC(std::vector<uint8_t>& rom) : romData(rom), ramData(empty) {}
+  MBC(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
       uint16_t ramBanks)
       : romBanksCount(romBanks),
         ramBanksCount(ramBanks),
@@ -23,8 +23,8 @@ class MBC : public Serializable {
   uint16_t romBanksCount = 0;
   uint16_t ramBanksCount = 0;
 
-  std::vector<uint8_t> &romData;
-  std::vector<uint8_t> &ramData;
+  std::vector<uint8_t>& romData;
+  std::vector<uint8_t>& ramData;
 
  private:
   static std::vector<uint8_t> empty;
@@ -32,11 +32,11 @@ class MBC : public Serializable {
 
 class MBC0 : public MBC {
  public:
-  explicit MBC0(std::vector<uint8_t> &rom) : MBC(rom) {}
+  explicit MBC0(std::vector<uint8_t>& rom) : MBC(rom) {}
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class MBC1 : public MBC {
@@ -47,14 +47,14 @@ class MBC1 : public MBC {
   uint8_t bankingMode = 0;
 
  public:
-  MBC1(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+  MBC1(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
        uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class MBC2 : public MBC {
@@ -64,14 +64,14 @@ class MBC2 : public MBC {
   std::array<uint8_t, 512> ram_{};
 
  public:
-  MBC2(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+  MBC2(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
        uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class MBC3 : public MBC {
@@ -81,12 +81,12 @@ class MBC3 : public MBC {
   uint8_t ramBank = 0;
 
  public:
-  MBC3(std::vector<uint8_t> &rom, std::vector<uint8_t> &ram, uint16_t romBanks,
+  MBC3(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
        uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };

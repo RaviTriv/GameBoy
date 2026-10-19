@@ -27,6 +27,6 @@ class PixelFifo : public Serializable {
 
   void reset();
 
-  void save(std::ostream &out) const override;
-  void load(std::istream &in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
