@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 3.30)
 
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER g++-16)
+endif()
+
 project(GameBoy LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(BUILD_APP "Build UI" ON)
 option(BUILD_TESTS "Build headless for testing" ON)
@@ -16,10 +22,8 @@ endif()
 
 enable_testing()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(GB_WARNINGS -Wall -Wextra -Wpedantic -Wshadow -Wimplicit-fallthrough
-        -Wconversion -Wsign-conversion -Werror)
-endif()
+set(GB_WARNINGS -Wall -Wextra -Wpedantic -Wshadow -Wimplicit-fallthrough
+    -Wconversion -Wsign-conversion -Werror)
 
 if(GB_SANITIZE)
     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -48,18 +52,18 @@ set(CORE_SOURCES
 )
 
 find_package(spdlog 1.11 REQUIRED CONFIG)
+find_package(fmt REQUIRED CONFIG)
 
 add_library(gameboy_core OBJECT ${CORE_SOURCES})
 
 target_include_directories(gameboy_core PUBLIC include src)
 
-target_link_libraries(gameboy_core PUBLIC spdlog::spdlog)
+target_link_libraries(gameboy_core PUBLIC spdlog::spdlog_header_only fmt::fmt-header-only)
 
-target_compile_features(gameboy_core PUBLIC cxx_std_23)
+target_compile_features(gameboy_core PUBLIC cxx_std_26)
+target_compile_options(gameboy_core PUBLIC -freflection)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(gameboy_core PRIVATE ${GB_WARNINGS})
-endif()
+target_compile_options(gameboy_core PRIVATE ${GB_WARNINGS})
 
 if(BUILD_APP)
     find_package(SDL3 3.2 CONFIG REQUIRED)
@@ -77,9 +81,7 @@ if(BUILD_APP)
         SDL3_ttf::SDL3_ttf
     )
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(gameboy PRIVATE ${GB_WARNINGS})
-    endif()
+    target_compile_options(gameboy PRIVATE ${GB_WARNINGS})
 endif()
 
 if(BUILD_TESTS)
@@ -87,9 +89,7 @@ if(BUILD_TESTS)
 
     target_link_libraries(gameboy_tests PRIVATE gameboy_core)
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(gameboy_tests PRIVATE ${GB_WARNINGS})
-    endif()
+    target_compile_options(gameboy_tests PRIVATE ${GB_WARNINGS})
 
     file(GLOB BLARGG_ROMS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/roms/blargg/*.gb")
     foreach(rom ${BLARGG_ROMS})

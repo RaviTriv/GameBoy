@@ -24,10 +24,10 @@
 #include "Ppu.h"
 
 UI::UI(CloseCallback closeCallback, SaveStateCallback saveStateCallback,
-       PPU& ppu, Gamepad& gamepad, APU& apu)
-    : apu(apu),
-      ppu(ppu),
-      gamepad(gamepad),
+       PPU& ppuRef, Gamepad& gamepadRef, APU& apuRef)
+    : apu(apuRef),
+      ppu(ppuRef),
+      gamepad(gamepadRef),
       onClose(std::move(std::move(closeCallback))),
       onSaveState(std::move(std::move(saveStateCallback))) {}
 
