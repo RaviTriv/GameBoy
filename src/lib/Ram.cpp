@@ -2,9 +2,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 #include "Common.h"
 #include "Logger.h"
+#include "Serializable.h"
 
 uint8_t RAM::readWRAM(uint16_t address) const {
   if (address < WRAM_BASE || address >= WRAM_BASE + state.wram.size()) {
@@ -42,6 +45,6 @@ void RAM::writeHRAM(uint16_t address, uint8_t value) {
   state.hram[offset] = value;
 }
 
-RAM::State RAM::getState() const { return state; };
+void RAM::save(std::ostream& out) const { serial::write(out, state); }
 
-void RAM::setState(const State& newState) { state = newState; }
+void RAM::load(std::istream& in) { serial::read(in, state); }

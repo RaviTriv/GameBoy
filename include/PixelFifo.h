@@ -5,8 +5,9 @@
 #include <cstdint>
 
 #include "./Common.h"
+#include "./Serializable.h"
 
-class PixelFifo {
+class PixelFifo : public Serializable {
  private:
   std::array<uint32_t, FIFO_CAPACITY> buffer{};
   size_t head = 0;
@@ -15,7 +16,7 @@ class PixelFifo {
 
  public:
   PixelFifo();
-  ~PixelFifo() = default;
+  ~PixelFifo() override = default;
 
   void push(uint32_t pixel);
   [[nodiscard]] uint32_t pop();
@@ -26,10 +27,6 @@ class PixelFifo {
 
   void reset();
 
-  [[nodiscard]] const std::array<uint32_t, FIFO_CAPACITY> &getBuffer() const;
-  [[nodiscard]] size_t getHead() const;
-  [[nodiscard]] size_t getTail() const;
-  [[nodiscard]] size_t getCount() const;
-  void setState(const std::array<uint32_t, FIFO_CAPACITY> &newBuffer,
-                size_t newHead, size_t newTail, size_t newCount);
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 };

@@ -3,7 +3,9 @@
 #include <atomic>
 #include <cstdint>
 
-class Gamepad {
+#include "Serializable.h"
+
+class Gamepad : public Serializable {
  public:
   [[nodiscard]] bool isBPressed() const;
   [[nodiscard]] bool isAPressed() const;
@@ -27,6 +29,8 @@ class Gamepad {
   [[nodiscard]] bool directionSel() const;
   void setSel(uint8_t value);
   [[nodiscard]] uint8_t getOutput() const;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   std::atomic<uint8_t> buttons{0};

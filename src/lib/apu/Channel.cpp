@@ -2,7 +2,12 @@
 
 #include <array>
 #include <cstdint>
+#include <istream>
+#include <ostream>
+#include <stdexcept>
 #include <utility>
+
+#include "Serializable.h"
 
 const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {
     {{0, 0, 0, 0, 0, 0, 0, 1},
@@ -310,4 +315,79 @@ int NoiseChannel::advanceTimer(int ticks) {
   }
 
   return fires;
+}
+void Channel::save(std::ostream& out) const {
+  serial::write(out, nrx0);
+  serial::write(out, nrx1);
+  serial::write(out, nrx2);
+  serial::write(out, nrx3);
+  serial::write(out, nrx4);
+  serial::write(out, enabled);
+  serial::write(out, triggerLength);
+  serial::write(out, triggerEnvelope);
+  serial::write(out, triggerSweep);
+  serial::write(out, freqTimer);
+  serial::write(out, lengthTimer);
+  serial::write(out, envelopeEnabled);
+  serial::write(out, envelopeVolume);
+  serial::write(out, envelopeTimer);
+}
+
+void Channel::load(std::istream& in) {
+  serial::read(in, nrx0);
+  serial::read(in, nrx1);
+  serial::read(in, nrx2);
+  serial::read(in, nrx3);
+  serial::read(in, nrx4);
+  serial::read(in, enabled);
+  serial::read(in, triggerLength);
+  serial::read(in, triggerEnvelope);
+  serial::read(in, triggerSweep);
+  serial::read(in, freqTimer);
+  serial::read(in, lengthTimer);
+  serial::read(in, envelopeEnabled);
+  serial::read(in, envelopeVolume);
+  serial::read(in, envelopeTimer);
+}
+
+void SquareChannel::save(std::ostream& out) const {
+  Channel::save(out);
+  serial::write(out, duty);
+  serial::write(out, sweepTimer);
+  serial::write(out, sweepShadowFreq);
+  serial::write(out, sweepEnabled);
+}
+
+void SquareChannel::load(std::istream& in) {
+  Channel::load(in);
+  serial::read(in, duty);
+  if (duty >= duties[0].size()) {
+    throw std::runtime_error("Invalid square channel duty in save file");
+  }
+  serial::read(in, sweepTimer);
+  serial::read(in, sweepShadowFreq);
+  serial::read(in, sweepEnabled);
+}
+
+void WaveChannel::save(std::ostream& out) const {
+  Channel::save(out);
+  serial::write(out, sample);
+}
+
+void WaveChannel::load(std::istream& in) {
+  Channel::load(in);
+  serial::read(in, sample);
+  if (sample >= WAVE_SAMPLE_COUNT) {
+    throw std::runtime_error("Invalid wave channel sample in save file");
+  }
+}
+
+void NoiseChannel::save(std::ostream& out) const {
+  Channel::save(out);
+  serial::write(out, lfsr);
+}
+
+void NoiseChannel::load(std::istream& in) {
+  Channel::load(in);
+  serial::read(in, lfsr);
 }

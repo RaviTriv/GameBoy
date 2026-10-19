@@ -8,11 +8,12 @@
 #include "./OamTypes.h"
 #include "./Pipeline.h"
 #include "./ScanlineContext.h"
+#include "./Serializable.h"
 
 class IMemRead;
 class InterruptSink;
 class LCD;
-class PPU {
+class PPU : public Serializable {
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
  public:
@@ -31,8 +32,6 @@ class PPU {
   void init();
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
-  void setCurrentFrame(uint32_t frame);
-  void setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE>& buffer);
 
   void oamWrite(uint16_t addr, uint8_t value);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
@@ -43,12 +42,8 @@ class PPU {
   void setLcd(LCD* newLcd) { lcd = newLcd; }
   [[nodiscard]] const std::array<uint32_t, BUFFER_SIZE>& getVideoBuffer() const;
 
-  [[nodiscard]] PPU::State getState() const;
-  void setState(const State& newState);
-
-  [[nodiscard]] Pipeline::State getPipelineState() const;
-  [[nodiscard]] Pipeline* getPipeline() { return &pipeline; }
-  void setPipelineState(const Pipeline::State& newState);
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   State state;

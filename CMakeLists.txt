@@ -168,6 +168,13 @@ if(BUILD_TESTS)
         add_mooneye_mbc_test(mbc2/rom_1Mb.gb)
         add_mooneye_mbc_test(mbc2/rom_2Mb.gb)
 
+        add_test(NAME savestate.cpu_instrs
+                 COMMAND gameboy_tests "${BLARGG_DIR}/cpu_instrs/cpu_instrs.gb" --savestate)
+        set_tests_properties(savestate.cpu_instrs PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS savestate)
+        add_test(NAME savestate.dmg_acid2
+                 COMMAND gameboy_tests "${ACID2_ROM}" --savestate-line 72)
+        set_tests_properties(savestate.dmg_acid2 PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS savestate)
+
         set(HALT_BUG_PASS_HASH 5c09de1ce5732c7c)
         add_test(NAME blargg.halt_bug
                  COMMAND gameboy_tests "${BLARGG_DIR}/halt_bug.gb" --frames 180 --hash)

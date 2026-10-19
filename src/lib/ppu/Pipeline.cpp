@@ -2,11 +2,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 
 #include "Common.h"
 #include "ScanlineContext.h"
+#include "Serializable.h"
 
 Pipeline::Pipeline(ReadFn readFn, WritePixelFn writePixelFn)
     : readFn_(std::move(readFn)), writePixelFn_(std::move(writePixelFn)) {}
@@ -301,3 +304,16 @@ void Pipeline::oamReset() {
 /*
 <--- RESET-END --->
 */
+
+void Pipeline::save(std::ostream& out) const {
+  serial::write(out, state);
+  pixelFifo.save(out);
+}
+
+void Pipeline::load(std::istream& in) {
+  serial::read(in, state);
+  if (state.entryCount > state.fetchedEntries.size()) {
+    throw std::runtime_error("Invalid pipeline sprite count in save file");
+  }
+  pixelFifo.load(in);
+}

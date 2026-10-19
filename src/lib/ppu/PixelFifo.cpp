@@ -3,8 +3,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
+#include <stdexcept>
 
 #include "Common.h"
+#include "Serializable.h"
 
 PixelFifo::PixelFifo() { buffer.fill(0); }
 
@@ -44,15 +48,26 @@ void PixelFifo::reset() {
   count = 0;
 }
 
-const std::array<uint32_t, FIFO_CAPACITY> &PixelFifo::getBuffer() const {
-  return buffer;
+void PixelFifo::save(std::ostream &out) const {
+  serial::write(out, buffer);
+  serial::write(out, head);
+  serial::write(out, tail);
+  serial::write(out, count);
 }
-size_t PixelFifo::getHead() const { return head; }
-size_t PixelFifo::getTail() const { return tail; }
-size_t PixelFifo::getCount() const { return count; }
 
-void PixelFifo::setState(const std::array<uint32_t, FIFO_CAPACITY> &newBuffer,
-                         size_t newHead, size_t newTail, size_t newCount) {
+void PixelFifo::load(std::istream &in) {
+  std::array<uint32_t, FIFO_CAPACITY> newBuffer{};
+  size_t newHead = 0;
+  size_t newTail = 0;
+  size_t newCount = 0;
+  serial::read(in, newBuffer);
+  serial::read(in, newHead);
+  serial::read(in, newTail);
+  serial::read(in, newCount);
+  if (newHead >= FIFO_CAPACITY || newTail >= FIFO_CAPACITY ||
+      newCount > FIFO_CAPACITY) {
+    throw std::runtime_error("Invalid pixel FIFO state in save file");
+  }
   buffer = newBuffer;
   head = newHead;
   tail = newTail;

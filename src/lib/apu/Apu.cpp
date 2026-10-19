@@ -2,8 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 #include "Channel.h"
+#include "Serializable.h"
 
 uint8_t APU::read(uint16_t address) const {
   switch (address) {
@@ -314,4 +317,41 @@ void APU::tick() {
 
 std::size_t APU::popSamples(StereoSample* out, std::size_t count) {
   return sampleQueue.pop_n(out, count);
+}
+void APU::save(std::ostream& out) const {
+  serial::write(out, state.registers);
+  state.channel1.save(out);
+  state.channel2.save(out);
+  state.channel3.save(out);
+  state.channel4.save(out);
+  serial::write(out, state.wavePattern);
+  serial::write(out, state.enabled);
+  serial::write(out, state.sampleRate);
+  serial::write(out, state.cycleCounter);
+  serial::write(out, frameTimer);
+  serial::write(out, frameSequence);
+  serial::write(out, triggerLength);
+  serial::write(out, triggerEnvelope);
+  serial::write(out, triggerSweep);
+  serial::write(out, sampleTimer);
+  serial::write(out, pendingTicks);
+}
+
+void APU::load(std::istream& in) {
+  serial::read(in, state.registers);
+  state.channel1.load(in);
+  state.channel2.load(in);
+  state.channel3.load(in);
+  state.channel4.load(in);
+  serial::read(in, state.wavePattern);
+  serial::read(in, state.enabled);
+  serial::read(in, state.sampleRate);
+  serial::read(in, state.cycleCounter);
+  serial::read(in, frameTimer);
+  serial::read(in, frameSequence);
+  serial::read(in, triggerLength);
+  serial::read(in, triggerEnvelope);
+  serial::read(in, triggerSweep);
+  serial::read(in, sampleTimer);
+  serial::read(in, pendingTicks);
 }

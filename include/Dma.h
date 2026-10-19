@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <functional>
 
+#include "Serializable.h"
+
 class IMemRead;
-class DMA {
+class DMA : public Serializable {
   struct State {
     bool isActive = false;
     uint8_t byte = 0;
@@ -17,6 +19,8 @@ class DMA {
   void start(uint8_t start);
   void tick();
   [[nodiscard]] bool isTransferring() const;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
   void setMemRead(IMemRead& reader) { memRead = &reader; }
 
  private:

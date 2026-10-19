@@ -3,7 +3,9 @@
 #include <array>
 #include <cstdint>
 
-class RAM {
+#include "Serializable.h"
+
+class RAM : public Serializable {
  public:
   struct State {
     std::array<uint8_t, 0x2000> wram = {};
@@ -14,8 +16,8 @@ class RAM {
   void writeWRAM(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t readHRAM(uint16_t address) const;
   void writeHRAM(uint16_t address, uint8_t value);
-  [[nodiscard]] RAM::State getState() const;
-  void setState(const State& newState);
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   State state;

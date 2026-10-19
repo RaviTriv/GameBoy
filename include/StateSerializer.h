@@ -1,39 +1,36 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <istream>
 #include <ostream>
 #include <string>
+#include <vector>
 
-class RAM;
-class CPU;
-class PPU;
-class LCD;
+class Serializable;
+
 class StateSerializer {
  public:
-  StateSerializer(CPU &cpu, RAM &ram, PPU &ppu, LCD &lcd);
+  struct Section {
+    std::string name;
+    Serializable *component;
+  };
+
+  explicit StateSerializer(std::vector<Section> sections);
   [[nodiscard]] bool save(std::ostream &out, const std::string &label = {});
   [[nodiscard]] bool load(std::istream &in);
   [[nodiscard]] bool saveState(const std::string &title);
   [[nodiscard]] bool loadState(const std::string &title);
 
  private:
-  CPU &cpu_;
-  RAM &ram_;
-  PPU &ppu_;
-  LCD &lcd_;
+  std::vector<Section> sections_;
 
-  void saveCPUState(std::ostream &file);
-  void saveRAMState(std::ostream &file);
-  void savePPUState(std::ostream &file);
-  void saveLCDState(std::ostream &file);
-
-  void loadCPUState(std::istream &file);
-  void loadRAMState(std::istream &file);
-  void loadPPUState(std::istream &file);
-  void loadLCDState(std::istream &file);
+  void writeSections(std::ostream &out) const;
+  void readSections(std::istream &in);
 
   std::string removeSpaces(const std::string &str) const;
 
+  static constexpr std::array<char, 4> MAGIC = {'G', 'B', 'S', 'T'};
+  static constexpr uint32_t VERSION = 2;
   static constexpr uint32_t MAX_HEADER_LENGTH = 256;
 };

@@ -1,12 +1,15 @@
 #include "Cpu.h"
 
 #include <cstdint>
+#include <istream>
+#include <ostream>
 #include <stdexcept>
 
 #include "Bus.h"
 #include "Common.h"
 #include "InterruptRegs.h"
 #include "InterruptSink.h"
+#include "Serializable.h"
 
 namespace {
 
@@ -95,8 +98,9 @@ void CPU::setInterruptEnable(uint8_t value) { state.ie = value; }
 uint8_t CPU::getInterruptEnable() const { return state.ie; }
 void CPU::setInterruptFlags(uint8_t value) { state.intf = value; }
 uint8_t CPU::getInterruptFlags() const { return state.intf; }
-CPU::State CPU::getState() const { return state; }
-void CPU::setState(const State& s) { this->state = s; }
+void CPU::save(std::ostream& out) const { serial::write(out, state); }
+
+void CPU::load(std::istream& in) { serial::read(in, state); }
 InterruptRegs CPU::getInterruptRegs() {
   return {.ie = state.ie, .intf = state.intf};
 }

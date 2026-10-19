@@ -2,6 +2,10 @@
 
 #include <atomic>
 #include <cstdint>
+#include <istream>
+#include <ostream>
+
+#include "Serializable.h"
 
 bool Gamepad::isBPressed() const {
   return buttons.load(std::memory_order_relaxed) & BTN_B;
@@ -134,4 +138,14 @@ uint8_t Gamepad::getOutput() const {
   }
 
   return output;
+}
+
+void Gamepad::save(std::ostream& out) const {
+  serial::write(out, directionSelected);
+  serial::write(out, actionSelected);
+}
+
+void Gamepad::load(std::istream& in) {
+  serial::read(in, directionSelected);
+  serial::read(in, actionSelected);
 }

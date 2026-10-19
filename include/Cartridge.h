@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "./Mbc.h"
+#include "./Serializable.h"
 
 enum class CartridgeType : uint8_t {
   ROM_ONLY = 0x00,
@@ -42,7 +43,7 @@ struct RomHeader {
 };
 
 class MBC;
-class Cartridge {
+class Cartridge : public Serializable {
  public:
   struct State {
     std::array<char, 1024> filename;
@@ -56,6 +57,8 @@ class Cartridge {
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] std::string getTitle() const;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   State state;

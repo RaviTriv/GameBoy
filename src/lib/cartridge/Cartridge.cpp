@@ -6,7 +6,9 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -16,6 +18,7 @@
 
 #include "Logger.h"
 #include "Mbc.h"
+#include "Serializable.h"
 
 Cartridge::Cartridge(std::string_view romPath) { loadCartridge(romPath); }
 
@@ -204,4 +207,13 @@ std::string Cartridge::getTitle() const {
     }
   }
   return result;
+}
+void Cartridge::save(std::ostream& out) const {
+  serial::writeBytes(out, state.ramData);
+  mbc->save(out);
+}
+
+void Cartridge::load(std::istream& in) {
+  serial::readBytes(in, state.ramData);
+  mbc->load(in);
 }

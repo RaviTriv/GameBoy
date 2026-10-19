@@ -2,9 +2,12 @@
 
 #include <cstdint>
 #include <functional>
+#include <istream>
+#include <ostream>
 #include <utility>
 
 #include "IMemRead.h"
+#include "Serializable.h"
 
 DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite)
     : oamWrite_(std::move(oamWrite)) {}
@@ -33,3 +36,6 @@ void DMA::tick() {
 }
 
 bool DMA::isTransferring() const { return state.isActive; }
+void DMA::save(std::ostream& out) const { serial::write(out, state); }
+
+void DMA::load(std::istream& in) { serial::read(in, state); }

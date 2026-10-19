@@ -4,9 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <istream>
+#include <ostream>
 #include <utility>
 
 #include "Logger.h"
+#include "Serializable.h"
 
 LCD::LCD(std::function<void(uint8_t)> onDmaStart)
     : onDmaStart_(std::move(onDmaStart)) {
@@ -191,9 +194,15 @@ LCD::EnableTransition LCD::consumeEnableTransition() {
   return transition;
 }
 
-LCD::State LCD::getState() const { return state; }
+void LCD::save(std::ostream& out) const {
+  serial::write(out, state);
+  serial::write(out, lcdWasEnabled);
+}
 
-void LCD::setState(const State& newState) { state = newState; }
+void LCD::load(std::istream& in) {
+  serial::read(in, state);
+  serial::read(in, lcdWasEnabled);
+}
 
 uint8_t LCD::getLy() const { return state.ly; }
 

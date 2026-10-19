@@ -4,6 +4,9 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
+#include <stdexcept>
 
 #include "Common.h"
 #include "IMemRead.h"
@@ -11,6 +14,7 @@
 #include "Lcd.h"
 #include "Logger.h"
 #include "OamTypes.h"
+#include "Serializable.h"
 
 PPU::PPU(InterruptSink& interruptSink)
     : interruptSink_(interruptSink),
@@ -264,21 +268,32 @@ uint32_t PPU::getCurrentFrame() const {
   return currentFrame.load(std::memory_order_relaxed);
 }
 
-void PPU::setCurrentFrame(uint32_t frame) {
+void PPU::save(std::ostream& out) const {
+  State saved = state;
+  saved.scanlineCtx.sprites = nullptr;
+  saved.scanlineCtx.lineTicks = nullptr;
+  serial::write(out, saved);
+  serial::write(out, getCurrentFrame());
+  serial::write(out, getVideoBuffer());
+  pipeline.save(out);
+}
+
+void PPU::load(std::istream& in) {
+  serial::read(in, state);
+  if (state.lineSpritesCount > state.currentLineSprites.size() ||
+      state.scanlineCtx.spriteCount > state.currentLineSprites.size()) {
+    throw std::runtime_error("Invalid PPU sprite count in save file");
+  }
+  state.scanlineCtx.sprites = state.currentLineSprites.data();
+  state.scanlineCtx.lineTicks = &state.lineTicks;
+
+  uint32_t frame = 0;
+  serial::read(in, frame);
   currentFrame.store(frame, std::memory_order_relaxed);
+
+  serial::read(in, videoBuffers[0]);
+  videoBuffers[1] = videoBuffers[0];
+
+  pipeline.load(in);
+  pipeline.beginScanline(state.scanlineCtx);
 }
-
-void PPU::setVideoBuffer(const std::array<uint32_t, BUFFER_SIZE>& buffer) {
-  videoBuffers[0] = buffer;
-  videoBuffers[1] = buffer;
-}
-
-PPU::State PPU::getState() const { return state; }
-
-void PPU::setState(const State& newState) { state = newState; };
-
-Pipeline::State PPU::getPipelineState() const { return pipeline.getState(); }
-
-void PPU::setPipelineState(const Pipeline::State& newState) {
-  pipeline.setState(newState);
-};

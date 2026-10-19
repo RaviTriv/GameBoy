@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <functional>
 
-class LCD {
+#include "Serializable.h"
+
+class LCD : public Serializable {
  public:
   enum PaletteType { BGP = 0, OBP0 = 1, OBP1 = 2 };
 
@@ -65,8 +67,8 @@ class LCD {
   void setLycFlag(bool value);
   [[nodiscard]] bool isLcdEnabled() const;
   EnableTransition consumeEnableTransition();
-  [[nodiscard]] LCD::State getState() const;
-  void setState(const State& newState);
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
   [[nodiscard]] uint8_t getLy() const;
   void setLy(uint8_t value);

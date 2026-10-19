@@ -4,15 +4,19 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "Apu.h"
@@ -27,6 +31,7 @@
 #include "Logger.h"
 #include "Ppu.h"
 #include "Ram.h"
+#include "StateSerializer.h"
 #include "Timer.h"
 
 namespace {
@@ -40,6 +45,10 @@ constexpr uint32_t DEFAULT_BENCH_WARMUP = 2;
 constexpr uint32_t MAX_BENCH_RUNS = 10'000;
 constexpr double MAX_RELATIVE_STDDEV = 0.03;
 constexpr std::size_t AUDIO_DRAIN_CHUNK = 1024;
+constexpr uint32_t SAVESTATE_WARMUP_FRAMES = 10;
+constexpr uint32_t SAVESTATE_COMPARE_FRAMES = 120;
+constexpr uint32_t SAVESTATE_DRAWING_STEPS = 4;
+constexpr uint8_t VISIBLE_LINES = 144;
 
 #ifdef __OPTIMIZE__
 constexpr bool OPTIMIZED_BUILD = true;
@@ -126,6 +135,17 @@ class TestRunner {
       serialDirty = true;
     });
     ppu->init();
+    stateSerializer =
+        std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
+            {.name = "CPU", .component = cpu.get()},
+            {.name = "RAM", .component = ram.get()},
+            {.name = "PPU", .component = ppu.get()},
+            {.name = "LCD", .component = lcd.get()},
+            {.name = "TIMER", .component = timer.get()},
+            {.name = "DMA", .component = dma.get()},
+            {.name = "APU", .component = apu.get()},
+            {.name = "CARTRIDGE", .component = cartridge.get()},
+            {.name = "JOYPAD", .component = gamepad.get()}});
   }
 
   int run(uint64_t budget) {
@@ -153,6 +173,21 @@ class TestRunner {
     }
   }
 
+  [[nodiscard]] bool runUntilDrawing(uint8_t line, uint32_t extraSteps,
+                                     uint32_t maxFrames) {
+    while (lcd->getLy() != line || lcd->getLcdMode() != LCD::DRAWING) {
+      if (framesElapsed >= maxFrames) {
+        return false;
+      }
+      cpu->step();
+    }
+    for (uint32_t i = 0; i < extraSteps && lcd->getLcdMode() == LCD::DRAWING;
+         i++) {
+      cpu->step();
+    }
+    return lcd->getLy() == line && lcd->getLcdMode() == LCD::DRAWING;
+  }
+
   void runCycles(uint64_t mcycles) {
     while (totalCycles < mcycles) {
       cpu->step();
@@ -162,6 +197,8 @@ class TestRunner {
   [[nodiscard]] const auto& videoBuffer() const {
     return ppu->getVideoBuffer();
   }
+
+  [[nodiscard]] StateSerializer& serializer() { return *stateSerializer; }
 
  private:
   static void cycleTrampoline(void* self, int cycles) {
@@ -260,6 +297,7 @@ class TestRunner {
   std::unique_ptr<Timer> timer;
   std::unique_ptr<IO> io;
   std::unique_ptr<Bus> bus;
+  std::unique_ptr<StateSerializer> stateSerializer;
 
   Protocol protocol_ = Protocol::Blargg;
   std::string serialLog;
@@ -368,6 +406,123 @@ int runBenchmark(const std::string& romPath, const BenchOptions& options) {
   return 0;
 }
 
+std::string saveBody(TestRunner& runner) {
+  std::stringstream out;
+  if (!runner.serializer().save(out)) {
+    throw std::runtime_error("save failed");
+  }
+  const std::string data = out.str();
+  constexpr std::size_t HEADER_LENGTH_OFFSET = 8;
+  uint32_t headerLength = 0;
+  std::memcpy(&headerLength, data.data() + HEADER_LENGTH_OFFSET,
+              sizeof(headerLength));
+  return data.substr(HEADER_LENGTH_OFFSET + sizeof(headerLength) +
+                     headerLength);
+}
+
+std::vector<std::pair<std::string, std::string>> splitSections(
+    const std::string& body) {
+  std::vector<std::pair<std::string, std::string>> sections;
+  std::size_t pos = sizeof(uint32_t);
+  while (pos < body.size()) {
+    const auto nameLength = static_cast<uint8_t>(body[pos]);
+    pos += 1;
+    std::string name = body.substr(pos, nameLength);
+    pos += nameLength;
+    uint32_t size = 0;
+    std::memcpy(&size, body.data() + pos, sizeof(size));
+    pos += sizeof(size);
+    sections.emplace_back(std::move(name), body.substr(pos, size));
+    pos += size;
+  }
+  return sections;
+}
+
+bool reportDivergence(const std::string& expected, const std::string& actual,
+                      std::string_view context) {
+  const auto expectedSections = splitSections(expected);
+  const auto actualSections = splitSections(actual);
+  bool diverged = expectedSections.size() != actualSections.size();
+  for (std::size_t i = 0;
+       i < std::min(expectedSections.size(), actualSections.size()); i++) {
+    if (expectedSections[i] != actualSections[i]) {
+      std::cerr << "FAIL: " << context << ": section "
+                << expectedSections[i].first << " differs\n";
+      diverged = true;
+    }
+  }
+  return diverged;
+}
+
+bool reportFrameDivergence(const TestRunner& original,
+                           const TestRunner& restored,
+                           std::string_view context) {
+  const uint64_t originalHash = hashFramebuffer(original.videoBuffer());
+  const uint64_t restoredHash = hashFramebuffer(restored.videoBuffer());
+  if (originalHash == restoredHash) {
+    return false;
+  }
+  std::cerr << "FAIL: " << context << " (" << formatHash(originalHash) << " vs "
+            << formatHash(restoredHash) << ")\n";
+  return true;
+}
+
+int runSaveStateTest(const std::string& romPath,
+                     std::optional<uint8_t> drawingLine) {
+  TestRunner original(romPath, Protocol::Blargg);
+  original.runFrames(SAVESTATE_WARMUP_FRAMES);
+  if (drawingLine &&
+      !original.runUntilDrawing(*drawingLine, SAVESTATE_DRAWING_STEPS,
+                                SAVESTATE_WARMUP_FRAMES + 1)) {
+    std::cerr << "FAIL: never reached mode 3 on line "
+              << static_cast<int>(*drawingLine) << "\n";
+    return 1;
+  }
+  std::stringstream snapshot;
+  if (!original.serializer().save(snapshot)) {
+    std::cerr << "FAIL: save failed\n";
+    return 1;
+  }
+  TestRunner restored(romPath, Protocol::Blargg);
+  if (!restored.serializer().load(snapshot)) {
+    std::cerr << "FAIL: load failed\n";
+    return 1;
+  }
+
+  original.runFrames(SAVESTATE_WARMUP_FRAMES + 1);
+  restored.runFrames(1);
+  if (reportFrameDivergence(original, restored,
+                            "first frame after load diverged")) {
+    return 1;
+  }
+
+  original.runFrames(SAVESTATE_WARMUP_FRAMES + SAVESTATE_COMPARE_FRAMES);
+  restored.runFrames(SAVESTATE_COMPARE_FRAMES);
+  if (reportFrameDivergence(original, restored,
+                            "framebuffer diverged after load")) {
+    return 1;
+  }
+  if (reportDivergence(saveBody(original), saveBody(restored),
+                       "state diverged after load")) {
+    return 1;
+  }
+
+  const std::string bytes = snapshot.str();
+  std::stringstream truncated(bytes.substr(0, bytes.size() / 2));
+  const std::string beforeFailedLoad = saveBody(restored);
+  if (restored.serializer().load(truncated)) {
+    std::cerr << "FAIL: truncated save state loaded\n";
+    return 1;
+  }
+  if (reportDivergence(beforeFailedLoad, saveBody(restored),
+                       "failed load changed state")) {
+    return 1;
+  }
+
+  std::cout << "Passed\n";
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -381,6 +536,8 @@ int main(int argc, char** argv) {
     std::string dumpPath;
     bool benchMode = false;
     bool allowUnoptimized = false;
+    bool saveStateMode = false;
+    std::optional<uint8_t> saveStateLine;
     BenchOptions bench;
 
     for (int i = 1; i < argc; i++) {
@@ -404,6 +561,17 @@ int main(int argc, char** argv) {
         bench.runs = static_cast<uint32_t>(std::stoul(argv[++i]));
       } else if (arg == "--bench-warmup") {
         bench.warmup = static_cast<uint32_t>(std::stoul(argv[++i]));
+      } else if (arg == "--savestate") {
+        saveStateMode = true;
+      } else if (arg == "--savestate-line") {
+        saveStateMode = true;
+        const auto line = std::stoul(argv[++i]);
+        if (line >= VISIBLE_LINES) {
+          std::cerr << "--savestate-line must be below "
+                    << static_cast<int>(VISIBLE_LINES) << "\n";
+          return 3;
+        }
+        saveStateLine = static_cast<uint8_t>(line);
       } else if (arg == "--allow-unoptimized") {
         allowUnoptimized = true;
       } else if (romPath.empty()) {
@@ -418,7 +586,8 @@ int main(int argc, char** argv) {
                    "[--mooneye] [--memory] [--frames N] [--hash] "
                    "[--dump path] [--bench [--bench-frames N] "
                    "[--bench-runs R] [--bench-warmup W] "
-                   "[--allow-unoptimized]]\n";
+                   "[--allow-unoptimized]] "
+                   "[--savestate | --savestate-line LY]\n";
       return 3;
     }
 
@@ -440,6 +609,10 @@ int main(int argc, char** argv) {
         std::cerr << "WARNING: NDEBUG is not defined; assertions are on\n";
       }
       return runBenchmark(romPath, bench);
+    }
+
+    if (saveStateMode) {
+      return runSaveStateTest(romPath, saveStateLine);
     }
 
     TestRunner runner(romPath, protocol);

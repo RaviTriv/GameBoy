@@ -1,9 +1,12 @@
 #include "Timer.h"
 
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 #include "Common.h"
 #include "InterruptSink.h"
+#include "Serializable.h"
 
 Timer::Timer(InterruptSink &interruptSink) : interruptSink_(interruptSink) {
   state.div = INITIAL_DIV_VALUE;
@@ -84,3 +87,6 @@ uint8_t Timer::read(uint16_t address) const {
       return 0;
   }
 }
+void Timer::save(std::ostream &out) const { serial::write(out, state); }
+
+void Timer::load(std::istream &in) { serial::read(in, state); }

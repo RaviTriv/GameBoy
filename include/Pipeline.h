@@ -7,11 +7,12 @@
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
 #include "./ScanlineContext.h"
+#include "./Serializable.h"
 
 using ReadFn = std::function<uint8_t(uint16_t)>;
 using WritePixelFn = std::function<void(uint32_t, uint32_t)>;
 
-class Pipeline {
+class Pipeline : public Serializable {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
   constexpr static int PIXEL_TILE_DIMENSION = 8;
 
@@ -39,10 +40,8 @@ class Pipeline {
   void reset();
   void oamReset();
   [[nodiscard]] bool isWindowVisible() const;
-  [[nodiscard]] const State &getState() const { return state; }
-  void setState(const State &s) { state = s; }
-  [[nodiscard]] const PixelFifo *getPixelFifo() const { return &pixelFifo; }
-  [[nodiscard]] PixelFifo *getPixelFifo() { return &pixelFifo; }
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
  private:

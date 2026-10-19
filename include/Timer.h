@@ -2,8 +2,10 @@
 
 #include <cstdint>
 
+#include "Serializable.h"
+
 class InterruptSink;
-class Timer {
+class Timer : public Serializable {
   struct State {
     uint16_t div = 0;
     uint8_t tima = 0;
@@ -17,6 +19,8 @@ class Timer {
   void tick();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 
  private:
   State state;

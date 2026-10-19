@@ -7,9 +7,10 @@
 #include "Common.h"
 #include "InterruptRegs.h"
 #include "InterruptSink.h"
+#include "Serializable.h"
 
 class Bus;
-class CPU : public InterruptSink {
+class CPU : public InterruptSink, public Serializable {
  public:
   struct State {
     struct Registers registers;
@@ -37,8 +38,8 @@ class CPU : public InterruptSink {
   [[nodiscard]] uint8_t getInterruptFlags() const;
   [[nodiscard]] InterruptRegs getInterruptRegs();
   void setInterruptFlags(uint8_t value);
-  [[nodiscard]] CPU::State getState() const;
-  void setState(const State& state);
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 
  private:
   CycleCallbackFn cycleCallback_;

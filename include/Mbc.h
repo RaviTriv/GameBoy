@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <vector>
 
-class MBC {
+#include "Serializable.h"
+
+class MBC : public Serializable {
  public:
-  virtual ~MBC() = default;
+  ~MBC() override = default;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
   explicit MBC(std::vector<uint8_t> &rom) : romData(rom), ramData(empty) {}
@@ -33,6 +35,8 @@ class MBC0 : public MBC {
   explicit MBC0(std::vector<uint8_t> &rom) : MBC(rom) {}
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 };
 
 class MBC1 : public MBC {
@@ -49,6 +53,8 @@ class MBC1 : public MBC {
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 };
 
 class MBC2 : public MBC {
@@ -64,6 +70,8 @@ class MBC2 : public MBC {
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 };
 
 class MBC3 : public MBC {
@@ -79,4 +87,6 @@ class MBC3 : public MBC {
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 };

@@ -2,9 +2,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 #include <vector>
 
 #include "Logger.h"
+#include "Serializable.h"
 
 std::vector<uint8_t> MBC::empty;
 
@@ -134,4 +137,48 @@ void MBC3::write(uint16_t address, uint8_t value) {
       ramData[index] = value;
     }
   }
+}
+
+void MBC0::save(std::ostream& /*out*/) const {}
+
+void MBC0::load(std::istream& /*in*/) {}
+
+void MBC1::save(std::ostream& out) const {
+  serial::write(out, ramEnabled);
+  serial::write(out, romBank);
+  serial::write(out, ramBank);
+  serial::write(out, bankingMode);
+}
+
+void MBC1::load(std::istream& in) {
+  serial::read(in, ramEnabled);
+  serial::read(in, romBank);
+  serial::read(in, ramBank);
+  serial::read(in, bankingMode);
+}
+
+void MBC2::save(std::ostream& out) const {
+  serial::write(out, ramEnabled);
+  serial::write(out, romBank);
+  serial::write(out, ram_);
+}
+
+void MBC2::load(std::istream& in) {
+  serial::read(in, ramEnabled);
+  serial::read(in, romBank);
+  romBank = static_cast<uint8_t>(romBank % romBanksCount);
+  serial::read(in, ram_);
+}
+
+void MBC3::save(std::ostream& out) const {
+  serial::write(out, ramEnabled);
+  serial::write(out, romBank);
+  serial::write(out, ramBank);
+}
+
+void MBC3::load(std::istream& in) {
+  serial::read(in, ramEnabled);
+  serial::read(in, romBank);
+  romBank = static_cast<uint8_t>(romBank % romBanksCount);
+  serial::read(in, ramBank);
 }

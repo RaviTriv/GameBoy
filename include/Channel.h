@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <memory>
 
+#include "Serializable.h"
+
 class APU;
 class Bus;
-class Channel {
+class Channel : public Serializable {
  protected:
   uint8_t nrx0 = 0, nrx1 = 0, nrx2 = 0, nrx3 = 0, nrx4 = 0;
   bool enabled = false;
@@ -33,13 +35,15 @@ class Channel {
   static constexpr uint8_t MAX_VOLUME = 0x0F;
 
  public:
-  virtual ~Channel() = default;
+  ~Channel() override = default;
   void updateTriggers(bool lengthTrigger, bool envelopeTrigger,
                       bool sweepTrigger);
   void envelopeAction();
   virtual void reset() = 0;
   virtual bool lengthTimerAction() = 0;
   [[nodiscard]] virtual uint8_t getSample() const = 0;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class SquareChannel : public Channel {
@@ -72,6 +76,8 @@ class SquareChannel : public Channel {
   bool lengthTimerAction() override;
   void sweepAction();
   [[nodiscard]] uint8_t getSample() const override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class WaveChannel : public Channel {
@@ -89,6 +95,8 @@ class WaveChannel : public Channel {
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };
 
 class NoiseChannel : public Channel {
@@ -116,4 +124,6 @@ class NoiseChannel : public Channel {
   int advanceTimer(int ticks);
   bool lengthTimerAction() override;
   [[nodiscard]] uint8_t getSample() const override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
 };

@@ -9,6 +9,7 @@
 #include <string>
 #include <thread>
 #include <variant>
+#include <vector>
 
 #include "Apu.h"
 #include "Bus.h"
@@ -63,10 +64,9 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
       },
       this, nullptr);
   ppu = std::make_unique<PPU>(*cpu);
-  ui =
-      std::make_unique<UI>([this] { state.isRunning.store(false); },
-                           [this] { pushCommand(SaveStateCommand{}); }, *ppu,
-                           *gamepad, *apu);
+  ui = std::make_unique<UI>([this] { state.isRunning.store(false); },
+                            [this] { pushCommand(SaveStateCommand{}); }, *ppu,
+                            *gamepad, *apu);
   timer = std::make_unique<Timer>(*cpu);
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
                             *apu);
@@ -80,9 +80,18 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
       std::make_unique<FramePacer>([this] { return ui->getTicks(); },
                                    [this](uint32_t ms) { ui->delay(ms); });
   framePacer->setFastForward(startFastForward);
-  ui->setToggleFastForward(
-      [this] { pushCommand(ToggleFastForwardCommand{}); });
-  stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
+  ui->setToggleFastForward([this] { pushCommand(ToggleFastForwardCommand{}); });
+  stateSerializer =
+      std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
+          {.name = "CPU", .component = cpu.get()},
+          {.name = "RAM", .component = ram.get()},
+          {.name = "PPU", .component = ppu.get()},
+          {.name = "LCD", .component = lcd.get()},
+          {.name = "TIMER", .component = timer.get()},
+          {.name = "DMA", .component = dma.get()},
+          {.name = "APU", .component = apu.get()},
+          {.name = "CARTRIDGE", .component = cartridge.get()},
+          {.name = "JOYPAD", .component = gamepad.get()}});
   state.isRunning.store(true);
   trace = enableTrace;
   loadSave = loadSaveOnStart;

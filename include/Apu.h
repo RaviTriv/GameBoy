@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "./Channel.h"
+#include "Serializable.h"
 #include "spsc_queue.hpp"
 
 struct StereoSample {
@@ -11,7 +12,7 @@ struct StereoSample {
   uint8_t right;
 };
 
-class APU {
+class APU : public Serializable {
   struct Registers {
     uint8_t NR52 = 0;
     uint8_t NR51 = 0;
@@ -37,6 +38,8 @@ class APU {
   void tick();
 
   std::size_t popSamples(StereoSample *out, std::size_t count);
+  void save(std::ostream &out) const override;
+  void load(std::istream &in) override;
 
   static constexpr int audioFreq = 44100;
 
