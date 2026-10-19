@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <variant>
 
 #include "Apu.h"
 #include "Bus.h"
@@ -25,6 +26,13 @@
 #include "StateSerializer.h"
 #include "Timer.h"
 #include "Ui.h"
+
+namespace {
+template <class... Ts>
+struct Overloaded : Ts... {
+  using Ts::operator()...;
+};
+}  // namespace
 
 GameBoy::GameBoy() = default;
 GameBoy::~GameBoy() {
@@ -57,7 +65,8 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
   ppu = std::make_unique<PPU>(*cpu);
   ui =
       std::make_unique<UI>([this] { state.isRunning.store(false); },
-                           [this] { this->saveState(); }, *ppu, *gamepad, *apu);
+                           [this] { pushCommand(SaveStateCommand{}); }, *ppu,
+                           *gamepad, *apu);
   timer = std::make_unique<Timer>(*cpu);
   io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
                             *apu);
@@ -72,7 +81,7 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
                                    [this](uint32_t ms) { ui->delay(ms); });
   framePacer->setFastForward(startFastForward);
   ui->setToggleFastForward(
-      [this] { framePacer->setFastForward(!framePacer->isFastForward()); });
+      [this] { pushCommand(ToggleFastForwardCommand{}); });
   stateSerializer = std::make_unique<StateSerializer>(*cpu, *ram, *ppu, *lcd);
   state.isRunning.store(true);
   trace = enableTrace;
@@ -113,7 +122,27 @@ void GameBoy::run() {
 
 void GameBoy::cpuLoop() {
   while (state.isRunning.load()) {
+    processCommands();
     cpu->step();
+  }
+}
+
+void GameBoy::pushCommand(const Command& command) {
+  if (!commands.push(command)) {
+    Logger::GetLogger()->warn("Command queue full, dropping command");
+  }
+}
+
+void GameBoy::processCommands() {
+  Command command;
+  while (commands.pop(command)) {
+    std::visit(Overloaded{
+                   [this](const SaveStateCommand&) { saveState(); },
+                   [this](const ToggleFastForwardCommand&) {
+                     framePacer->setFastForward(!framePacer->isFastForward());
+                   },
+               },
+               command);
   }
 }
 

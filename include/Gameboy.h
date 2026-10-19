@@ -6,6 +6,9 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <variant>
+
+#include "spsc_queue.hpp"
 
 class APU;
 class Bus;
@@ -39,7 +42,12 @@ class GameBoy {
   void cycle(int cycles);
 
  private:
+  struct SaveStateCommand {};
+  struct ToggleFastForwardCommand {};
+  using Command = std::variant<SaveStateCommand, ToggleFastForwardCommand>;
+
   State state;
+  spsc::Queue<Command, 64> commands;
   std::unique_ptr<APU> apu;
   std::unique_ptr<Bus> bus;
   std::unique_ptr<Cartridge> cartridge;
@@ -57,6 +65,8 @@ class GameBoy {
 
   std::thread cpuThread;
   void cpuLoop();
+  void pushCommand(const Command& command);
+  void processCommands();
   void displayBootArt();
   void saveState();
   bool trace = false;
