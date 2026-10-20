@@ -8,7 +8,7 @@
 #include "InterruptRegs.h"
 #include "Serializable.h"
 
-class Bus;
+class IMemAccess;
 class CPU : public Serializable {
  public:
   struct State {
@@ -27,10 +27,11 @@ class CPU : public Serializable {
 
   using CycleCallbackFn = void (*)(void*, int);
 
-  CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx, Bus* bus);
+  CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx,
+      IMemAccess* memory);
 
   void step();
-  void setBus(Bus* bus);
+  void setMemory(IMemAccess* memory);
   [[nodiscard]] uint8_t getInterruptEnable() const;
   void setInterruptEnable(uint8_t value);
   [[nodiscard]] uint8_t getInterruptFlags() const;
@@ -42,7 +43,7 @@ class CPU : public Serializable {
  private:
   CycleCallbackFn cycleCallback_;
   void* cycleCallbackCtx_;
-  Bus* bus_;
+  IMemAccess* memory_;
 
   State state;
 

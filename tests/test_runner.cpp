@@ -148,7 +148,7 @@ class TestRunner {
                               *apu);
     bus = std::make_unique<Bus>(*cartridge, cpu->getInterruptRegs(), *dma, *io,
                                 *ppu, *ram);
-    cpu->setBus(bus.get());
+    cpu->setMemory(bus.get());
     dma->setMemRead(*bus);
     ppu->setMemRead(*bus);
     ppu->setLcd(lcd.get());
