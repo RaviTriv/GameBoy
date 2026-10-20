@@ -2,10 +2,10 @@
 
 #include <array>
 #include <cstdint>
-#include <functional>
 
 #include "Serializable.h"
 
+class DMA;
 class LCD : public Serializable {
  public:
   enum PaletteType { BGP = 0, OBP0 = 1, OBP1 = 2 };
@@ -51,7 +51,7 @@ class LCD : public Serializable {
     std::array<uint32_t, 4> ob2Colors{};
   };
 
-  explicit LCD(std::function<void(uint8_t)> onDmaStart);
+  explicit LCD(DMA& dma);
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] bool isLcdStatIntEnabled(uint8_t source) const;
@@ -85,7 +85,7 @@ class LCD : public Serializable {
  private:
   State state;
   bool lcdWasEnabled = true;
-  std::function<void(uint8_t)> onDmaStart_;
+  DMA& dma_;
   static constexpr std::array<uint32_t, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);

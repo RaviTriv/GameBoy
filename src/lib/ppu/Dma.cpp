@@ -1,16 +1,12 @@
 #include "Dma.h"
 
 #include <cstdint>
-#include <functional>
 #include <istream>
 #include <ostream>
-#include <utility>
 
 #include "IMemRead.h"
+#include "Ppu.h"
 #include "Serializable.h"
-
-DMA::DMA(std::function<void(uint16_t, uint8_t)> oamWrite)
-    : oamWrite_(std::move(oamWrite)) {}
 
 void DMA::start(uint8_t start) {
   state.isActive = true;
@@ -19,7 +15,7 @@ void DMA::start(uint8_t start) {
   state.startDelay = 2;
 }
 
-void DMA::tick() {
+void DMA::tick(IMemRead& memory, PPU& ppu) {
   if (!state.isActive) {
     return;
   }
@@ -29,8 +25,9 @@ void DMA::tick() {
     return;
   }
 
-  oamWrite_(state.byte, memRead->read8(static_cast<uint16_t>(
-                            (state.value * 0x100) + state.byte)));
+  ppu.oamWrite(
+      state.byte,
+      memory.read8(static_cast<uint16_t>((state.value * 0x100) + state.byte)));
   state.byte++;
   state.isActive = state.byte < 0xA0;
 }

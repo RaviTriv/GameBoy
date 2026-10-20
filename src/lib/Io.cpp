@@ -5,13 +5,13 @@
 #include "Apu.h"
 #include "Common.h"
 #include "Gamepad.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Lcd.h"
 #include "Timer.h"
 
-IO::IO(InterruptRegs interruptRegs, Timer& timer, LCD& lcd, Gamepad& gamepad,
+IO::IO(Interrupts& interrupts, Timer& timer, LCD& lcd, Gamepad& gamepad,
        APU& apu)
-    : interruptRegs_(interruptRegs),
+    : interrupts_(interrupts),
       apu_(apu),
       timer_(timer),
       lcd_(lcd),
@@ -38,7 +38,7 @@ uint8_t IO::read(uint16_t address) const {
 
   if (address == IF_REGISTER) {
     // Interrupt flags
-    return interruptRegs_.intf | IF_UNUSED_BITS;
+    return interrupts_.intf() | IF_UNUSED_BITS;
   }
 
   if ((address >= APU_START) && (address <= APU_END)) {
@@ -89,7 +89,7 @@ void IO::write(uint16_t address, uint8_t value) {
 
   if (address == IF_REGISTER) {
     // Interrupt flags
-    interruptRegs_.intf = value;
+    interrupts_.setIntf(value);
     return;
   }
 

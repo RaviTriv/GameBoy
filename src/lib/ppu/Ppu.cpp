@@ -9,16 +9,16 @@
 #include <stdexcept>
 
 #include "Common.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Lcd.h"
 #include "Logger.h"
 #include "OamTypes.h"
 #include "Serializable.h"
 
-PPU::PPU(InterruptRegs interruptRegs)
-    : interruptRegs_(interruptRegs), pipeline(state.vram) {}
-
-void PPU::init() { lcd->setLcdMode(LCD::MODE::OAM); }
+PPU::PPU(Interrupts& interrupts, LCD& lcd)
+    : interrupts_(interrupts), lcd_(lcd), pipeline(state.vram) {
+  lcd_.setLcdMode(LCD::MODE::OAM);
+}
 
 const PPU::Frame& PPU::acquireFrontFrame() {
   if ((readyIndex.load(std::memory_order_relaxed) & FRAME_FRESH_BIT) != 0) {
@@ -48,10 +48,10 @@ void PPU::publishFrame() {
 }
 
 void PPU::tick() {
-  switch (lcd->consumeEnableTransition()) {
+  switch (lcd_.consumeEnableTransition()) {
     case LCD::TURNED_OFF:
-      lcd->setLy(0);
-      lcd->setLcdMode(LCD::MODE::HBLANK);
+      lcd_.setLy(0);
+      lcd_.setLcdMode(LCD::MODE::HBLANK);
       pipeline.reset();
       state.lineTicks = 0;
       state.windowLine = 0;
@@ -59,8 +59,8 @@ void PPU::tick() {
       finishFrame();
       return;
     case LCD::TURNED_ON:
-      lcd->setLy(0);
-      lcd->setLcdMode(LCD::MODE::OAM);
+      lcd_.setLy(0);
+      lcd_.setLcdMode(LCD::MODE::OAM);
       state.lineTicks = 0;
       state.windowLine = 0;
       break;
@@ -68,12 +68,12 @@ void PPU::tick() {
       break;
   }
 
-  if (!lcd->isLcdEnabled()) {
+  if (!lcd_.isLcdEnabled()) {
     return;
   }
 
   state.lineTicks++;
-  switch (lcd->getLcdMode()) {
+  switch (lcd_.getLcdMode()) {
     case LCD::MODE::OAM:
       oamMode();
       break;
@@ -87,7 +87,7 @@ void PPU::tick() {
       vBlankMode();
       break;
     default:
-      Logger::GetLogger()->error("Unknown PPU mode: {}", lcd->getLcdMode());
+      Logger::GetLogger()->error("Unknown PPU mode: {}", lcd_.getLcdMode());
       break;
   }
 }
@@ -127,28 +127,28 @@ uint8_t PPU::vramRead(uint16_t address) const {
 */
 
 void PPU::incrementLY() {
-  if (pipeline.isWindowVisible() && lcd->getLy() >= lcd->getWindowY() &&
-      lcd->getLy() < lcd->getWindowY() + YRES) {
+  if (pipeline.isWindowVisible() && lcd_.getLy() >= lcd_.getWindowY() &&
+      lcd_.getLy() < lcd_.getWindowY() + YRES) {
     state.windowLine++;
   }
 
-  lcd->incrementLy();
+  lcd_.incrementLy();
 
-  if (lcd->getLy() == lcd->getLyCompare()) {
-    lcd->setLycFlag(true);
+  if (lcd_.getLy() == lcd_.getLyCompare()) {
+    lcd_.setLycFlag(true);
 
-    if (lcd->isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
-      interruptRegs_.request(InterruptType::LCD_STAT);
+    if (lcd_.isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
+      interrupts_.request(InterruptType::LCD_STAT);
     }
   } else {
-    lcd->setLycFlag(false);
+    lcd_.setLycFlag(false);
   }
 }
 
 void PPU::loadLineSprites() {
-  int curY = lcd->getLy();
+  int curY = lcd_.getLy();
 
-  uint8_t spriteHeight = lcd->getObjHeight();
+  uint8_t spriteHeight = lcd_.getObjHeight();
 
   for (std::size_t i = 0; i < 40; i++) {
     OAM_ENTRY entry = state.oamRam[i];
@@ -175,22 +175,22 @@ void PPU::loadLineSprites() {
 }
 
 void PPU::buildScanlineContext() {
-  state.scanlineCtx.scrollX = lcd->getScrollX();
-  state.scanlineCtx.scrollY = lcd->getScrollY();
-  state.scanlineCtx.ly = lcd->getLy();
-  state.scanlineCtx.windowX = lcd->getWindowX();
-  state.scanlineCtx.windowY = lcd->getWindowY();
+  state.scanlineCtx.scrollX = lcd_.getScrollX();
+  state.scanlineCtx.scrollY = lcd_.getScrollY();
+  state.scanlineCtx.ly = lcd_.getLy();
+  state.scanlineCtx.windowX = lcd_.getWindowX();
+  state.scanlineCtx.windowY = lcd_.getWindowY();
   state.scanlineCtx.windowLine = state.windowLine;
-  state.scanlineCtx.bgWindowEnabled = lcd->isBgWindowEnabled();
-  state.scanlineCtx.objEnabled = lcd->isObjEnabled();
-  state.scanlineCtx.windowEnabled = lcd->isWindowEnabled();
-  state.scanlineCtx.objHeight = lcd->getObjHeight();
-  state.scanlineCtx.bgMapArea = lcd->getBgMapArea();
-  state.scanlineCtx.bgWinDataArea = lcd->getBgWindowDataArea();
-  state.scanlineCtx.winMapArea = lcd->getWindowMapArea();
-  state.scanlineCtx.bgColors = lcd->getBgColors();
-  state.scanlineCtx.ob1Colors = lcd->getOb1Colors();
-  state.scanlineCtx.ob2Colors = lcd->getOb2Colors();
+  state.scanlineCtx.bgWindowEnabled = lcd_.isBgWindowEnabled();
+  state.scanlineCtx.objEnabled = lcd_.isObjEnabled();
+  state.scanlineCtx.windowEnabled = lcd_.isWindowEnabled();
+  state.scanlineCtx.objHeight = lcd_.getObjHeight();
+  state.scanlineCtx.bgMapArea = lcd_.getBgMapArea();
+  state.scanlineCtx.bgWinDataArea = lcd_.getBgWindowDataArea();
+  state.scanlineCtx.winMapArea = lcd_.getWindowMapArea();
+  state.scanlineCtx.bgColors = lcd_.getBgColors();
+  state.scanlineCtx.ob1Colors = lcd_.getOb1Colors();
+  state.scanlineCtx.ob2Colors = lcd_.getOb2Colors();
   state.scanlineCtx.sprites = state.currentLineSprites.data();
   state.scanlineCtx.spriteCount = state.lineSpritesCount;
   state.scanlineCtx.lineTicks = &state.lineTicks;
@@ -203,7 +203,7 @@ void PPU::oamMode() {
   }
 
   if (state.lineTicks >= 80) {
-    lcd->setLcdMode(LCD::MODE::DRAWING);
+    lcd_.setLcdMode(LCD::MODE::DRAWING);
     state.spritePenalty = state.lineSpritesCount * 6;
 
     buildScanlineContext();
@@ -224,11 +224,11 @@ void PPU::drawingMode() {
     }
 
     pipeline.reset();
-    lcd->setLcdMode(LCD::MODE::HBLANK);
+    lcd_.setLcdMode(LCD::MODE::HBLANK);
 
-    if (lcd->isLcdStatIntEnabled(
+    if (lcd_.isLcdStatIntEnabled(
             static_cast<uint8_t>(LCD::LCDS_SRC::S_HBLANK))) {
-      interruptRegs_.request(InterruptType::LCD_STAT);
+      interrupts_.request(InterruptType::LCD_STAT);
     }
   }
 }
@@ -237,19 +237,19 @@ void PPU::hBlankMode() {
   if (state.lineTicks >= TICKS_PER_LINE) {
     incrementLY();
 
-    if (lcd->getLy() >= YRES) {
-      lcd->setLcdMode(LCD::MODE::VBLANK);
+    if (lcd_.getLy() >= YRES) {
+      lcd_.setLcdMode(LCD::MODE::VBLANK);
 
-      interruptRegs_.request(InterruptType::VBLANK);
+      interrupts_.request(InterruptType::VBLANK);
 
-      if (lcd->isLcdStatIntEnabled(
+      if (lcd_.isLcdStatIntEnabled(
               static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK))) {
-        interruptRegs_.request(InterruptType::LCD_STAT);
+        interrupts_.request(InterruptType::LCD_STAT);
       }
 
       finishFrame();
     } else {
-      lcd->setLcdMode(LCD::MODE::OAM);
+      lcd_.setLcdMode(LCD::MODE::OAM);
     }
 
     state.lineTicks = 0;
@@ -260,9 +260,9 @@ void PPU::vBlankMode() {
   if (state.lineTicks >= TICKS_PER_LINE) {
     incrementLY();
 
-    if (lcd->getLy() >= LINES_PER_FRAME) {
-      lcd->setLcdMode(LCD::MODE::OAM);
-      lcd->setLy(0);
+    if (lcd_.getLy() >= LINES_PER_FRAME) {
+      lcd_.setLcdMode(LCD::MODE::OAM);
+      lcd_.setLy(0);
       state.windowLine = 0;
     }
     state.lineTicks = 0;

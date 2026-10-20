@@ -5,15 +5,15 @@
 #include "Cartridge.h"
 #include "Common.h"
 #include "Dma.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Io.h"
 #include "Ppu.h"
 #include "Ram.h"
 
-Bus::Bus(Cartridge& cartridge, InterruptRegs interruptRegs, DMA& dma, IO& io,
+Bus::Bus(Cartridge& cartridge, Interrupts& interrupts, DMA& dma, IO& io,
          PPU& ppu, RAM& ram)
     : cartridge_(cartridge),
-      interruptRegs_(interruptRegs),
+      interrupts_(interrupts),
       dma_(dma),
       io_(io),
       ppu_(ppu),
@@ -54,7 +54,7 @@ uint8_t Bus::readPageFF(uint16_t address) {
     return io_.read(address);
   }
   if (address == IE_REGISTER) {
-    return interruptRegs_.ie;
+    return interrupts_.ie();
   }
   return ram_.readHRAM(address);
 }
@@ -98,7 +98,7 @@ void Bus::writePageFF(uint16_t address, uint8_t value) {
   if (address <= IO_REGISTERS_END) {
     io_.write(address, value);
   } else if (address == IE_REGISTER) {
-    interruptRegs_.ie = value;
+    interrupts_.setIe(value);
   } else {
     ram_.writeHRAM(address, value);
   }

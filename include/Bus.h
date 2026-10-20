@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "IMemAccess.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 
 class Cartridge;
 class DMA;
@@ -49,15 +49,15 @@ inline constexpr auto PAGE_TABLE = buildPageTable();
 
 class Bus : public IMemAccess {
  public:
-  Bus(Cartridge& cartridge, InterruptRegs interruptRegs, DMA& dma, IO& io,
-      PPU& ppu, RAM& ram);
+  Bus(Cartridge& cartridge, Interrupts& interrupts, DMA& dma, IO& io, PPU& ppu,
+      RAM& ram);
   [[nodiscard]] uint8_t read8(uint16_t address) override;
   void write8(uint16_t address, uint8_t value) override;
   void write16(uint16_t address, uint16_t value) override;
 
  private:
   Cartridge& cartridge_;
-  InterruptRegs interruptRegs_;
+  Interrupts& interrupts_;
   DMA& dma_;
   IO& io_;
   PPU& ppu_;

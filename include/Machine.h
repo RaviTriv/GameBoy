@@ -12,6 +12,7 @@
 #include "Dma.h"
 #include "Gamepad.h"
 #include "IMemRead.h"
+#include "Interrupts.h"
 #include "Io.h"
 #include "Lcd.h"
 #include "Ppu.h"
@@ -53,17 +54,18 @@ class Machine {
   static void cycleCallback(void* self, int cycles);
   void cycle(int cycles);
 
+  Interrupts interrupts_;
   Cartridge cartridge_;
   RAM ram_;
   Gamepad gamepad_;
   APU apu_;
-  CPU cpu_;
+  DMA dma_;
   LCD lcd_;
   PPU ppu_;
-  DMA dma_;
   Timer timer_;
   IO io_;
   Bus bus_;
+  CPU cpu_;
   StateSerializer serializer_;
   uint64_t cycles_ = 0;
 };

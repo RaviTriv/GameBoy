@@ -3,16 +3,14 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <istream>
 #include <ostream>
-#include <utility>
 
+#include "Dma.h"
 #include "Logger.h"
 #include "Serializable.h"
 
-LCD::LCD(std::function<void(uint8_t)> onDmaStart)
-    : onDmaStart_(std::move(onDmaStart)) {
+LCD::LCD(DMA& dma) : dma_(dma) {
   state.lcdc = 0x91;
   state.scrollX = 0;
   state.scrollY = 0;
@@ -83,7 +81,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       state.lyCompare = value;
       break;
     case 0xFF46:
-      onDmaStart_(value);
+      dma_.start(value);
       break;
     case 0xFF47:
       updatePalettes(PaletteType::BGP, value);

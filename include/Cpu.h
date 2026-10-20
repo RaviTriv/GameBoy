@@ -5,7 +5,7 @@
 
 #include "./Registers.h"
 #include "Common.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Serializable.h"
 
 class IMemAccess;
@@ -19,31 +19,24 @@ class CPU : public Serializable {
     uint16_t memoryAddress = 0;
     bool ime = false;
     bool imeScheduled = false;
-    uint8_t ie = 0;
-    uint8_t intf = 0;
     bool halted = false;
     bool haltBug = false;
   };
 
   using CycleCallbackFn = void (*)(void*, int);
 
-  CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx,
-      IMemAccess* memory);
+  CPU(Interrupts& interrupts, IMemAccess& memory, CycleCallbackFn cycleCallback,
+      void* cycleCallbackCtx);
 
   void step();
-  void setMemory(IMemAccess* memory);
-  [[nodiscard]] uint8_t getInterruptEnable() const;
-  void setInterruptEnable(uint8_t value);
-  [[nodiscard]] uint8_t getInterruptFlags() const;
-  [[nodiscard]] InterruptRegs getInterruptRegs();
-  void setInterruptFlags(uint8_t value);
   void save(std::ostream& out) const override;
   void load(std::istream& in) override;
 
  private:
+  Interrupts& interrupts_;
+  IMemAccess& memory_;
   CycleCallbackFn cycleCallback_;
   void* cycleCallbackCtx_;
-  IMemAccess* memory_;
 
   State state;
 

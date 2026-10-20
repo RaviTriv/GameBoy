@@ -7,7 +7,7 @@
 
 #include "Common.h"
 #include "IMemAccess.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Serializable.h"
 
 namespace {
@@ -18,11 +18,12 @@ constexpr uint16_t toWord(int high, int low) {
 
 }  // namespace
 
-CPU::CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx,
-         IMemAccess* memory)
-    : cycleCallback_(cycleCallback),
-      cycleCallbackCtx_(cycleCallbackCtx),
-      memory_(memory) {
+CPU::CPU(Interrupts& interrupts, IMemAccess& memory,
+         CycleCallbackFn cycleCallback, void* cycleCallbackCtx)
+    : interrupts_(interrupts),
+      memory_(memory),
+      cycleCallback_(cycleCallback),
+      cycleCallbackCtx_(cycleCallbackCtx) {
   state.registers.a = 0x01;
   state.registers.f = 0xB0;
   state.registers.b = 0x00;
@@ -33,21 +34,17 @@ CPU::CPU(CycleCallbackFn cycleCallback, void* cycleCallbackCtx,
   state.registers.l = 0x4D;
   state.registers.sp = 0xFFFE;
   state.registers.pc = 0x0100;
-  state.ie = 0x00;
-  state.intf = 0;
   state.imeScheduled = false;
   state.ime = false;
 }
 
-void CPU::setMemory(IMemAccess* memory) { memory_ = memory; }
-
 inline void CPU::stackPush8(uint8_t val) {
   state.registers.sp--;
-  memory_->write8(state.registers.sp, val);
+  memory_.write8(state.registers.sp, val);
 }
 
 inline uint8_t CPU::stackPop8() {
-  uint8_t val = memory_->read8(state.registers.sp);
+  uint8_t val = memory_.read8(state.registers.sp);
   state.registers.sp++;
   return val;
 }
@@ -69,10 +66,9 @@ void CPU::interruptHandle(uint16_t address) {
 }
 
 bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
-  if (state.intf & static_cast<int>(type) &&
-      state.ie & static_cast<int>(type)) {
+  if (interrupts_.isPending(type)) {
     interruptHandle(address);
-    state.intf &= static_cast<uint8_t>(~static_cast<int>(type));
+    interrupts_.clear(type);
     state.halted = false;
     state.ime = false;
     return true;
@@ -90,19 +86,12 @@ void CPU::handleInterrupts() {
   }
 }
 
-void CPU::setInterruptEnable(uint8_t value) { state.ie = value; }
-uint8_t CPU::getInterruptEnable() const { return state.ie; }
-void CPU::setInterruptFlags(uint8_t value) { state.intf = value; }
-uint8_t CPU::getInterruptFlags() const { return state.intf; }
 void CPU::save(std::ostream& out) const { serial::write(out, state); }
 
 void CPU::load(std::istream& in) { serial::read(in, state); }
-InterruptRegs CPU::getInterruptRegs() {
-  return {.ie = state.ie, .intf = state.intf};
-}
 
 void CPU::executeCB() {
-  uint8_t sub = memory_->read8(state.registers.pc++);
+  uint8_t sub = memory_.read8(state.registers.pc++);
   cycle(1);
 
   auto cbRead = [&](uint8_t idx) -> uint8_t {
@@ -120,7 +109,7 @@ void CPU::executeCB() {
       case 5:
         return state.registers.l;
       case 6:
-        return memory_->read8(state.registers.hl());
+        return memory_.read8(state.registers.hl());
       case 7:
         return state.registers.a;
       default:
@@ -149,7 +138,7 @@ void CPU::executeCB() {
         state.registers.l = val;
         break;
       case 6:
-        memory_->write8(state.registers.hl(), val);
+        memory_.write8(state.registers.hl(), val);
         cycle(1);
         break;
       case 7:
@@ -238,16 +227,16 @@ void CPU::executeCB() {
 void CPU::step() {
   if (state.halted) [[unlikely]] {
     cycle(1);
-    if (state.intf & state.ie & 0x1F) {
+    if (interrupts_.anyPending()) {
       state.halted = false;
     }
   } else {
     uint8_t opcode = 0;
     if (state.haltBug) {
-      opcode = memory_->read8(state.registers.pc);
+      opcode = memory_.read8(state.registers.pc);
       state.haltBug = false;
     } else {
-      opcode = memory_->read8(state.registers.pc++);
+      opcode = memory_.read8(state.registers.pc++);
     }
     cycle(1);
 
@@ -256,9 +245,9 @@ void CPU::step() {
       } break;
 
       case 0x01: { /* LD BC,d16 */
-        uint8_t lo = memory_->read8(state.registers.pc);
+        uint8_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint8_t hi = memory_->read8(state.registers.pc + 1);
+        uint8_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         state.registers.c = lo;
@@ -266,7 +255,7 @@ void CPU::step() {
       } break;
 
       case 0x02: { /* LD (BC),A */
-        memory_->write8(state.registers.bc(), state.registers.a);
+        memory_.write8(state.registers.bc(), state.registers.a);
         cycle(1);
       } break;
 
@@ -288,7 +277,7 @@ void CPU::step() {
       } break;
 
       case 0x06: { /* LD B,d8 */
-        state.registers.b = memory_->read8(state.registers.pc++);
+        state.registers.b = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -301,16 +290,16 @@ void CPU::step() {
       } break;
 
       case 0x08: { /* LD (a16),SP */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         uint16_t addr = toWord(hi, lo);
         state.registers.pc += 2;
-        memory_->write8(addr, lowByte(state.registers.sp));
+        memory_.write8(addr, lowByte(state.registers.sp));
         cycle(1);
-        memory_->write8(static_cast<uint16_t>(addr + 1),
-                        highByte(state.registers.sp));
+        memory_.write8(static_cast<uint16_t>(addr + 1),
+                       highByte(state.registers.sp));
         cycle(1);
       } break;
 
@@ -327,7 +316,7 @@ void CPU::step() {
       } break;
 
       case 0x0A: { /* LD A,(BC) */
-        state.registers.a = memory_->read8(state.registers.bc());
+        state.registers.a = memory_.read8(state.registers.bc());
         cycle(1);
       } break;
 
@@ -349,7 +338,7 @@ void CPU::step() {
       } break;
 
       case 0x0E: { /* LD C,d8 */
-        state.registers.c = memory_->read8(state.registers.pc++);
+        state.registers.c = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -361,14 +350,14 @@ void CPU::step() {
       } break;
 
       case 0x10: { /* STOP */
-        (void)memory_->read8(state.registers.pc++);
-        memory_->write8(TIMER_DIV_REGISTER, 0);
+        (void)memory_.read8(state.registers.pc++);
+        memory_.write8(TIMER_DIV_REGISTER, 0);
       } break;
 
       case 0x11: { /* LD DE,d16 */
-        uint8_t lo = memory_->read8(state.registers.pc);
+        uint8_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint8_t hi = memory_->read8(state.registers.pc + 1);
+        uint8_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         state.registers.e = lo;
@@ -376,7 +365,7 @@ void CPU::step() {
       } break;
 
       case 0x12: { /* LD (DE),A */
-        memory_->write8(state.registers.de(), state.registers.a);
+        memory_.write8(state.registers.de(), state.registers.a);
         cycle(1);
       } break;
 
@@ -398,7 +387,7 @@ void CPU::step() {
       } break;
 
       case 0x16: { /* LD D,d8 */
-        state.registers.d = memory_->read8(state.registers.pc++);
+        state.registers.d = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -411,7 +400,7 @@ void CPU::step() {
       } break;
 
       case 0x18: { /* JR r8 */
-        auto rel = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
         cycle(1);
@@ -430,7 +419,7 @@ void CPU::step() {
       } break;
 
       case 0x1A: { /* LD A,(DE) */
-        state.registers.a = memory_->read8(state.registers.de());
+        state.registers.a = memory_.read8(state.registers.de());
         cycle(1);
       } break;
 
@@ -452,7 +441,7 @@ void CPU::step() {
       } break;
 
       case 0x1E: { /* LD E,d8 */
-        state.registers.e = memory_->read8(state.registers.pc++);
+        state.registers.e = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -465,7 +454,7 @@ void CPU::step() {
       } break;
 
       case 0x20: { /* JR NZ,r8 */
-        auto rel = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         if (!flagZ()) {
           state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
@@ -474,9 +463,9 @@ void CPU::step() {
       } break;
 
       case 0x21: { /* LD HL,d16 */
-        uint8_t lo = memory_->read8(state.registers.pc);
+        uint8_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint8_t hi = memory_->read8(state.registers.pc + 1);
+        uint8_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         state.registers.l = lo;
@@ -485,7 +474,7 @@ void CPU::step() {
 
       case 0x22: { /* LD (HL+),A */
         uint16_t hl = state.registers.hl();
-        memory_->write8(hl, state.registers.a);
+        memory_.write8(hl, state.registers.a);
         state.registers.setHl(hl + 1);
         cycle(1);
       } break;
@@ -508,7 +497,7 @@ void CPU::step() {
       } break;
 
       case 0x26: { /* LD H,d8 */
-        state.registers.h = memory_->read8(state.registers.pc++);
+        state.registers.h = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -527,7 +516,7 @@ void CPU::step() {
       } break;
 
       case 0x28: { /* JR Z,r8 */
-        auto rel = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         if (flagZ()) {
           state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
@@ -548,7 +537,7 @@ void CPU::step() {
 
       case 0x2A: { /* LD A,(HL+) */
         uint16_t hl = state.registers.hl();
-        state.registers.a = memory_->read8(hl);
+        state.registers.a = memory_.read8(hl);
         cycle(1);
         state.registers.setHl(hl + 1);
       } break;
@@ -571,7 +560,7 @@ void CPU::step() {
       } break;
 
       case 0x2E: { /* LD L,d8 */
-        state.registers.l = memory_->read8(state.registers.pc++);
+        state.registers.l = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -581,7 +570,7 @@ void CPU::step() {
       } break;
 
       case 0x30: { /* JR NC,r8 */
-        auto rel = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         if (!flagC()) {
           state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
@@ -590,9 +579,9 @@ void CPU::step() {
       } break;
 
       case 0x31: { /* LD SP,d16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         state.registers.sp = toWord(hi, lo);
@@ -600,7 +589,7 @@ void CPU::step() {
 
       case 0x32: { /* LD (HL-),A */
         uint16_t hl = state.registers.hl();
-        memory_->write8(hl, state.registers.a);
+        memory_.write8(hl, state.registers.a);
         state.registers.setHl(hl - 1);
         cycle(1);
       } break;
@@ -612,28 +601,28 @@ void CPU::step() {
 
       case 0x34: { /* INC (HL) */
         uint16_t hl = state.registers.hl();
-        uint8_t val = memory_->read8(hl);
+        uint8_t val = memory_.read8(hl);
         cycle(1);
         val++;
-        memory_->write8(hl, val);
+        memory_.write8(hl, val);
         cycle(1);
         setFlags(val == 0, 0, (val & NIBBLE_MASK) == 0, -1);
       } break;
 
       case 0x35: { /* DEC (HL) */
         uint16_t hl = state.registers.hl();
-        uint8_t val = memory_->read8(hl);
+        uint8_t val = memory_.read8(hl);
         cycle(1);
         val--;
-        memory_->write8(hl, val);
+        memory_.write8(hl, val);
         cycle(1);
         setFlags(val == 0, 1, (val & NIBBLE_MASK) == NIBBLE_MASK, -1);
       } break;
 
       case 0x36: { /* LD (HL),d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
-        memory_->write8(state.registers.hl(), val);
+        memory_.write8(state.registers.hl(), val);
         cycle(1);
       } break;
 
@@ -642,7 +631,7 @@ void CPU::step() {
       } break;
 
       case 0x38: { /* JR C,r8 */
-        auto rel = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         if (flagC()) {
           state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
@@ -664,7 +653,7 @@ void CPU::step() {
 
       case 0x3A: { /* LD A,(HL-) */
         uint16_t hl = state.registers.hl();
-        state.registers.a = memory_->read8(hl);
+        state.registers.a = memory_.read8(hl);
         cycle(1);
         state.registers.setHl(hl - 1);
       } break;
@@ -687,7 +676,7 @@ void CPU::step() {
       } break;
 
       case 0x3E: { /* LD A,d8 */
-        state.registers.a = memory_->read8(state.registers.pc++);
+        state.registers.a = memory_.read8(state.registers.pc++);
         cycle(1);
       } break;
 
@@ -714,7 +703,7 @@ void CPU::step() {
         state.registers.b = state.registers.l;
         break;
       case 0x46: /* LD B,(HL) */
-        state.registers.b = memory_->read8(state.registers.hl());
+        state.registers.b = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x47: /* LD B,A */
@@ -739,7 +728,7 @@ void CPU::step() {
         state.registers.c = state.registers.l;
         break;
       case 0x4E: /* LD C,(HL) */
-        state.registers.c = memory_->read8(state.registers.hl());
+        state.registers.c = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x4F: /* LD C,A */
@@ -764,7 +753,7 @@ void CPU::step() {
         state.registers.d = state.registers.l;
         break;
       case 0x56: /* LD D,(HL) */
-        state.registers.d = memory_->read8(state.registers.hl());
+        state.registers.d = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x57: /* LD D,A */
@@ -789,7 +778,7 @@ void CPU::step() {
         state.registers.e = state.registers.l;
         break;
       case 0x5E: /* LD E,(HL) */
-        state.registers.e = memory_->read8(state.registers.hl());
+        state.registers.e = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x5F: /* LD E,A */
@@ -814,7 +803,7 @@ void CPU::step() {
         state.registers.h = state.registers.l;
         break;
       case 0x66: /* LD H,(HL) */
-        state.registers.h = memory_->read8(state.registers.hl());
+        state.registers.h = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x67: /* LD H,A */
@@ -839,39 +828,39 @@ void CPU::step() {
         state.registers.l = state.registers.l;
         break;
       case 0x6E: /* LD L,(HL) */
-        state.registers.l = memory_->read8(state.registers.hl());
+        state.registers.l = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x6F: /* LD L,A */
         state.registers.l = state.registers.a;
         break;
       case 0x70: /* LD (HL),B */
-        memory_->write8(state.registers.hl(), state.registers.b);
+        memory_.write8(state.registers.hl(), state.registers.b);
         cycle(1);
         break;
       case 0x71: /* LD (HL),C */
-        memory_->write8(state.registers.hl(), state.registers.c);
+        memory_.write8(state.registers.hl(), state.registers.c);
         cycle(1);
         break;
       case 0x72: /* LD (HL),D */
-        memory_->write8(state.registers.hl(), state.registers.d);
+        memory_.write8(state.registers.hl(), state.registers.d);
         cycle(1);
         break;
       case 0x73: /* LD (HL),E */
-        memory_->write8(state.registers.hl(), state.registers.e);
+        memory_.write8(state.registers.hl(), state.registers.e);
         cycle(1);
         break;
       case 0x74: /* LD (HL),H */
-        memory_->write8(state.registers.hl(), state.registers.h);
+        memory_.write8(state.registers.hl(), state.registers.h);
         cycle(1);
         break;
       case 0x75: /* LD (HL),L */
-        memory_->write8(state.registers.hl(), state.registers.l);
+        memory_.write8(state.registers.hl(), state.registers.l);
         cycle(1);
         break;
 
       case 0x76: { /* HALT */
-        if (!state.ime && (state.intf & state.ie & 0x1F)) {
+        if (!state.ime && interrupts_.anyPending()) {
           state.haltBug = true;
         } else {
           state.halted = true;
@@ -879,7 +868,7 @@ void CPU::step() {
       } break;
 
       case 0x77: /* LD (HL),A */
-        memory_->write8(state.registers.hl(), state.registers.a);
+        memory_.write8(state.registers.hl(), state.registers.a);
         cycle(1);
         break;
       case 0x78: /* LD A,B */
@@ -901,7 +890,7 @@ void CPU::step() {
         state.registers.a = state.registers.l;
         break;
       case 0x7E: /* LD A,(HL) */
-        state.registers.a = memory_->read8(state.registers.hl());
+        state.registers.a = memory_.read8(state.registers.hl());
         cycle(1);
         break;
       case 0x7F: /* LD A,A */
@@ -959,7 +948,7 @@ void CPU::step() {
       } break;
       case 0x86: { /* ADD A,(HL) */
         uint16_t a = state.registers.a;
-        uint16_t val = memory_->read8(state.registers.hl());
+        uint16_t val = memory_.read8(state.registers.hl());
         cycle(1);
         state.registers.a = toU8(a + val);
         setFlags(state.registers.a == 0, 0,
@@ -1032,7 +1021,7 @@ void CPU::step() {
       } break;
       case 0x8E: { /* ADC A,(HL) */
         uint16_t a = state.registers.a;
-        uint16_t val = memory_->read8(state.registers.hl());
+        uint16_t val = memory_.read8(state.registers.hl());
         cycle(1);
         uint16_t c = flagC();
         state.registers.a = toU8(a + val + c);
@@ -1095,7 +1084,7 @@ void CPU::step() {
       } break;
       case 0x96: { /* SUB (HL) */
         int a = state.registers.a;
-        int val = memory_->read8(state.registers.hl());
+        int val = memory_.read8(state.registers.hl());
         cycle(1);
         state.registers.a = toU8(a - val);
         setFlags(state.registers.a == 0, 1,
@@ -1166,7 +1155,7 @@ void CPU::step() {
       } break;
       case 0x9E: { /* SBC A,(HL) */
         int a = state.registers.a;
-        int val = memory_->read8(state.registers.hl());
+        int val = memory_.read8(state.registers.hl());
         cycle(1);
         int c = flagC();
         state.registers.a = toU8(a - val - c);
@@ -1211,7 +1200,7 @@ void CPU::step() {
         break;
       case 0xA6: /* AND (HL) */
       {
-        uint8_t v = memory_->read8(state.registers.hl());
+        uint8_t v = memory_.read8(state.registers.hl());
         cycle(1);
         state.registers.a &= v;
         setFlags(state.registers.a == 0, 0, 1, 0);
@@ -1248,7 +1237,7 @@ void CPU::step() {
         break;
       case 0xAE: /* XOR (HL) */
       {
-        uint8_t v = memory_->read8(state.registers.hl());
+        uint8_t v = memory_.read8(state.registers.hl());
         cycle(1);
         state.registers.a ^= v;
         setFlags(state.registers.a == 0, 0, 0, 0);
@@ -1285,7 +1274,7 @@ void CPU::step() {
         break;
       case 0xB6: /* OR (HL) */
       {
-        uint8_t v = memory_->read8(state.registers.hl());
+        uint8_t v = memory_.read8(state.registers.hl());
         cycle(1);
         state.registers.a |= v;
         setFlags(state.registers.a == 0, 0, 0, 0);
@@ -1351,7 +1340,7 @@ void CPU::step() {
                  tmp < 0);
       } break;
       case 0xBE: { /* CP (HL) */
-        uint8_t val = memory_->read8(state.registers.hl());
+        uint8_t val = memory_.read8(state.registers.hl());
         cycle(1);
         int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
         setFlags(tmp == 0, 1,
@@ -1391,9 +1380,9 @@ void CPU::step() {
       } break;
 
       case 0xC2: { /* JP NZ,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (!flagZ()) {
@@ -1403,18 +1392,18 @@ void CPU::step() {
       } break;
 
       case 0xC3: { /* JP a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc = toWord(hi, lo);
         cycle(1);
       } break;
 
       case 0xC4: { /* CALL NZ,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (!flagZ()) {
@@ -1438,7 +1427,7 @@ void CPU::step() {
       } break;
 
       case 0xC6: { /* ADD A,d8 */
-        uint16_t val = memory_->read8(state.registers.pc++);
+        uint16_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         uint16_t a = state.registers.a;
         state.registers.a = toU8(a + val);
@@ -1478,9 +1467,9 @@ void CPU::step() {
       } break;
 
       case 0xCA: { /* JP Z,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (flagZ()) {
@@ -1494,9 +1483,9 @@ void CPU::step() {
       } break;
 
       case 0xCC: { /* CALL Z,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (flagZ()) {
@@ -1510,9 +1499,9 @@ void CPU::step() {
       } break;
 
       case 0xCD: { /* CALL a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         cycle(1);
@@ -1524,7 +1513,7 @@ void CPU::step() {
       } break;
 
       case 0xCE: { /* ADC A,d8 */
-        uint16_t val = memory_->read8(state.registers.pc++);
+        uint16_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         uint16_t a = state.registers.a;
         uint16_t c = flagC();
@@ -1564,9 +1553,9 @@ void CPU::step() {
       } break;
 
       case 0xD2: { /* JP NC,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (!flagC()) {
@@ -1580,9 +1569,9 @@ void CPU::step() {
       } break;
 
       case 0xD4: { /* CALL NC,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (!flagC()) {
@@ -1606,7 +1595,7 @@ void CPU::step() {
       } break;
 
       case 0xD6: { /* SUB d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         int a = state.registers.a;
         state.registers.a = toU8(a - val);
@@ -1646,9 +1635,9 @@ void CPU::step() {
       } break;
 
       case 0xDA: { /* JP C,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (flagC()) {
@@ -1662,9 +1651,9 @@ void CPU::step() {
       } break;
 
       case 0xDC: { /* CALL C,a16 */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
         if (flagC()) {
@@ -1682,7 +1671,7 @@ void CPU::step() {
       } break;
 
       case 0xDE: { /* SBC A,d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         int a = state.registers.a;
         int c = flagC();
@@ -1702,9 +1691,9 @@ void CPU::step() {
       } break;
 
       case 0xE0: { /* LDH (a8),A */
-        uint8_t offset = memory_->read8(state.registers.pc++);
+        uint8_t offset = memory_.read8(state.registers.pc++);
         cycle(1);
-        memory_->write8(IO_REGISTERS_START | offset, state.registers.a);
+        memory_.write8(IO_REGISTERS_START | offset, state.registers.a);
         cycle(1);
       } break;
 
@@ -1717,8 +1706,8 @@ void CPU::step() {
       } break;
 
       case 0xE2: { /* LD (C),A */
-        memory_->write8(IO_REGISTERS_START | state.registers.c,
-                        state.registers.a);
+        memory_.write8(IO_REGISTERS_START | state.registers.c,
+                       state.registers.a);
         cycle(1);
       } break;
 
@@ -1738,7 +1727,7 @@ void CPU::step() {
       } break;
 
       case 0xE6: { /* AND d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         state.registers.a &= val;
         setFlags(state.registers.a == 0, 0, 1, 0);
@@ -1754,7 +1743,7 @@ void CPU::step() {
       } break;
 
       case 0xE8: { /* ADD SP,r8 */
-        auto val = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto val = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         int h =
             (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
@@ -1771,12 +1760,12 @@ void CPU::step() {
       } break;
 
       case 0xEA: { /* LD (a16),A */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
         state.registers.pc += 2;
-        memory_->write8(toWord(hi, lo), state.registers.a);
+        memory_.write8(toWord(hi, lo), state.registers.a);
         cycle(1);
       } break;
 
@@ -1787,7 +1776,7 @@ void CPU::step() {
       } break;
 
       case 0xEE: { /* XOR d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         state.registers.a ^= val;
         setFlags(state.registers.a == 0, 0, 0, 0);
@@ -1803,9 +1792,9 @@ void CPU::step() {
       } break;
 
       case 0xF0: { /* LDH A,(a8) */
-        uint8_t offset = memory_->read8(state.registers.pc++);
+        uint8_t offset = memory_.read8(state.registers.pc++);
         cycle(1);
-        state.registers.a = memory_->read8(IO_REGISTERS_START | offset);
+        state.registers.a = memory_.read8(IO_REGISTERS_START | offset);
         cycle(1);
       } break;
 
@@ -1819,7 +1808,7 @@ void CPU::step() {
 
       case 0xF2: { /* LD A,(C) */
         state.registers.a =
-            memory_->read8(IO_REGISTERS_START | state.registers.c);
+            memory_.read8(IO_REGISTERS_START | state.registers.c);
         cycle(1);
       } break;
 
@@ -1843,7 +1832,7 @@ void CPU::step() {
       } break;
 
       case 0xF6: { /* OR d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         state.registers.a |= val;
         setFlags(state.registers.a == 0, 0, 0, 0);
@@ -1859,7 +1848,7 @@ void CPU::step() {
       } break;
 
       case 0xF8: { /* LD HL,SP+r8 */
-        auto val = static_cast<int8_t>(memory_->read8(state.registers.pc++));
+        auto val = static_cast<int8_t>(memory_.read8(state.registers.pc++));
         cycle(1);
         uint8_t H =
             (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
@@ -1877,11 +1866,11 @@ void CPU::step() {
       } break;
 
       case 0xFA: { /* LD A,(a16) */
-        uint16_t lo = memory_->read8(state.registers.pc);
+        uint16_t lo = memory_.read8(state.registers.pc);
         cycle(1);
-        uint16_t hi = memory_->read8(state.registers.pc + 1);
+        uint16_t hi = memory_.read8(state.registers.pc + 1);
         cycle(1);
-        state.registers.a = memory_->read8(toWord(hi, lo));
+        state.registers.a = memory_.read8(toWord(hi, lo));
         cycle(1);
         state.registers.pc += 2;
       } break;
@@ -1896,7 +1885,7 @@ void CPU::step() {
       } break;
 
       case 0xFE: { /* CP d8 */
-        uint8_t val = memory_->read8(state.registers.pc++);
+        uint8_t val = memory_.read8(state.registers.pc++);
         cycle(1);
         int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
         setFlags(tmp == 0, 1,

@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "./Common.h"
-#include "./InterruptRegs.h"
+#include "./Interrupts.h"
 #include "./OamTypes.h"
 #include "./Pipeline.h"
 #include "./ScanlineContext.h"
@@ -31,8 +31,7 @@ class PPU : public Serializable {
     std::array<OAM_ENTRY, 10> currentLineSprites{};
     ScanlineContext scanlineCtx{};
   };
-  explicit PPU(InterruptRegs interruptRegs);
-  void init();
+  PPU(Interrupts& interrupts, LCD& lcd);
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
 
@@ -41,7 +40,6 @@ class PPU : public Serializable {
   [[nodiscard]] uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 
-  void setLcd(LCD* newLcd) { lcd = newLcd; }
   void setOnFrameComplete(std::function<void()> callback) {
     onFrameComplete = std::move(callback);
   }
@@ -53,8 +51,8 @@ class PPU : public Serializable {
 
  private:
   State state;
-  InterruptRegs interruptRegs_;
-  LCD* lcd = nullptr;
+  Interrupts& interrupts_;
+  LCD& lcd_;
   std::function<void()> onFrameComplete;
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};

@@ -5,10 +5,10 @@
 #include <ostream>
 
 #include "Common.h"
-#include "InterruptRegs.h"
+#include "Interrupts.h"
 #include "Serializable.h"
 
-Timer::Timer(InterruptRegs interruptRegs) : interruptRegs_(interruptRegs) {
+Timer::Timer(Interrupts& interrupts) : interrupts_(interrupts) {
   state.div = INITIAL_DIV_VALUE;
 }
 
@@ -16,7 +16,7 @@ void Timer::tick() {
   if (state.reloadPending) {
     state.reloadPending = false;
     state.tima = state.tma;
-    interruptRegs_.request(InterruptType::TIMER);
+    interrupts_.request(InterruptType::TIMER);
   }
 
   uint16_t prevDivider = state.div;
