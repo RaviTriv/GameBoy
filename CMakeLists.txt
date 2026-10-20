@@ -40,6 +40,7 @@ set(CORE_SOURCES
     src/lib/FramePacer.cpp
     src/lib/Gamepad.cpp
     src/lib/Io.cpp
+    src/lib/Machine.cpp
     src/lib/ppu/Dma.cpp
     src/lib/ppu/Lcd.cpp
     src/lib/ppu/Pipeline.cpp

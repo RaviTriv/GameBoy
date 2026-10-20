@@ -10,26 +10,14 @@
 
 #include "spsc_queue.hpp"
 
-class APU;
-class Bus;
-class Cartridge;
-class CPU;
-class DMA;
 class FramePacer;
-class IO;
-class LCD;
-class PPU;
-class RAM;
-class StateSerializer;
-class Timer;
-class Gamepad;
+class Machine;
 class UI;
 class GameBoy {
  public:
   struct State {
     std::atomic<bool> isRunning{false};
     bool isPaused = false;
-    uint64_t ticks = 0;
   };
   GameBoy();
   GameBoy(const GameBoy&) = delete;
@@ -39,8 +27,6 @@ class GameBoy {
             bool startFastForward);
   void run();
 
-  void cycle(int cycles);
-
  private:
   struct SaveStateCommand {};
   struct ToggleFastForwardCommand {};
@@ -48,19 +34,8 @@ class GameBoy {
 
   State state;
   spsc::Queue<Command, 64> commands;
-  std::unique_ptr<APU> apu;
-  std::unique_ptr<Bus> bus;
-  std::unique_ptr<Cartridge> cartridge;
-  std::unique_ptr<CPU> cpu;
-  std::unique_ptr<DMA> dma;
-  std::unique_ptr<IO> io;
-  std::unique_ptr<LCD> lcd;
-  std::unique_ptr<PPU> ppu;
-  std::unique_ptr<RAM> ram;
-  std::unique_ptr<Timer> timer;
-  std::unique_ptr<Gamepad> gamepad;
+  std::unique_ptr<Machine> machine;
   std::unique_ptr<UI> ui;
-  std::unique_ptr<StateSerializer> stateSerializer;
   std::unique_ptr<FramePacer> framePacer;
 
   std::thread cpuThread;

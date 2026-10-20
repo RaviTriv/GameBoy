@@ -20,19 +20,11 @@
 #include <vector>
 
 #include "Apu.h"
-#include "Bus.h"
-#include "Cartridge.h"
 #include "Common.h"
-#include "Cpu.h"
-#include "Dma.h"
-#include "Gamepad.h"
-#include "Io.h"
 #include "Lcd.h"
 #include "Logger.h"
-#include "Ppu.h"
-#include "Ram.h"
+#include "Machine.h"
 #include "StateSerializer.h"
-#include "Timer.h"
 
 namespace {
 
@@ -134,50 +126,22 @@ class TestRunner {
   TestRunner(const std::string& romPath, Protocol protocol)
       : protocol_(protocol) {
     Logger::Disable();
-    cartridge = std::make_unique<Cartridge>(romPath);
-    dma = std::make_unique<DMA>(
-        [this](uint16_t addr, uint8_t val) { ppu->oamWrite(addr, val); });
-    ram = std::make_unique<RAM>();
-    gamepad = std::make_unique<Gamepad>();
-    lcd = std::make_unique<LCD>([this](uint8_t value) { dma->start(value); });
-    apu = std::make_unique<APU>();
-    cpu = std::make_unique<CPU>(&TestRunner::cycleTrampoline, this, nullptr);
-    ppu = std::make_unique<PPU>(cpu->getInterruptRegs());
-    timer = std::make_unique<Timer>(cpu->getInterruptRegs());
-    io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
-                              *apu);
-    bus = std::make_unique<Bus>(*cartridge, cpu->getInterruptRegs(), *dma, *io,
-                                *ppu, *ram);
-    cpu->setMemory(bus.get());
-    dma->setMemRead(*bus);
-    ppu->setLcd(lcd.get());
-    io->setSerialSink([this](uint8_t byte) {
+    machine = std::make_unique<Machine>(romPath);
+    machine->setSerialSink([this](uint8_t byte) {
       serialLog.push_back(static_cast<char>(byte));
       serialDirty = true;
     });
-    ppu->init();
-    ppu->setOnFrameComplete([this] {
+    machine->setOnFrameComplete([this] {
       frameDirty = true;
       framesElapsed++;
       drainAudio();
       applyInput();
     });
-    stateSerializer =
-        std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
-            {.name = "CPU", .component = cpu.get()},
-            {.name = "RAM", .component = ram.get()},
-            {.name = "PPU", .component = ppu.get()},
-            {.name = "LCD", .component = lcd.get()},
-            {.name = "TIMER", .component = timer.get()},
-            {.name = "DMA", .component = dma.get()},
-            {.name = "APU", .component = apu.get()},
-            {.name = "CARTRIDGE", .component = cartridge.get()},
-            {.name = "JOYPAD", .component = gamepad.get()}});
   }
 
   int run(uint64_t budget) {
-    while (totalCycles < budget) {
-      cpu->step();
+    while (machine->cycles() < budget) {
+      machine->step();
       switch (checkResult()) {
         case Result::Pass:
           report();
@@ -196,57 +160,42 @@ class TestRunner {
 
   void runFrames(uint32_t frames) {
     while (framesElapsed < frames) {
-      cpu->step();
+      machine->step();
     }
   }
 
   [[nodiscard]] bool runUntilDrawing(uint8_t line, uint32_t extraSteps,
                                      uint32_t maxFrames) {
-    while (lcd->getLy() != line || lcd->getLcdMode() != LCD::DRAWING) {
+    while (machine->lcd().getLy() != line ||
+           machine->lcd().getLcdMode() != LCD::DRAWING) {
       if (framesElapsed >= maxFrames) {
         return false;
       }
-      cpu->step();
+      machine->step();
     }
-    for (uint32_t i = 0; i < extraSteps && lcd->getLcdMode() == LCD::DRAWING;
-         i++) {
-      cpu->step();
+    for (uint32_t i = 0;
+         i < extraSteps && machine->lcd().getLcdMode() == LCD::DRAWING; i++) {
+      machine->step();
     }
-    return lcd->getLy() == line && lcd->getLcdMode() == LCD::DRAWING;
+    return machine->lcd().getLy() == line &&
+           machine->lcd().getLcdMode() == LCD::DRAWING;
   }
 
   void runCycles(uint64_t mcycles) {
-    while (totalCycles < mcycles) {
-      cpu->step();
+    while (machine->cycles() < mcycles) {
+      machine->step();
     }
   }
 
   [[nodiscard]] const auto& videoBuffer() const {
-    return ppu->getPublishedFrame();
+    return machine->ppu().getPublishedFrame();
   }
 
-  [[nodiscard]] StateSerializer& serializer() { return *stateSerializer; }
+  [[nodiscard]] StateSerializer& serializer() { return machine->serializer(); }
 
   void setInput(std::vector<InputEvent> events) { input = std::move(events); }
 
  private:
-  static void cycleTrampoline(void* self, int cycles) {
-    static_cast<TestRunner*>(self)->cycle(cycles);
-  }
-
-  void cycle(int cycles) {
-    totalCycles += static_cast<uint64_t>(cycles);
-    cartridge->tick(cycles);
-    for (int i = 0; i < cycles; i++) {
-      for (int j = 0; j < CLOCK_CYCLES; j++) {
-        timer->tick();
-        ppu->tick();
-        apu->tick();
-      }
-      dma->tick();
-    }
-  }
-
   void applyInput() {
     for (const InputEvent& event : input) {
       if (framesElapsed == event.frame) {
@@ -260,28 +209,28 @@ class TestRunner {
   void setButton(char button, bool pressed) {
     switch (button) {
       case 'A':
-        gamepad->setAPressed(pressed);
+        machine->gamepad().setAPressed(pressed);
         break;
       case 'B':
-        gamepad->setBPressed(pressed);
+        machine->gamepad().setBPressed(pressed);
         break;
       case 'S':
-        gamepad->setStartPressed(pressed);
+        machine->gamepad().setStartPressed(pressed);
         break;
       case 'E':
-        gamepad->setSelectPressed(pressed);
+        machine->gamepad().setSelectPressed(pressed);
         break;
       case 'U':
-        gamepad->setUpPressed(pressed);
+        machine->gamepad().setUpPressed(pressed);
         break;
       case 'D':
-        gamepad->setDownPressed(pressed);
+        machine->gamepad().setDownPressed(pressed);
         break;
       case 'L':
-        gamepad->setLeftPressed(pressed);
+        machine->gamepad().setLeftPressed(pressed);
         break;
       case 'R':
-        gamepad->setRightPressed(pressed);
+        machine->gamepad().setRightPressed(pressed);
         break;
       default:
         throw std::invalid_argument(std::string("Unknown button: ") + button);
@@ -291,7 +240,8 @@ class TestRunner {
   void drainAudio() {
     std::size_t popped = 0;
     do {
-      popped = apu->popSamples(audioScratch.data(), audioScratch.size());
+      popped =
+          machine->apu().popSamples(audioScratch.data(), audioScratch.size());
     } while (popped == audioScratch.size());
   }
 
@@ -324,13 +274,15 @@ class TestRunner {
   }
 
   Result checkMemoryResult() {
-    if (bus->read8(MEMORY_SIGNATURE_ADDR) != MEMORY_SIGNATURE_0 ||
-        bus->read8(MEMORY_SIGNATURE_ADDR + 1) != MEMORY_SIGNATURE_1 ||
-        bus->read8(MEMORY_SIGNATURE_ADDR + 2) != MEMORY_SIGNATURE_2) {
+    if (machine->memory().read8(MEMORY_SIGNATURE_ADDR) != MEMORY_SIGNATURE_0 ||
+        machine->memory().read8(MEMORY_SIGNATURE_ADDR + 1) !=
+            MEMORY_SIGNATURE_1 ||
+        machine->memory().read8(MEMORY_SIGNATURE_ADDR + 2) !=
+            MEMORY_SIGNATURE_2) {
       return Result::Running;
     }
 
-    const uint8_t code = bus->read8(MEMORY_RESULT_ADDR);
+    const uint8_t code = machine->memory().read8(MEMORY_RESULT_ADDR);
     if (code == MEMORY_STILL_RUNNING) {
       return Result::Running;
     }
@@ -351,24 +303,12 @@ class TestRunner {
     std::cout << std::dec << '\n';
   }
 
-  std::unique_ptr<Cartridge> cartridge;
-  std::unique_ptr<DMA> dma;
-  std::unique_ptr<RAM> ram;
-  std::unique_ptr<Gamepad> gamepad;
-  std::unique_ptr<LCD> lcd;
-  std::unique_ptr<APU> apu;
-  std::unique_ptr<CPU> cpu;
-  std::unique_ptr<PPU> ppu;
-  std::unique_ptr<Timer> timer;
-  std::unique_ptr<IO> io;
-  std::unique_ptr<Bus> bus;
-  std::unique_ptr<StateSerializer> stateSerializer;
+  std::unique_ptr<Machine> machine;
 
   Protocol protocol_ = Protocol::Blargg;
   std::string serialLog;
   bool serialDirty = false;
   bool frameDirty = false;
-  uint64_t totalCycles = 0;
   uint32_t framesElapsed = 0;
   std::array<StereoSample, AUDIO_DRAIN_CHUNK> audioScratch{};
   std::vector<InputEvent> input;

@@ -9,23 +9,12 @@
 #include <string>
 #include <thread>
 #include <variant>
-#include <vector>
 
-#include "Apu.h"
-#include "Bus.h"
-#include "Cartridge.h"
 #include "Common.h"
-#include "Cpu.h"
-#include "Dma.h"
 #include "FramePacer.h"
-#include "Gamepad.h"
-#include "Io.h"
-#include "Lcd.h"
 #include "Logger.h"
-#include "Ppu.h"
-#include "Ram.h"
+#include "Machine.h"
 #include "StateSerializer.h"
-#include "Timer.h"
 #include "Ui.h"
 
 namespace {
@@ -51,48 +40,17 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
   }
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
-  cartridge = std::make_unique<Cartridge>(romPath);
-  StateSerializer::loadBattery(*cartridge);
-  dma = std::make_unique<DMA>(
-      [this](uint16_t addr, uint8_t val) { ppu->oamWrite(addr, val); });
-  ram = std::make_unique<RAM>();
-  gamepad = std::make_unique<Gamepad>();
-  lcd = std::make_unique<LCD>([this](uint8_t value) { dma->start(value); });
-  apu = std::make_unique<APU>();
-  cpu = std::make_unique<CPU>(
-      [](void* self, int cycles) {
-        static_cast<GameBoy*>(self)->cycle(cycles);
-      },
-      this, nullptr);
-  ppu = std::make_unique<PPU>(cpu->getInterruptRegs());
+  machine = std::make_unique<Machine>(romPath);
+  StateSerializer::loadBattery(machine->cartridge());
   ui = std::make_unique<UI>([this] { state.isRunning.store(false); },
-                            [this] { pushCommand(SaveStateCommand{}); }, *ppu,
-                            *gamepad, *apu);
-  timer = std::make_unique<Timer>(cpu->getInterruptRegs());
-  io = std::make_unique<IO>(cpu->getInterruptRegs(), *timer, *lcd, *gamepad,
-                            *apu);
-  bus = std::make_unique<Bus>(*cartridge, cpu->getInterruptRegs(), *dma, *io,
-                              *ppu, *ram);
-  cpu->setMemory(bus.get());
-  dma->setMemRead(*bus);
-  ppu->setLcd(lcd.get());
+                            [this] { pushCommand(SaveStateCommand{}); },
+                            machine->ppu(), machine->gamepad(), machine->apu());
   framePacer =
       std::make_unique<FramePacer>([this] { return ui->getTicks(); },
                                    [this](uint32_t ms) { ui->delay(ms); });
   framePacer->setFastForward(startFastForward);
-  ppu->setOnFrameComplete([this] { framePacer->onFrameComplete(); });
+  machine->setOnFrameComplete([this] { framePacer->onFrameComplete(); });
   ui->setToggleFastForward([this] { pushCommand(ToggleFastForwardCommand{}); });
-  stateSerializer =
-      std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
-          {.name = "CPU", .component = cpu.get()},
-          {.name = "RAM", .component = ram.get()},
-          {.name = "PPU", .component = ppu.get()},
-          {.name = "LCD", .component = lcd.get()},
-          {.name = "TIMER", .component = timer.get()},
-          {.name = "DMA", .component = dma.get()},
-          {.name = "APU", .component = apu.get()},
-          {.name = "CARTRIDGE", .component = cartridge.get()},
-          {.name = "JOYPAD", .component = gamepad.get()}});
   state.isRunning.store(true);
   trace = enableTrace;
   loadSave = loadSaveOnStart;
@@ -100,19 +58,18 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
 }
 
 void GameBoy::saveState() {
-  if (!stateSerializer->saveState(cartridge->getTitle())) {
-    Logger::GetLogger()->error("Failed to save state for: {}",
-                               cartridge->getTitle());
+  const std::string title = machine->cartridge().getTitle();
+  if (!machine->serializer().saveState(title)) {
+    Logger::GetLogger()->error("Failed to save state for: {}", title);
   }
 }
 
 void GameBoy::run() {
-  ppu->init();
   ui->init();
 
-  if (loadSave && (!stateSerializer->loadState(cartridge->getTitle()))) {
-    Logger::GetLogger()->error("Failed to load save state for: {}",
-                               cartridge->getTitle());
+  const std::string title = machine->cartridge().getTitle();
+  if (loadSave && (!machine->serializer().loadState(title))) {
+    Logger::GetLogger()->error("Failed to load save state for: {}", title);
   }
 
   cpuThread = std::thread(&GameBoy::cpuLoop, this);
@@ -121,20 +78,20 @@ void GameBoy::run() {
   while (state.isRunning.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(UI_THREAD_SLEEP_MS));
     ui->handleEvents();
-    if (prevFrame != ppu->getCurrentFrame()) {
+    if (prevFrame != machine->ppu().getCurrentFrame()) {
       ui->update();
     }
-    prevFrame = ppu->getCurrentFrame();
+    prevFrame = machine->ppu().getCurrentFrame();
   }
 
   cpuThread.join();
-  StateSerializer::saveBattery(*cartridge);
+  StateSerializer::saveBattery(machine->cartridge());
 }
 
 void GameBoy::cpuLoop() {
   while (state.isRunning.load()) {
     processCommands();
-    cpu->step();
+    machine->step();
   }
 }
 
@@ -154,19 +111,6 @@ void GameBoy::processCommands() {
                    },
                },
                command);
-  }
-}
-
-void GameBoy::cycle(int cycles) {
-  cartridge->tick(cycles);
-  for (int i = 0; i < cycles; i++) {
-    for (int j = 0; j < CLOCK_CYCLES; j++) {
-      state.ticks++;
-      timer->tick();
-      ppu->tick();
-      apu->tick();
-    }
-    dma->tick();
   }
 }
 
