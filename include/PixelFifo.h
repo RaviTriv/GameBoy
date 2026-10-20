@@ -3,11 +3,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 #include "./Common.h"
-#include "./Serializable.h"
 
-class PixelFifo : public Serializable {
+class PixelFifo {
  private:
   std::array<uint32_t, FIFO_CAPACITY> buffer{};
   size_t head = 0;
@@ -16,7 +17,6 @@ class PixelFifo : public Serializable {
 
  public:
   PixelFifo();
-  ~PixelFifo() override = default;
 
   void push(uint32_t pixel);
   [[nodiscard]] uint32_t pop();
@@ -27,6 +27,6 @@ class PixelFifo : public Serializable {
 
   void reset();
 
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };

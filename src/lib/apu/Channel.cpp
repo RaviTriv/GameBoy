@@ -185,8 +185,6 @@ bool WaveChannel::lengthTimerAction() {
   return true;
 }
 
-uint8_t WaveChannel::getSample() const { return 0; }
-
 uint8_t WaveChannel::getSample(uint8_t s) const {
   return static_cast<uint8_t>(s * enabled * (nrx0 >> DAC_ENABLE_SHIFT));
 }

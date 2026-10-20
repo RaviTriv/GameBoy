@@ -3,15 +3,16 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 #include <span>
 
 #include "./Common.h"
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
 #include "./ScanlineContext.h"
-#include "./Serializable.h"
 
-class Pipeline : public Serializable {
+class Pipeline {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
   constexpr static int PIXEL_TILE_DIMENSION = 8;
 
@@ -42,8 +43,8 @@ class Pipeline : public Serializable {
   void reset();
   void oamReset();
   [[nodiscard]] bool isWindowVisible() const;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
   [[nodiscard]] uint8_t getPushedCount() const { return state.pushedCount; }
 
  private:

@@ -1,14 +1,15 @@
 #pragma once
 
 #include <array>
+#include <concepts>
 #include <cstdint>
+#include <istream>
 #include <memory>
-
-#include "Serializable.h"
+#include <ostream>
 
 class APU;
 class Bus;
-class Channel : public Serializable {
+class Channel {
  protected:
   uint8_t nrx0 = 0, nrx1 = 0, nrx2 = 0, nrx3 = 0, nrx4 = 0;
   bool enabled = false;
@@ -35,15 +36,11 @@ class Channel : public Serializable {
   static constexpr uint8_t MAX_VOLUME = 0x0F;
 
  public:
-  ~Channel() override = default;
   void updateTriggers(bool lengthTrigger, bool envelopeTrigger,
                       bool sweepTrigger);
   void envelopeAction();
-  virtual void reset() = 0;
-  virtual bool lengthTimerAction() = 0;
-  [[nodiscard]] virtual uint8_t getSample() const = 0;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class SquareChannel : public Channel {
@@ -71,13 +68,13 @@ class SquareChannel : public Channel {
   uint16_t sweepCalculation();
 
  public:
-  void reset() override;
+  void reset();
   int advanceTimer(int ticks);
-  bool lengthTimerAction() override;
+  bool lengthTimerAction();
   void sweepAction();
-  [[nodiscard]] uint8_t getSample() const override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t getSample() const;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class WaveChannel : public Channel {
@@ -90,13 +87,12 @@ class WaveChannel : public Channel {
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
 
  public:
-  void reset() override;
+  void reset();
   int advanceTimer(int ticks);
-  bool lengthTimerAction() override;
-  [[nodiscard]] uint8_t getSample() const override;
+  bool lengthTimerAction();
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class NoiseChannel : public Channel {
@@ -120,10 +116,25 @@ class NoiseChannel : public Channel {
   static constexpr uint8_t LFSR_7BIT_TAP = 6;
 
  public:
-  void reset() override;
+  void reset();
   int advanceTimer(int ticks);
-  bool lengthTimerAction() override;
-  [[nodiscard]] uint8_t getSample() const override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  bool lengthTimerAction();
+  [[nodiscard]] uint8_t getSample() const;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
+
+template <typename C>
+concept SoundChannel = std::derived_from<C, Channel> &&
+                       requires(C channel, const C constChannel, int ticks,
+                                std::ostream& out, std::istream& in) {
+                         channel.reset();
+                         { channel.lengthTimerAction() } -> std::same_as<bool>;
+                         { channel.advanceTimer(ticks) } -> std::same_as<int>;
+                         constChannel.save(out);
+                         channel.load(in);
+                       };
+
+static_assert(SoundChannel<SquareChannel>);
+static_assert(SoundChannel<WaveChannel>);
+static_assert(SoundChannel<NoiseChannel>);
