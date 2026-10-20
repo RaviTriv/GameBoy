@@ -150,7 +150,6 @@ class TestRunner {
                                 *ppu, *ram);
     cpu->setMemory(bus.get());
     dma->setMemRead(*bus);
-    ppu->setMemRead(*bus);
     ppu->setLcd(lcd.get());
     io->setSerialSink([this](uint8_t byte) {
       serialLog.push_back(static_cast<char>(byte));

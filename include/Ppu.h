@@ -13,7 +13,6 @@
 #include "./ScanlineContext.h"
 #include "./Serializable.h"
 
-class IMemRead;
 class LCD;
 class PPU : public Serializable {
   static constexpr int BUFFER_SIZE = XRES * YRES;
@@ -42,7 +41,6 @@ class PPU : public Serializable {
   [[nodiscard]] uint8_t vramRead(uint16_t address) const;
   void vramWrite(uint16_t address, uint8_t value);
 
-  void setMemRead(IMemRead& reader) { memRead = &reader; }
   void setLcd(LCD* newLcd) { lcd = newLcd; }
   void setOnFrameComplete(std::function<void()> callback) {
     onFrameComplete = std::move(callback);
@@ -56,7 +54,6 @@ class PPU : public Serializable {
  private:
   State state;
   InterruptRegs interruptRegs_;
-  IMemRead* memRead = nullptr;
   LCD* lcd = nullptr;
   std::function<void()> onFrameComplete;
   Pipeline pipeline;

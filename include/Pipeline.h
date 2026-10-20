@@ -1,16 +1,15 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
-#include <functional>
+#include <span>
 
+#include "./Common.h"
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
 #include "./ScanlineContext.h"
 #include "./Serializable.h"
-
-using ReadFn = std::function<uint8_t(uint16_t)>;
-using WritePixelFn = std::function<void(uint32_t, uint32_t)>;
 
 class Pipeline : public Serializable {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
@@ -19,6 +18,9 @@ class Pipeline : public Serializable {
   enum class FETCH_STATE { TILE, DATA0, DATA1, IDLE, PUSH };
 
  public:
+  using VramView = std::span<const uint8_t, 0x2000>;
+  using FrameView = std::span<uint32_t, static_cast<std::size_t>(XRES) * YRES>;
+
   struct State {
     FETCH_STATE fetchState = FETCH_STATE::TILE;
     size_t fifoX = 0;
@@ -34,8 +36,8 @@ class Pipeline : public Serializable {
     uint8_t tileY = 0;
     uint8_t entryCount = 0;
   };
-  Pipeline(ReadFn readFn, WritePixelFn writePixelFn);
-  void beginScanline(const ScanlineContext& ctx);
+  explicit Pipeline(VramView vram);
+  void beginScanline(const ScanlineContext& ctx, FrameView target);
   void process();
   void reset();
   void oamReset();
@@ -46,8 +48,8 @@ class Pipeline : public Serializable {
 
  private:
   State state;
-  ReadFn readFn_;
-  WritePixelFn writePixelFn_;
+  VramView vram_;
+  std::span<uint32_t> target_;
   const ScanlineContext* ctx = nullptr;
   PixelFifo pixelFifo;
   void fetch();
@@ -58,6 +60,7 @@ class Pipeline : public Serializable {
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
   uint32_t bufferIndex() const;
+  [[nodiscard]] uint8_t readVram(uint16_t address) const;
   uint16_t bgw0ReadAddress() const;
   uint16_t bgw1ReadAddress() const;
   uint16_t windowTileReadAddress(uint8_t wTileY) const;

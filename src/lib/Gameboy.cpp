@@ -75,7 +75,6 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
                               *ppu, *ram);
   cpu->setMemory(bus.get());
   dma->setMemRead(*bus);
-  ppu->setMemRead(*bus);
   ppu->setLcd(lcd.get());
   framePacer =
       std::make_unique<FramePacer>([this] { return ui->getTicks(); },

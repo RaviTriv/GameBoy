@@ -11,11 +11,16 @@
 #include "ScanlineContext.h"
 #include "Serializable.h"
 
-Pipeline::Pipeline(ReadFn readFn, WritePixelFn writePixelFn)
-    : readFn_(std::move(readFn)), writePixelFn_(std::move(writePixelFn)) {}
+Pipeline::Pipeline(VramView vram) : vram_(vram) {}
 
-void Pipeline::beginScanline(const ScanlineContext& scanlineCtx) {
+void Pipeline::beginScanline(const ScanlineContext& scanlineCtx,
+                             FrameView target) {
   ctx = &scanlineCtx;
+  target_ = target;
+}
+
+uint8_t Pipeline::readVram(uint16_t address) const {
+  return vram_[address - VRAM_START];
 }
 
 void Pipeline::process() {
@@ -59,7 +64,7 @@ void Pipeline::fetchTile() {
   state.entryCount = 0;
 
   if (ctx->bgWindowEnabled) {
-    state.bgwBuffer[0] = readFn_(bgw0ReadAddress());
+    state.bgwBuffer[0] = readVram(bgw0ReadAddress());
 
     loadWindowTile();
 
@@ -77,13 +82,13 @@ void Pipeline::fetchTile() {
 }
 
 void Pipeline::fetchDataLow() {
-  state.bgwBuffer[1] = readFn_(bgw1ReadAddress());
+  state.bgwBuffer[1] = readVram(bgw1ReadAddress());
   loadSpriteData(0);
   state.fetchState = FETCH_STATE::DATA1;
 }
 
 void Pipeline::fetchDataHigh() {
-  state.bgwBuffer[2] = readFn_(bgw1ReadAddress() + 1);
+  state.bgwBuffer[2] = readVram(bgw1ReadAddress() + 1);
   loadSpriteData(1);
   state.fetchState = FETCH_STATE::IDLE;
 }
@@ -122,7 +127,7 @@ void Pipeline::pushPixel() {
     uint32_t pixel = pixelFifo.pop();
 
     if (state.lineX >= ctx->scrollX % 8) {
-      writePixelFn_(bufferIndex(), pixel);
+      target_[bufferIndex()] = pixel;
       state.pushedCount++;
     }
 
@@ -189,7 +194,7 @@ void Pipeline::loadWindowTile() {
       (ctx->ly >= windowY && ctx->ly < windowY + XRES)) {
     uint8_t wTileY = (ctx->windowLine / PIXEL_TILE_DIMENSION);
 
-    state.bgwBuffer[0] = readFn_(windowTileReadAddress(wTileY));
+    state.bgwBuffer[0] = readVram(windowTileReadAddress(wTileY));
   }
 }
 
@@ -227,7 +232,7 @@ void Pipeline::loadSpriteData(uint8_t offset) {
       tileIdx &= static_cast<uint8_t>(~1);
     }
 
-    state.objectBuffer[(i * 2) + offset] = readFn_(
+    state.objectBuffer[(i * 2) + offset] = readVram(
         static_cast<uint16_t>(0x8000 + (tileIdx * 16) + tileY + offset));
   }
 }

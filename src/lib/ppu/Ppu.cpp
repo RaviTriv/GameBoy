@@ -9,7 +9,6 @@
 #include <stdexcept>
 
 #include "Common.h"
-#include "IMemRead.h"
 #include "InterruptRegs.h"
 #include "Lcd.h"
 #include "Logger.h"
@@ -17,12 +16,7 @@
 #include "Serializable.h"
 
 PPU::PPU(InterruptRegs interruptRegs)
-    : interruptRegs_(interruptRegs),
-      pipeline(
-          [this](uint16_t addr) -> uint8_t { return memRead->read8(addr); },
-          [this](uint32_t idx, uint32_t color) {
-            frames[backIndex][idx] = color;
-          }) {}
+    : interruptRegs_(interruptRegs), pipeline(state.vram) {}
 
 void PPU::init() { lcd->setLcdMode(LCD::MODE::OAM); }
 
@@ -213,7 +207,7 @@ void PPU::oamMode() {
     state.spritePenalty = state.lineSpritesCount * 6;
 
     buildScanlineContext();
-    pipeline.beginScanline(state.scanlineCtx);
+    pipeline.beginScanline(state.scanlineCtx, frames[backIndex]);
     pipeline.oamReset();
   }
 }
@@ -311,5 +305,5 @@ void PPU::load(std::istream& in) {
   frames[backIndex] = getPublishedFrame();
 
   pipeline.load(in);
-  pipeline.beginScanline(state.scanlineCtx);
+  pipeline.beginScanline(state.scanlineCtx, frames[backIndex]);
 }
