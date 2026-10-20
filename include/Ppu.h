@@ -3,6 +3,8 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <functional>
+#include <utility>
 
 #include "./Common.h"
 #include "./InterruptRegs.h"
@@ -42,6 +44,9 @@ class PPU : public Serializable {
 
   void setMemRead(IMemRead& reader) { memRead = &reader; }
   void setLcd(LCD* newLcd) { lcd = newLcd; }
+  void setOnFrameComplete(std::function<void()> callback) {
+    onFrameComplete = std::move(callback);
+  }
   [[nodiscard]] const Frame& acquireFrontFrame();
   [[nodiscard]] const Frame& getPublishedFrame() const;
 
@@ -53,6 +58,7 @@ class PPU : public Serializable {
   InterruptRegs interruptRegs_;
   IMemRead* memRead = nullptr;
   LCD* lcd = nullptr;
+  std::function<void()> onFrameComplete;
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};
 
@@ -70,6 +76,7 @@ class PPU : public Serializable {
   static constexpr uint8_t FRAME_FRESH_BIT = 0x4;
 
   void publishFrame();
+  void finishFrame();
   void incrementLY();
   void loadLineSprites();
   void buildScanlineContext();

@@ -81,6 +81,7 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
       std::make_unique<FramePacer>([this] { return ui->getTicks(); },
                                    [this](uint32_t ms) { ui->delay(ms); });
   framePacer->setFastForward(startFastForward);
+  ppu->setOnFrameComplete([this] { framePacer->onFrameComplete(); });
   ui->setToggleFastForward([this] { pushCommand(ToggleFastForwardCommand{}); });
   stateSerializer =
       std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
@@ -163,11 +164,7 @@ void GameBoy::cycle(int cycles) {
     for (int j = 0; j < CLOCK_CYCLES; j++) {
       state.ticks++;
       timer->tick();
-      uint32_t prevFrame = ppu->getCurrentFrame();
       ppu->tick();
-      if (prevFrame != ppu->getCurrentFrame()) {
-        framePacer->onFrameComplete();
-      }
       apu->tick();
     }
     dma->tick();

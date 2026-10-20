@@ -157,6 +157,12 @@ class TestRunner {
       serialDirty = true;
     });
     ppu->init();
+    ppu->setOnFrameComplete([this] {
+      frameDirty = true;
+      framesElapsed++;
+      drainAudio();
+      applyInput();
+    });
     stateSerializer =
         std::make_unique<StateSerializer>(std::vector<StateSerializer::Section>{
             {.name = "CPU", .component = cpu.get()},
@@ -235,14 +241,7 @@ class TestRunner {
     for (int i = 0; i < cycles; i++) {
       for (int j = 0; j < CLOCK_CYCLES; j++) {
         timer->tick();
-        const uint32_t prevFrame = ppu->getCurrentFrame();
         ppu->tick();
-        if (prevFrame != ppu->getCurrentFrame()) {
-          frameDirty = true;
-          framesElapsed++;
-          drainAudio();
-          applyInput();
-        }
         apu->tick();
       }
       dma->tick();

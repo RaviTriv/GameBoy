@@ -38,6 +38,14 @@ const PPU::Frame& PPU::getPublishedFrame() const {
   return frames[publishedIndex];
 }
 
+void PPU::finishFrame() {
+  publishFrame();
+  currentFrame.fetch_add(1, std::memory_order_relaxed);
+  if (onFrameComplete) {
+    onFrameComplete();
+  }
+}
+
 void PPU::publishFrame() {
   publishedIndex = backIndex;
   backIndex = readyIndex.exchange(backIndex | FRAME_FRESH_BIT,
@@ -54,8 +62,7 @@ void PPU::tick() {
       state.lineTicks = 0;
       state.windowLine = 0;
       frames[backIndex].fill(0xFFFFFFFF);
-      publishFrame();
-      currentFrame.fetch_add(1, std::memory_order_relaxed);
+      finishFrame();
       return;
     case LCD::TURNED_ON:
       lcd->setLy(0);
@@ -246,8 +253,7 @@ void PPU::hBlankMode() {
         interruptRegs_.request(InterruptType::LCD_STAT);
       }
 
-      publishFrame();
-      currentFrame.fetch_add(1, std::memory_order_relaxed);
+      finishFrame();
     } else {
       lcd->setLcdMode(LCD::MODE::OAM);
     }
