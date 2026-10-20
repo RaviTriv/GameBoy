@@ -1,6 +1,7 @@
 #include "Cartridge.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -92,6 +93,16 @@ void Cartridge::initFromRom() {
   state.header->globalChecksum = static_cast<uint16_t>(
       (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F]);
 
+  uint8_t checksum = 0;
+  for (std::size_t i = 0x134; i <= 0x14C; i++) {
+    checksum = static_cast<uint8_t>(checksum - rom[i] - 1);
+  }
+  if (checksum != state.header->checksum) {
+    Logger::GetLogger()->warn(
+        "Header checksum mismatch: expected 0x{:02X}, computed 0x{:02X}",
+        state.header->checksum, checksum);
+  }
+
   int romBanks = std::max(2, static_cast<int>(state.romSize / 0x4000));
   int ramBanks = getRamBanksCount(state.romData.at(0x149));
 
@@ -99,13 +110,15 @@ void Cartridge::initFromRom() {
 
   switch (state.header->type) {
     case CartridgeType::ROM_ONLY:
-      mbc = std::make_unique<MBC0>(state.romData);
+    case CartridgeType::ROM_RAM:
+    case CartridgeType::ROM_RAM_BATTERY:
+      mbc = std::make_unique<MBC0>(state.romData, state.ramData);
       break;
     case CartridgeType::MBC1:
     case CartridgeType::MBC1_RAM:
     case CartridgeType::MBC1_RAM_BATTERY:
       mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks,
-                                   ramBanks);
+                                   ramBanks, isMbc1Multicart());
       break;
     case CartridgeType::MBC2:
     case CartridgeType::MBC2_BATTERY:
@@ -115,10 +128,25 @@ void Cartridge::initFromRom() {
     case CartridgeType::MBC3:
     case CartridgeType::MBC3_RAM:
     case CartridgeType::MBC3_RAM_BATTERY:
+      mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks,
+                                   ramBanks, false);
+      break;
     case CartridgeType::MBC3_TIMER_BATTERY:
     case CartridgeType::MBC3_TIMER_RAM_BATTERY:
       mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks,
-                                   ramBanks);
+                                   ramBanks, true);
+      break;
+    case CartridgeType::MBC5:
+    case CartridgeType::MBC5_RAM:
+    case CartridgeType::MBC5_RAM_BATTERY:
+      mbc = std::make_unique<MBC5>(state.romData, state.ramData, romBanks,
+                                   ramBanks, false);
+      break;
+    case CartridgeType::MBC5_RUMBLE:
+    case CartridgeType::MBC5_RUMBLE_RAM:
+    case CartridgeType::MBC5_RUMBLE_RAM_BATTERY:
+      mbc = std::make_unique<MBC5>(state.romData, state.ramData, romBanks,
+                                   ramBanks, true);
       break;
     default: {
       std::ostringstream message;
@@ -139,11 +167,31 @@ void Cartridge::outputCartridgeInfo() {
   Logger::GetLogger()->info("Ram Size: {} bytes", state.ramData.size());
 }
 
+bool Cartridge::isMbc1Multicart() const {
+  constexpr std::size_t MULTICART_SIZE = 0x100000;
+  constexpr std::size_t GAME_SIZE = 0x40000;
+  constexpr std::size_t LOGO_OFFSET = ROM_HEADER_OFFSET + 0x04;
+  if (state.romSize != MULTICART_SIZE) {
+    return false;
+  }
+  int logos = 0;
+  for (std::size_t base = 0; base < MULTICART_SIZE; base += GAME_SIZE) {
+    if (std::equal(state.header->logo.begin(), state.header->logo.end(),
+                   state.romData.begin() +
+                       static_cast<std::ptrdiff_t>(base + LOGO_OFFSET))) {
+      logos++;
+    }
+  }
+  return logos > 1;
+}
+
 uint8_t Cartridge::read(uint16_t address) const { return mbc->read(address); }
 
 void Cartridge::write(uint16_t address, uint8_t value) {
   mbc->write(address, value);
 }
+
+void Cartridge::tick(int cycles) { mbc->tick(cycles); }
 
 int Cartridge::getRamBanksCount(uint8_t type) const {
   switch (type) {
@@ -179,6 +227,27 @@ std::string Cartridge::getTitle() const {
   }
   return result;
 }
+
+bool Cartridge::hasBattery() const {
+  switch (state.header->type) {
+    case CartridgeType::MBC1_RAM_BATTERY:
+    case CartridgeType::MBC2_BATTERY:
+    case CartridgeType::ROM_RAM_BATTERY:
+    case CartridgeType::MBC3_TIMER_BATTERY:
+    case CartridgeType::MBC3_TIMER_RAM_BATTERY:
+    case CartridgeType::MBC3_RAM_BATTERY:
+    case CartridgeType::MBC5_RAM_BATTERY:
+    case CartridgeType::MBC5_RUMBLE_RAM_BATTERY:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void Cartridge::saveBattery(std::ostream& out) const { mbc->saveBattery(out); }
+
+void Cartridge::loadBattery(std::istream& in) { mbc->loadBattery(in); }
+
 void Cartridge::save(std::ostream& out) const {
   serial::writeBytes(out, state.ramData);
   mbc->save(out);

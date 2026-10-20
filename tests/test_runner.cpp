@@ -49,6 +49,7 @@ constexpr uint32_t SAVESTATE_WARMUP_FRAMES = 10;
 constexpr uint32_t SAVESTATE_COMPARE_FRAMES = 120;
 constexpr uint32_t SAVESTATE_DRAWING_STEPS = 4;
 constexpr uint8_t VISIBLE_LINES = 144;
+constexpr uint32_t INPUT_HOLD_FRAMES = 5;
 
 #ifdef __OPTIMIZE__
 constexpr bool OPTIMIZED_BUILD = true;
@@ -65,6 +66,27 @@ constexpr bool ASSERTS_DISABLED = false;
 enum class Result { Running, Pass, Fail };
 
 enum class Protocol { Blargg, Mooneye, Memory };
+
+struct InputEvent {
+  uint32_t frame = 0;
+  char button = 0;
+};
+
+std::vector<InputEvent> parseInput(const std::string& spec) {
+  std::vector<InputEvent> events;
+  std::stringstream stream(spec);
+  std::string item;
+  while (std::getline(stream, item, ',')) {
+    const auto colon = item.find(':');
+    if (colon == std::string::npos || colon + 2 != item.size()) {
+      throw std::invalid_argument("--input expects FRAME:BUTTON[,...]");
+    }
+    events.push_back(
+        {.frame = static_cast<uint32_t>(std::stoul(item.substr(0, colon))),
+         .button = item[colon + 1]});
+  }
+  return events;
+}
 
 constexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ULL;
 constexpr uint64_t FNV_PRIME = 0x100000001b3ULL;
@@ -200,6 +222,8 @@ class TestRunner {
 
   [[nodiscard]] StateSerializer& serializer() { return *stateSerializer; }
 
+  void setInput(std::vector<InputEvent> events) { input = std::move(events); }
+
  private:
   static void cycleTrampoline(void* self, int cycles) {
     static_cast<TestRunner*>(self)->cycle(cycles);
@@ -207,6 +231,7 @@ class TestRunner {
 
   void cycle(int cycles) {
     totalCycles += static_cast<uint64_t>(cycles);
+    cartridge->tick(cycles);
     for (int i = 0; i < cycles; i++) {
       for (int j = 0; j < CLOCK_CYCLES; j++) {
         timer->tick();
@@ -216,10 +241,52 @@ class TestRunner {
           frameDirty = true;
           framesElapsed++;
           drainAudio();
+          applyInput();
         }
         apu->tick();
       }
       dma->tick();
+    }
+  }
+
+  void applyInput() {
+    for (const InputEvent& event : input) {
+      if (framesElapsed == event.frame) {
+        setButton(event.button, true);
+      } else if (framesElapsed == event.frame + INPUT_HOLD_FRAMES) {
+        setButton(event.button, false);
+      }
+    }
+  }
+
+  void setButton(char button, bool pressed) {
+    switch (button) {
+      case 'A':
+        gamepad->setAPressed(pressed);
+        break;
+      case 'B':
+        gamepad->setBPressed(pressed);
+        break;
+      case 'S':
+        gamepad->setStartPressed(pressed);
+        break;
+      case 'E':
+        gamepad->setSelectPressed(pressed);
+        break;
+      case 'U':
+        gamepad->setUpPressed(pressed);
+        break;
+      case 'D':
+        gamepad->setDownPressed(pressed);
+        break;
+      case 'L':
+        gamepad->setLeftPressed(pressed);
+        break;
+      case 'R':
+        gamepad->setRightPressed(pressed);
+        break;
+      default:
+        throw std::invalid_argument(std::string("Unknown button: ") + button);
     }
   }
 
@@ -306,6 +373,7 @@ class TestRunner {
   uint64_t totalCycles = 0;
   uint32_t framesElapsed = 0;
   std::array<StereoSample, AUDIO_DRAIN_CHUNK> audioScratch{};
+  std::vector<InputEvent> input;
 };
 
 struct BenchOptions {
@@ -538,6 +606,7 @@ int main(int argc, char** argv) {
     bool allowUnoptimized = false;
     bool saveStateMode = false;
     std::optional<uint8_t> saveStateLine;
+    std::vector<InputEvent> input;
     BenchOptions bench;
 
     for (int i = 1; i < argc; i++) {
@@ -572,6 +641,8 @@ int main(int argc, char** argv) {
           return 3;
         }
         saveStateLine = static_cast<uint8_t>(line);
+      } else if (arg == "--input") {
+        input = parseInput(argv[++i]);
       } else if (arg == "--allow-unoptimized") {
         allowUnoptimized = true;
       } else if (romPath.empty()) {
@@ -584,7 +655,8 @@ int main(int argc, char** argv) {
     if (romPath.empty()) {
       std::cerr << "Usage: test_runner <rom_path> [max_million_cycles] "
                    "[--mooneye] [--memory] [--frames N] [--hash] "
-                   "[--dump path] [--bench [--bench-frames N] "
+                   "[--dump path] [--input FRAME:BUTTON,...] [--bench "
+                   "[--bench-frames N] "
                    "[--bench-runs R] [--bench-warmup W] "
                    "[--allow-unoptimized]] "
                    "[--savestate | --savestate-line LY]\n";
@@ -616,6 +688,7 @@ int main(int argc, char** argv) {
     }
 
     TestRunner runner(romPath, protocol);
+    runner.setInput(std::move(input));
 
     if (frameMode) {
       runner.runFrames(frames);

@@ -156,17 +156,40 @@ if(BUILD_TESTS)
         add_mooneye_mbc_test(mbc1/rom_8Mb.gb)
         add_mooneye_mbc_test(mbc1/rom_16Mb.gb)
         add_mooneye_mbc_test(mbc1/multicart_rom_8Mb.gb)
-        mark_known_fail(mooneye.mbc1.multicart_rom_8Mb)
 
         add_mooneye_mbc_test(mbc2/bits_ramg.gb)
-        mark_known_fail(mooneye.mbc2.bits_ramg)
         add_mooneye_mbc_test(mbc2/bits_romb.gb)
-        mark_known_fail(mooneye.mbc2.bits_romb)
         add_mooneye_mbc_test(mbc2/bits_unused.gb)
         add_mooneye_mbc_test(mbc2/ram.gb)
         add_mooneye_mbc_test(mbc2/rom_512kb.gb)
         add_mooneye_mbc_test(mbc2/rom_1Mb.gb)
         add_mooneye_mbc_test(mbc2/rom_2Mb.gb)
+
+        add_mooneye_mbc_test(mbc5/rom_512kb.gb)
+        add_mooneye_mbc_test(mbc5/rom_1Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_2Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_4Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_8Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_16Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_32Mb.gb)
+        add_mooneye_mbc_test(mbc5/rom_64Mb.gb)
+
+        set(MBC3_TESTER_PASS_HASH 694d5c9493d33997)
+        add_test(NAME mbc3_tester
+                 COMMAND gameboy_tests "${gb_test_roms_SOURCE_DIR}/mbc3-tester/mbc3-tester.gb" --frames 60 --hash)
+        set_tests_properties(mbc3_tester PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS mbc
+                             PASS_REGULAR_EXPRESSION "^${MBC3_TESTER_PASS_HASH}")
+
+        set(RTC3TEST_ROM "${gb_test_roms_SOURCE_DIR}/rtc3test/rtc3test.gb")
+        function(add_rtc3test name input frames hash)
+            add_test(NAME "rtc3test.${name}"
+                     COMMAND gameboy_tests "${RTC3TEST_ROM}" --frames ${frames} --input ${input} --hash)
+            set_tests_properties("rtc3test.${name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS mbc
+                                 PASS_REGULAR_EXPRESSION "^${hash}")
+        endfunction()
+        add_rtc3test(basic 120:A 1000 e2beae8fcd88e055)
+        add_rtc3test(range 120:D,140:A 700 12ccb1439ce7fca4)
+        add_rtc3test(sub_second_writes 120:D,140:D,160:A 1900 021c5fcd50013455)
 
         add_test(NAME savestate.cpu_instrs
                  COMMAND gameboy_tests "${BLARGG_DIR}/cpu_instrs/cpu_instrs.gb" --savestate)

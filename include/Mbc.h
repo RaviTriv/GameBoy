@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -11,6 +12,9 @@ class MBC : public Serializable {
   ~MBC() override = default;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
+  virtual void saveBattery(std::ostream& out) const;
+  virtual void loadBattery(std::istream& in);
+  virtual void tick(int /*cycles*/) {}
   explicit MBC(std::vector<uint8_t>& rom) : romData(rom), ramData(empty) {}
   MBC(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
       uint16_t ramBanks)
@@ -32,7 +36,8 @@ class MBC : public Serializable {
 
 class MBC0 : public MBC {
  public:
-  explicit MBC0(std::vector<uint8_t>& rom) : MBC(rom) {}
+  MBC0(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram)
+      : MBC(rom, ram, 0, 0) {}
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
   void save(std::ostream& out) const override;
@@ -45,11 +50,14 @@ class MBC1 : public MBC {
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   uint8_t bankingMode = 0;
+  bool multicart = false;
+
+  [[nodiscard]] std::size_t upperBank() const;
 
  public:
   MBC1(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
-       uint16_t ramBanks)
-      : MBC(rom, ram, romBanks, ramBanks) {}
+       uint16_t ramBanks, bool isMulticart)
+      : MBC(rom, ram, romBanks, ramBanks), multicart(isMulticart) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
@@ -70,20 +78,59 @@ class MBC2 : public MBC {
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;
+  void saveBattery(std::ostream& out) const override;
+  void loadBattery(std::istream& in) override;
   void save(std::ostream& out) const override;
   void load(std::istream& in) override;
 };
 
 class MBC3 : public MBC {
  private:
+  static constexpr std::size_t RTC_REGISTERS = 5;
+  static constexpr uint32_t RTC_CYCLES_PER_SECOND = 1U << 20;
+  using RtcRegisters = std::array<uint8_t, RTC_REGISTERS>;
+
   bool ramEnabled = false;
+  bool hasRtc = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
+  RtcRegisters rtc{};
+  RtcRegisters latched{};
+  bool latchArmed = false;
+  uint32_t rtcCycles = 0;
+
+  [[nodiscard]] std::size_t ramIndex(uint16_t address) const;
+  [[nodiscard]] bool rtcHalted() const;
+  void advanceSecond();
+  void advanceSeconds(uint64_t seconds);
 
  public:
   MBC3(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
-       uint16_t ramBanks)
-      : MBC(rom, ram, romBanks, ramBanks) {}
+       uint16_t ramBanks, bool withRtc)
+      : MBC(rom, ram, romBanks, ramBanks), hasRtc(withRtc) {}
+
+  [[nodiscard]] uint8_t read(uint16_t address) const override;
+  void write(uint16_t address, uint8_t value) override;
+  void tick(int cycles) override;
+  void saveBattery(std::ostream& out) const override;
+  void loadBattery(std::istream& in) override;
+  void save(std::ostream& out) const override;
+  void load(std::istream& in) override;
+};
+
+class MBC5 : public MBC {
+ private:
+  bool ramEnabled = false;
+  bool rumble = false;
+  uint16_t romBank = 1;
+  uint8_t ramBank = 0;
+
+  [[nodiscard]] std::size_t ramIndex(uint16_t address) const;
+
+ public:
+  MBC5(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
+       uint16_t ramBanks, bool hasRumble)
+      : MBC(rom, ram, romBanks, ramBanks), rumble(hasRumble) {}
 
   [[nodiscard]] uint8_t read(uint16_t address) const override;
   void write(uint16_t address, uint8_t value) override;

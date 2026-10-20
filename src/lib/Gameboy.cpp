@@ -52,6 +52,7 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
   displayBootArt();
   Logger::GetLogger()->info("Initializing GameBoy");
   cartridge = std::make_unique<Cartridge>(romPath);
+  StateSerializer::loadBattery(*cartridge);
   dma = std::make_unique<DMA>(
       [this](uint16_t addr, uint8_t val) { ppu->oamWrite(addr, val); });
   ram = std::make_unique<RAM>();
@@ -127,6 +128,7 @@ void GameBoy::run() {
   }
 
   cpuThread.join();
+  StateSerializer::saveBattery(*cartridge);
 }
 
 void GameBoy::cpuLoop() {
@@ -156,6 +158,7 @@ void GameBoy::processCommands() {
 }
 
 void GameBoy::cycle(int cycles) {
+  cartridge->tick(cycles);
   for (int i = 0; i < cycles; i++) {
     for (int j = 0; j < CLOCK_CYCLES; j++) {
       state.ticks++;
