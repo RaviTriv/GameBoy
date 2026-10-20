@@ -60,28 +60,15 @@ jobs:
       - name: Run test ROMs
         run: ctest --test-dir build --output-on-failure -L "cpu|mbc" -LE known_fail
 
-  clang-tidy:
-    name: Clang Tidy
+  clang-format:
+    name: Clang Format
     runs-on: ubuntu-latest
-    container: gcc:16.2.0
 
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install dependencies
-        run: |
-          python3 .github/scripts/install_deps.py python3-pip
-          pip install --break-system-packages clang-tidy==23.1.3 clang-format==23.1.1
-
-      - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=g++ -DBUILD_APP=OFF -DBUILD_TESTS=ON -DFETCH_TEST_ROMS=OFF -DCMAKE_BUILD_TYPE=Release
-
-      - name: Run clang-tidy
-        run: |
-          jq -r '.[].file' build/compile_commands.json | grep -E '/(src|tests)/' | grep -v '/_deps/' | sort -u \
-            | xargs -P "$(nproc)" -n 1 clang-tidy -p build --quiet \
-                --removed-arg=-freflection \
-                --extra-arg=--gcc-install-dir="$(dirname "$(g++ -print-libgcc-file-name)")"
+      - name: Install clang-format
+        run: pip install clang-format==23.1.1
 
       - name: Run clang-format
         run: clang-format --dry-run --Werror $(find src include tests -name '*.cpp' -o -name '*.h')

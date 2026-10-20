@@ -62,7 +62,7 @@ def main():
     parser.add_argument("apt_packages", nargs="*", help="Extra apt packages to install")
     args = parser.parse_args()
 
-    apt_install(["cmake", "ninja-build", "jq", *args.apt_packages])
+    apt_install(["cmake", "ninja-build", *args.apt_packages])
 
     with tempfile.TemporaryDirectory() as workdir:
         for dep in DEPS:
