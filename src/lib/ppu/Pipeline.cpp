@@ -310,15 +310,11 @@ void Pipeline::oamReset() {
 <--- RESET-END --->
 */
 
-void Pipeline::save(std::ostream& out) const {
-  serial::write(out, state);
-  pixelFifo.save(out);
-}
+void Pipeline::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void Pipeline::load(std::istream& in) {
-  serial::read(in, state);
+  serial::loadFields(in, *this);
   if (state.entryCount > state.fetchedEntries.size()) {
     throw std::runtime_error("Invalid pipeline sprite count in save file");
   }
-  pixelFifo.load(in);
 }

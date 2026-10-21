@@ -49,27 +49,12 @@ void PixelFifo::reset() {
 }
 
 void PixelFifo::save(std::ostream& out) const {
-  serial::write(out, buffer);
-  serial::write(out, head);
-  serial::write(out, tail);
-  serial::write(out, count);
+  serial::saveFields(out, *this);
 }
 
 void PixelFifo::load(std::istream& in) {
-  std::array<uint32_t, FIFO_CAPACITY> newBuffer{};
-  size_t newHead = 0;
-  size_t newTail = 0;
-  size_t newCount = 0;
-  serial::read(in, newBuffer);
-  serial::read(in, newHead);
-  serial::read(in, newTail);
-  serial::read(in, newCount);
-  if (newHead >= FIFO_CAPACITY || newTail >= FIFO_CAPACITY ||
-      newCount > FIFO_CAPACITY) {
+  serial::loadFields(in, *this);
+  if (head >= FIFO_CAPACITY || tail >= FIFO_CAPACITY || count > FIFO_CAPACITY) {
     throw std::runtime_error("Invalid pixel FIFO state in save file");
   }
-  buffer = newBuffer;
-  head = newHead;
-  tail = newTail;
-  count = newCount;
 }

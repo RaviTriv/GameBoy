@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <array>
@@ -24,11 +25,11 @@ class MBC : public Serializable {
         ramData(ram) {}
 
  protected:
-  uint16_t romBanksCount = 0;
-  uint16_t ramBanksCount = 0;
+  [[= serial::skip]] uint16_t romBanksCount = 0;
+  [[= serial::skip]] uint16_t ramBanksCount = 0;
 
-  std::vector<uint8_t>& romData;
-  std::vector<uint8_t>& ramData;
+  [[= serial::skip]] std::vector<uint8_t>& romData;
+  [[= serial::skip]] std::vector<uint8_t>& ramData;
 
  private:
   static std::vector<uint8_t> empty;
@@ -50,7 +51,7 @@ class MBC1 : public MBC {
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   uint8_t bankingMode = 0;
-  bool multicart = false;
+  [[= serial::skip]] bool multicart = false;
 
   [[nodiscard]] std::size_t upperBank() const;
 
@@ -91,7 +92,7 @@ class MBC3 : public MBC {
   using RtcRegisters = std::array<uint8_t, RTC_REGISTERS>;
 
   bool ramEnabled = false;
-  bool hasRtc = false;
+  [[= serial::skip]] bool hasRtc = false;
   uint8_t romBank = 1;
   uint8_t ramBank = 0;
   RtcRegisters rtc{};
@@ -121,7 +122,7 @@ class MBC3 : public MBC {
 class MBC5 : public MBC {
  private:
   bool ramEnabled = false;
-  bool rumble = false;
+  [[= serial::skip]] bool rumble = false;
   uint16_t romBank = 1;
   uint8_t ramBank = 0;
 

@@ -7,6 +7,8 @@
 #include <memory>
 #include <ostream>
 
+#include "Serializable.h"
+
 class APU;
 class Bus;
 class Channel {
@@ -39,8 +41,6 @@ class Channel {
   void updateTriggers(bool lengthTrigger, bool envelopeTrigger,
                       bool sweepTrigger);
   void envelopeAction();
-  void save(std::ostream& out) const;
-  void load(std::istream& in);
 };
 
 class SquareChannel : public Channel {

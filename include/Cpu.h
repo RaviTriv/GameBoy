@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <cstdint>
@@ -33,10 +34,10 @@ class CPU : public Serializable {
   void load(std::istream& in) override;
 
  private:
-  Interrupts& interrupts_;
-  IMemAccess& memory_;
-  CycleCallbackFn cycleCallback_;
-  void* cycleCallbackCtx_;
+  [[= serial::skip]] Interrupts& interrupts_;
+  [[= serial::skip]] IMemAccess& memory_;
+  [[= serial::skip]] CycleCallbackFn cycleCallback_;
+  [[= serial::skip]] void* cycleCallbackCtx_;
 
   State state;
 

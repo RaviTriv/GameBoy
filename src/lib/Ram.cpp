@@ -45,6 +45,6 @@ void RAM::writeHRAM(uint16_t address, uint8_t value) {
   state.hram[offset] = value;
 }
 
-void RAM::save(std::ostream& out) const { serial::write(out, state); }
+void RAM::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void RAM::load(std::istream& in) { serial::read(in, state); }
+void RAM::load(std::istream& in) { serial::loadFields(in, *this); }

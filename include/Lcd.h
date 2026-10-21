@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <array>
@@ -85,7 +86,7 @@ class LCD : public Serializable {
  private:
   State state;
   bool lcdWasEnabled = true;
-  DMA& dma_;
+  [[= serial::skip]] DMA& dma_;
   static constexpr std::array<uint32_t, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
   void updatePalettes(PaletteType type, uint8_t value);

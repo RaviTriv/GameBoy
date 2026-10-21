@@ -45,7 +45,7 @@ class APU : public Serializable {
 
  private:
   State state;
-  spsc::Queue<StereoSample, 8192> sampleQueue;
+  [[= serial::skip]] spsc::Queue<StereoSample, 8192> sampleQueue;
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;

@@ -1,9 +1,11 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <array>
 #include <cstdint>
 
 #include "OamTypes.h"
+#include "Serializable.h"
 
 struct ScanlineContext {
   uint8_t scrollX = 0;
@@ -28,8 +30,8 @@ struct ScanlineContext {
   std::array<uint32_t, 4> ob1Colors{};
   std::array<uint32_t, 4> ob2Colors{};
 
-  const OAM_ENTRY* sprites = nullptr;
+  [[= serial::skip]] const OAM_ENTRY* sprites = nullptr;
   uint8_t spriteCount = 0;
 
-  const uint32_t* lineTicks = nullptr;
+  [[= serial::skip]] const uint32_t* lineTicks = nullptr;
 };

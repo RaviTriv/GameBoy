@@ -249,11 +249,7 @@ void Cartridge::saveBattery(std::ostream& out) const { mbc->saveBattery(out); }
 void Cartridge::loadBattery(std::istream& in) { mbc->loadBattery(in); }
 
 void Cartridge::save(std::ostream& out) const {
-  serial::writeBytes(out, state.ramData);
-  mbc->save(out);
+  serial::saveFields(out, *this);
 }
 
-void Cartridge::load(std::istream& in) {
-  serial::readBytes(in, state.ramData);
-  mbc->load(in);
-}
+void Cartridge::load(std::istream& in) { serial::loadFields(in, *this); }

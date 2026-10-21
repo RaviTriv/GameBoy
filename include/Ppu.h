@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <array>
@@ -51,17 +52,17 @@ class PPU : public Serializable {
 
  private:
   State state;
-  Interrupts& interrupts_;
-  LCD& lcd_;
-  std::function<void()> onFrameComplete;
+  [[= serial::skip]] Interrupts& interrupts_;
+  [[= serial::skip]] LCD& lcd_;
+  [[= serial::skip]] std::function<void()> onFrameComplete;
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};
 
-  std::array<Frame, 3> frames{};
-  uint8_t backIndex = 0;
-  uint8_t publishedIndex = 1;
-  std::atomic<uint8_t> readyIndex{1};
-  uint8_t frontIndex = 2;
+  [[= serial::skip]] std::array<Frame, 3> frames{};
+  [[= serial::skip]] uint8_t backIndex = 0;
+  [[= serial::skip]] uint8_t publishedIndex = 1;
+  [[= serial::skip]] std::atomic<uint8_t> readyIndex{1};
+  [[= serial::skip]] uint8_t frontIndex = 2;
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;

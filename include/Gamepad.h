@@ -33,7 +33,7 @@ class Gamepad : public Serializable {
   void load(std::istream& in) override;
 
  private:
-  std::atomic<uint8_t> buttons{0};
+  [[= serial::skip]] std::atomic<uint8_t> buttons{0};
   bool directionSelected = false;
   bool actionSelected = false;
 

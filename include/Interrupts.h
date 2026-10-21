@@ -37,8 +37,10 @@ class Interrupts : public Serializable {
     return (state.intf & state.ie & 0x1F) != 0;
   }
 
-  void save(std::ostream& out) const override { serial::write(out, state); }
-  void load(std::istream& in) override { serial::read(in, state); }
+  void save(std::ostream& out) const override {
+    serial::saveFields(out, *this);
+  }
+  void load(std::istream& in) override { serial::loadFields(in, *this); }
 
  private:
   State state;

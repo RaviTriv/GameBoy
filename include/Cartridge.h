@@ -55,11 +55,11 @@ class MBC;
 class Cartridge : public Serializable {
  public:
   struct State {
-    std::array<char, 1024> filename;
-    std::size_t romSize;
-    std::vector<uint8_t> romData;
+    [[= serial::skip]] std::array<char, 1024> filename;
+    [[= serial::skip]] std::size_t romSize;
+    [[= serial::skip]] std::vector<uint8_t> romData;
     std::vector<uint8_t> ramData;
-    std::unique_ptr<RomHeader> header;
+    [[= serial::skip]] std::unique_ptr<RomHeader> header;
   };
   explicit Cartridge(std::string_view romPath);
   explicit Cartridge(std::vector<uint8_t> rom);

@@ -86,9 +86,9 @@ void CPU::handleInterrupts() {
   }
 }
 
-void CPU::save(std::ostream& out) const { serial::write(out, state); }
+void CPU::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void CPU::load(std::istream& in) { serial::read(in, state); }
+void CPU::load(std::istream& in) { serial::loadFields(in, *this); }
 
 void CPU::executeCB() {
   uint8_t sub = memory_.read8(state.registers.pc++);

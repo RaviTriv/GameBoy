@@ -192,15 +192,9 @@ LCD::EnableTransition LCD::consumeEnableTransition() {
   return transition;
 }
 
-void LCD::save(std::ostream& out) const {
-  serial::write(out, state);
-  serial::write(out, lcdWasEnabled);
-}
+void LCD::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void LCD::load(std::istream& in) {
-  serial::read(in, state);
-  serial::read(in, lcdWasEnabled);
-}
+void LCD::load(std::istream& in) { serial::loadFields(in, *this); }
 
 uint8_t LCD::getLy() const { return state.ly; }
 

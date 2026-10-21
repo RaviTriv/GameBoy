@@ -7,6 +7,7 @@
 #include <ostream>
 
 #include "./Common.h"
+#include "./Serializable.h"
 
 class PixelFifo {
  private:

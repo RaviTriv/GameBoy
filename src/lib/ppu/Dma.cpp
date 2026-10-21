@@ -33,6 +33,6 @@ void DMA::tick(IMemRead& memory, PPU& ppu) {
 }
 
 bool DMA::isTransferring() const { return state.isActive; }
-void DMA::save(std::ostream& out) const { serial::write(out, state); }
+void DMA::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void DMA::load(std::istream& in) { serial::read(in, state); }
+void DMA::load(std::istream& in) { serial::loadFields(in, *this); }

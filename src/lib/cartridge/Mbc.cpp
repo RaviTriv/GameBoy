@@ -330,72 +330,32 @@ void MBC5::write(uint16_t address, uint8_t value) {
   }
 }
 
-void MBC0::save(std::ostream& /*out*/) const {}
+void MBC0::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void MBC0::load(std::istream& /*in*/) {}
+void MBC0::load(std::istream& in) { serial::loadFields(in, *this); }
 
-void MBC1::save(std::ostream& out) const {
-  serial::write(out, ramEnabled);
-  serial::write(out, romBank);
-  serial::write(out, ramBank);
-  serial::write(out, bankingMode);
-}
+void MBC1::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void MBC1::load(std::istream& in) {
-  serial::read(in, ramEnabled);
-  serial::read(in, romBank);
-  serial::read(in, ramBank);
-  serial::read(in, bankingMode);
-}
+void MBC1::load(std::istream& in) { serial::loadFields(in, *this); }
 
-void MBC2::save(std::ostream& out) const {
-  serial::write(out, ramEnabled);
-  serial::write(out, romBank);
-  serial::write(out, ram_);
-}
+void MBC2::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void MBC2::load(std::istream& in) {
-  serial::read(in, ramEnabled);
-  serial::read(in, romBank);
+  serial::loadFields(in, *this);
   romBank = static_cast<uint8_t>(romBank % romBanksCount);
-  serial::read(in, ram_);
 }
 
-void MBC3::save(std::ostream& out) const {
-  serial::write(out, ramEnabled);
-  serial::write(out, romBank);
-  serial::write(out, ramBank);
-  if (hasRtc) {
-    serial::write(out, rtc);
-    serial::write(out, latched);
-    serial::write(out, latchArmed);
-    serial::write(out, rtcCycles);
-  }
-}
+void MBC3::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void MBC3::load(std::istream& in) {
-  serial::read(in, ramEnabled);
-  serial::read(in, romBank);
+  serial::loadFields(in, *this);
   romBank = static_cast<uint8_t>(romBank % romBanksCount);
-  serial::read(in, ramBank);
-  if (hasRtc) {
-    serial::read(in, rtc);
-    serial::read(in, latched);
-    serial::read(in, latchArmed);
-    serial::read(in, rtcCycles);
-    rtcCycles %= RTC_CYCLES_PER_SECOND;
-  }
+  rtcCycles %= RTC_CYCLES_PER_SECOND;
 }
 
-void MBC5::save(std::ostream& out) const {
-  serial::write(out, ramEnabled);
-  serial::write(out, romBank);
-  serial::write(out, ramBank);
-}
+void MBC5::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void MBC5::load(std::istream& in) {
-  serial::read(in, ramEnabled);
-  serial::read(in, romBank);
+  serial::loadFields(in, *this);
   romBank &= 0x1FF;
-  serial::read(in, ramBank);
 }

@@ -140,12 +140,6 @@ uint8_t Gamepad::getOutput() const {
   return output;
 }
 
-void Gamepad::save(std::ostream& out) const {
-  serial::write(out, directionSelected);
-  serial::write(out, actionSelected);
-}
+void Gamepad::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void Gamepad::load(std::istream& in) {
-  serial::read(in, directionSelected);
-  serial::read(in, actionSelected);
-}
+void Gamepad::load(std::istream& in) { serial::loadFields(in, *this); }

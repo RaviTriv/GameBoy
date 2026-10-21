@@ -278,17 +278,12 @@ uint32_t PPU::getCurrentFrame() const {
 }
 
 void PPU::save(std::ostream& out) const {
-  State saved = state;
-  saved.scanlineCtx.sprites = nullptr;
-  saved.scanlineCtx.lineTicks = nullptr;
-  serial::write(out, saved);
-  serial::write(out, getCurrentFrame());
+  serial::saveFields(out, *this);
   serial::write(out, getPublishedFrame());
-  pipeline.save(out);
 }
 
 void PPU::load(std::istream& in) {
-  serial::read(in, state);
+  serial::loadFields(in, *this);
   if (state.lineSpritesCount > state.currentLineSprites.size() ||
       state.scanlineCtx.spriteCount > state.currentLineSprites.size()) {
     throw std::runtime_error("Invalid PPU sprite count in save file");
@@ -296,14 +291,9 @@ void PPU::load(std::istream& in) {
   state.scanlineCtx.sprites = state.currentLineSprites.data();
   state.scanlineCtx.lineTicks = &state.lineTicks;
 
-  uint32_t frame = 0;
-  serial::read(in, frame);
-  currentFrame.store(frame, std::memory_order_relaxed);
-
   serial::read(in, frames[backIndex]);
   publishFrame();
   frames[backIndex] = getPublishedFrame();
 
-  pipeline.load(in);
   pipeline.beginScanline(state.scanlineCtx, frames[backIndex]);
 }

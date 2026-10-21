@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <array>
@@ -11,6 +12,7 @@
 #include "./OamTypes.h"
 #include "./PixelFifo.h"
 #include "./ScanlineContext.h"
+#include "./Serializable.h"
 
 class Pipeline {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
@@ -49,9 +51,9 @@ class Pipeline {
 
  private:
   State state;
-  VramView vram_;
-  std::span<uint32_t> target_;
-  const ScanlineContext* ctx = nullptr;
+  [[= serial::skip]] VramView vram_;
+  [[= serial::skip]] std::span<uint32_t> target_;
+  [[= serial::skip]] const ScanlineContext* ctx = nullptr;
   PixelFifo pixelFifo;
   void fetch();
   void fetchTile();
