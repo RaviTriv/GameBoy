@@ -14,10 +14,6 @@ class CPU {
  public:
   struct State {
     struct Registers registers;
-    uint8_t opcode = 0;
-    uint16_t opValue = 0;
-    bool isMemoryOp = false;
-    uint16_t memoryAddress = 0;
     bool ime = false;
     bool imeScheduled = false;
     bool halted = false;
@@ -48,44 +44,61 @@ class CPU {
   uint8_t flagH() const { return (state.registers.f >> 5) & 1; }
   uint8_t flagC() const { return (state.registers.f >> 4) & 1; }
 
+  void setFlag(int value, uint8_t mask) {
+    if (value == -1) {
+      return;
+    }
+    if (value) {
+      state.registers.f |= mask;
+    } else {
+      state.registers.f &= static_cast<uint8_t>(~mask);
+    }
+  }
+
   void setFlags(int z, int n, int h, int c) {
-    if (z != -1) {
-      if (z) {
-        state.registers.f |= (1 << 7);
-      } else {
-        state.registers.f &= static_cast<uint8_t>(~(1 << 7));
-      }
-    }
-    if (n != -1) {
-      if (n) {
-        state.registers.f |= (1 << 6);
-      } else {
-        state.registers.f &= static_cast<uint8_t>(~(1 << 6));
-      }
-    }
-    if (h != -1) {
-      if (h) {
-        state.registers.f |= (1 << 5);
-      } else {
-        state.registers.f &= static_cast<uint8_t>(~(1 << 5));
-      }
-    }
-    if (c != -1) {
-      if (c) {
-        state.registers.f |= (1 << 4);
-      } else {
-        state.registers.f &= static_cast<uint8_t>(~(1 << 4));
-      }
-    }
+    setFlag(z, 1 << 7);
+    setFlag(n, 1 << 6);
+    setFlag(h, 1 << 5);
+    setFlag(c, 1 << 4);
   }
 
   inline void stackPush8(uint8_t val);
   inline uint8_t stackPop8();
-  inline uint16_t stackPop16();
+
+  inline uint8_t fetch8();
+  inline uint16_t fetch16();
+  inline void push16(uint16_t value);
+  inline uint16_t pop16();
+  inline void call(uint16_t address);
+  inline void ret();
+  inline void halt();
+
+  template <uint8_t Idx>
+  inline uint8_t readR8();
+  template <uint8_t Idx>
+  inline void writeR8(uint8_t value);
+  template <uint8_t P>
+  inline uint16_t rp() const;
+  template <uint8_t P>
+  inline void setRp(uint16_t value);
+  template <uint8_t P>
+  inline uint16_t rp2() const;
+  template <uint8_t P>
+  inline void setRp2(uint16_t value);
+  template <uint8_t Cc>
+  inline bool cond() const;
+  template <uint8_t Op>
+  inline void alu(uint8_t value);
+  template <uint8_t Op>
+  inline uint8_t shift(uint8_t value);
+  template <uint8_t Op>
+  inline void execute();
+  template <uint8_t Op>
+  inline void executeCB();
 
   void handleInterrupts();
   bool checkInterrupt(uint16_t address, InterruptType type);
   void interruptHandle(uint16_t address);
 
-  void executeCB();
+  void dispatchCB();
 };

@@ -1,5 +1,6 @@
 #include "Cpu.h"
 
+#include <array>
 #include <cstdint>
 #include <istream>
 #include <ostream>
@@ -14,6 +15,16 @@ namespace {
 
 constexpr uint16_t toWord(int high, int low) {
   return static_cast<uint16_t>((high << 8) | low);
+}
+
+constexpr uint8_t HL_INDIRECT = 6;
+
+constexpr std::array<uint8_t Registers::*, 8> R8_REGISTERS = {
+    &Registers::b, &Registers::c, &Registers::d, &Registers::e,
+    &Registers::h, &Registers::l, nullptr,       &Registers::a};
+
+[[noreturn]] void unknownInstruction() {
+  throw std::runtime_error("Unknown Instruction Type");
 }
 
 }  // namespace
@@ -49,20 +60,55 @@ inline uint8_t CPU::stackPop8() {
   return val;
 }
 
-inline uint16_t CPU::stackPop16() {
-  uint16_t low = stackPop8();
-  uint16_t high = stackPop8();
-  return toWord(high, low);
+inline uint8_t CPU::fetch8() {
+  uint8_t value = memory_.read8(state.registers.pc++);
+  cycle(1);
+  return value;
+}
+
+inline uint16_t CPU::fetch16() {
+  uint8_t lo = fetch8();
+  uint8_t hi = fetch8();
+  return toWord(hi, lo);
+}
+
+inline void CPU::push16(uint16_t value) {
+  cycle(1);
+  stackPush8(highByte(value));
+  cycle(1);
+  stackPush8(lowByte(value));
+}
+
+inline uint16_t CPU::pop16() {
+  uint8_t lo = stackPop8();
+  cycle(1);
+  uint8_t hi = stackPop8();
+  cycle(1);
+  return toWord(hi, lo);
+}
+
+inline void CPU::call(uint16_t address) {
+  push16(state.registers.pc);
+  state.registers.pc = address;
+  cycle(1);
+}
+
+inline void CPU::ret() {
+  state.registers.pc = pop16();
+  cycle(1);
+}
+
+inline void CPU::halt() {
+  if (!state.ime && interrupts_.anyPending()) {
+    state.haltBug = true;
+  } else {
+    state.halted = true;
+  }
 }
 
 void CPU::interruptHandle(uint16_t address) {
   cycle(2);
-  cycle(1);
-  stackPush8(highByte(state.registers.pc));
-  cycle(1);
-  stackPush8(lowByte(state.registers.pc));
-  state.registers.pc = address;
-  cycle(1);
+  call(address);
 }
 
 bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
@@ -90,138 +136,628 @@ void CPU::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void CPU::load(std::istream& in) { serial::loadFields(in, *this); }
 
-void CPU::executeCB() {
-  uint8_t sub = memory_.read8(state.registers.pc++);
-  cycle(1);
-
-  auto cbRead = [&](uint8_t idx) -> uint8_t {
-    switch (idx) {
-      case 0:
-        return state.registers.b;
-      case 1:
-        return state.registers.c;
-      case 2:
-        return state.registers.d;
-      case 3:
-        return state.registers.e;
-      case 4:
-        return state.registers.h;
-      case 5:
-        return state.registers.l;
-      case 6:
-        return memory_.read8(state.registers.hl());
-      case 7:
-        return state.registers.a;
-      default:
-        return 0;
-    }
-  };
-
-  auto cbWrite = [&](uint8_t idx, uint8_t val) {
-    switch (idx) {
-      case 0:
-        state.registers.b = val;
-        break;
-      case 1:
-        state.registers.c = val;
-        break;
-      case 2:
-        state.registers.d = val;
-        break;
-      case 3:
-        state.registers.e = val;
-        break;
-      case 4:
-        state.registers.h = val;
-        break;
-      case 5:
-        state.registers.l = val;
-        break;
-      case 6:
-        memory_.write8(state.registers.hl(), val);
-        cycle(1);
-        break;
-      case 7:
-        state.registers.a = val;
-        break;
-      default:
-        break;
-    }
-  };
-
-  uint8_t reg_idx = sub & 0x07;
-  uint8_t op_group = sub >> 6;
-  uint8_t bit_num = (sub >> 3) & 0x07;
-  bool isHL = (reg_idx == 6);
-
-  uint8_t val = cbRead(reg_idx);
-  if (isHL) cycle(1);
-
-  switch (op_group) {
-    case 0: {
-      switch (bit_num) {
-        case 0: { /* RLC */
-          bool setC = (val & BIT7_MASK) != 0;
-          uint8_t result = toU8((val << 1) | (setC ? 1 : 0));
-          cbWrite(reg_idx, result);
-          setFlags(result == 0, 0, 0, setC);
-        } break;
-        case 1: { /* RRC */
-          uint8_t old = val;
-          auto result = static_cast<uint8_t>((val >> 1) | (old << 7));
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, old & 1);
-        } break;
-        case 2: { /* RL */
-          uint8_t old = val;
-          auto result = static_cast<uint8_t>((val << 1) | flagC());
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, !!(old & BIT7_MASK));
-        } break;
-        case 3: { /* RR */
-          uint8_t old = val;
-          auto result = static_cast<uint8_t>((val >> 1) | (flagC() << 7));
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, old & 1);
-        } break;
-        case 4: { /* SLA */
-          uint8_t old = val;
-          auto result = static_cast<uint8_t>(val << 1);
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, !!(old & BIT7_MASK));
-        } break;
-        case 5: { /* SRA */
-          auto result = static_cast<uint8_t>(static_cast<int8_t>(val) >> 1);
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, val & 1);
-        } break;
-        case 6: { /* SWAP */
-          auto result = static_cast<uint8_t>(((val & HIGH_NIBBLE_MASK) >> 4) |
-                                             ((val & NIBBLE_MASK) << 4));
-          cbWrite(reg_idx, result);
-          setFlags(result == 0, 0, 0, 0);
-        } break;
-        case 7: { /* SRL */
-          uint8_t result = val >> 1;
-          cbWrite(reg_idx, result);
-          setFlags(!result, 0, 0, val & 1);
-        } break;
-        default:
-          break;
-      }
-    } break;
-    case 1: { /* BIT */
-      setFlags(!(val & (1 << bit_num)), 0, 1, -1);
-    } break;
-    case 2: { /* RES */
-      cbWrite(reg_idx, toU8(val & ~(1 << bit_num)));
-    } break;
-    case 3: { /* SET */
-      cbWrite(reg_idx, static_cast<uint8_t>(val | (1 << bit_num)));
-    } break;
-    default:
-      break;
+template <uint8_t Idx>
+inline uint8_t CPU::readR8() {
+  if constexpr (Idx == HL_INDIRECT) {
+    uint8_t value = memory_.read8(state.registers.hl());
+    cycle(1);
+    return value;
+  } else {
+    constexpr auto reg = R8_REGISTERS[Idx];
+    return state.registers.*reg;
   }
+}
+
+template <uint8_t Idx>
+inline void CPU::writeR8(uint8_t value) {
+  if constexpr (Idx == HL_INDIRECT) {
+    memory_.write8(state.registers.hl(), value);
+    cycle(1);
+  } else {
+    constexpr auto reg = R8_REGISTERS[Idx];
+    state.registers.*reg = value;
+  }
+}
+
+template <uint8_t P>
+inline uint16_t CPU::rp() const {
+  if constexpr (P == 0) {
+    return state.registers.bc();
+  } else if constexpr (P == 1) {
+    return state.registers.de();
+  } else if constexpr (P == 2) {
+    return state.registers.hl();
+  } else {
+    return state.registers.sp;
+  }
+}
+
+template <uint8_t P>
+inline void CPU::setRp(uint16_t value) {
+  if constexpr (P == 0) {
+    state.registers.setBc(value);
+  } else if constexpr (P == 1) {
+    state.registers.setDe(value);
+  } else if constexpr (P == 2) {
+    state.registers.setHl(value);
+  } else {
+    state.registers.sp = value;
+  }
+}
+
+template <uint8_t P>
+inline uint16_t CPU::rp2() const {
+  if constexpr (P == 3) {
+    return state.registers.af();
+  } else {
+    return rp<P>();
+  }
+}
+
+template <uint8_t P>
+inline void CPU::setRp2(uint16_t value) {
+  if constexpr (P == 3) {
+    state.registers.setAf(value);
+  } else {
+    setRp<P>(value);
+  }
+}
+
+template <uint8_t Cc>
+inline bool CPU::cond() const {
+  if constexpr (Cc == 0) {
+    return !flagZ();
+  } else if constexpr (Cc == 1) {
+    return flagZ();
+  } else if constexpr (Cc == 2) {
+    return !flagC();
+  } else {
+    return flagC();
+  }
+}
+
+template <uint8_t Op>
+inline void CPU::alu(uint8_t value) {
+  const int a = state.registers.a;
+  const int v = value;
+  if constexpr (Op == 0 || Op == 1) {
+    const int c = Op == 1 ? flagC() : 0;
+    state.registers.a = toU8(a + v + c);
+    setFlags(state.registers.a == 0, 0,
+             (a & NIBBLE_MASK) + (v & NIBBLE_MASK) + c > NIBBLE_MASK,
+             a + v + c > BYTE_MASK);
+  } else if constexpr (Op == 2 || Op == 3 || Op == 7) {
+    const int c = Op == 3 ? flagC() : 0;
+    const int result = a - v - c;
+    if constexpr (Op != 7) {
+      state.registers.a = toU8(result);
+    }
+    setFlags(toU8(result) == 0, 1,
+             (a & NIBBLE_MASK) - (v & NIBBLE_MASK) - c < 0, result < 0);
+  } else if constexpr (Op == 4) {
+    state.registers.a &= value;
+    setFlags(state.registers.a == 0, 0, 1, 0);
+  } else if constexpr (Op == 5) {
+    state.registers.a ^= value;
+    setFlags(state.registers.a == 0, 0, 0, 0);
+  } else {
+    state.registers.a |= value;
+    setFlags(state.registers.a == 0, 0, 0, 0);
+  }
+}
+
+template <uint8_t Op>
+inline uint8_t CPU::shift(uint8_t value) {
+  uint8_t result = 0;
+  int carry = 0;
+  if constexpr (Op == 0) {
+    carry = (value & BIT7_MASK) != 0;
+    result = toU8((value << 1) | carry);
+  } else if constexpr (Op == 1) {
+    carry = value & BIT0_MASK;
+    result = toU8((value >> 1) | (value << 7));
+  } else if constexpr (Op == 2) {
+    carry = (value & BIT7_MASK) != 0;
+    result = toU8((value << 1) | flagC());
+  } else if constexpr (Op == 3) {
+    carry = value & BIT0_MASK;
+    result = toU8((value >> 1) | (flagC() << 7));
+  } else if constexpr (Op == 4) {
+    carry = (value & BIT7_MASK) != 0;
+    result = toU8(value << 1);
+  } else if constexpr (Op == 5) {
+    carry = value & BIT0_MASK;
+    result = static_cast<uint8_t>(static_cast<int8_t>(value) >> 1);
+  } else if constexpr (Op == 6) {
+    result = toU8((value >> 4) | (value << 4));
+  } else {
+    carry = value & BIT0_MASK;
+    result = toU8(value >> 1);
+  }
+  setFlags(result == 0, 0, 0, carry);
+  return result;
+}
+
+template <uint8_t Op>
+inline void CPU::execute() {
+  constexpr uint8_t x = Op >> 6;
+  constexpr uint8_t y = (Op >> 3) & 7;
+  constexpr uint8_t z = Op & 7;
+  constexpr uint8_t p = y >> 1;
+  constexpr uint8_t q = y & 1;
+  auto& r = state.registers;
+
+  if constexpr (Op == 0x76) { /* HALT */
+    halt();
+  } else if constexpr (x == 1) { /* LD r,r */
+    writeR8<y>(readR8<z>());
+  } else if constexpr (x == 2) { /* ALU A,r */
+    alu<y>(readR8<z>());
+  } else if constexpr (x == 0 && z == 0) {
+    if constexpr (y == 0) {        /* NOP */
+    } else if constexpr (y == 1) { /* LD (a16),SP */
+      uint16_t address = fetch16();
+      memory_.write8(address, lowByte(r.sp));
+      cycle(1);
+      memory_.write8(static_cast<uint16_t>(address + 1), highByte(r.sp));
+      cycle(1);
+    } else if constexpr (y == 2) { /* STOP */
+      (void)memory_.read8(r.pc++);
+      memory_.write8(TIMER_DIV_REGISTER, 0);
+    } else { /* JR r8, JR cc,r8 */
+      auto offset = static_cast<int8_t>(fetch8());
+      if (y == 3 || cond<y & 3>()) {
+        r.pc = static_cast<uint16_t>(r.pc + offset);
+        cycle(1);
+      }
+    }
+  } else if constexpr (x == 0 && z == 1) {
+    if constexpr (q == 0) { /* LD rr,d16 */
+      setRp<p>(fetch16());
+    } else { /* ADD HL,rr */
+      uint32_t hl = r.hl();
+      uint32_t value = rp<p>();
+      uint32_t result = hl + value;
+      cycle(1);
+      int h = (hl & HALF_CARRY_16_MASK) + (value & HALF_CARRY_16_MASK) >=
+              HALF_CARRY_16_THRESHOLD;
+      int c = result >= CARRY_16_THRESHOLD;
+      r.setHl(result & WORD_MASK);
+      setFlags(-1, 0, h, c);
+    }
+  } else if constexpr (x == 0 && z == 2) { /* LD (rr),A / LD A,(rr) */
+    uint16_t address = rp<p == 3 ? 2 : p>();
+    if constexpr (q == 0) {
+      memory_.write8(address, r.a);
+    } else {
+      r.a = memory_.read8(address);
+    }
+    if constexpr (p == 2) {
+      r.setHl(address + 1);
+    } else if constexpr (p == 3) {
+      r.setHl(address - 1);
+    }
+    cycle(1);
+  } else if constexpr (x == 0 && z == 3) { /* INC rr / DEC rr */
+    setRp<p>(static_cast<uint16_t>(rp<p>() + (q == 0 ? 1 : -1)));
+    cycle(1);
+  } else if constexpr (x == 0 && z == 4) { /* INC r */
+    uint8_t value = toU8(readR8<y>() + 1);
+    writeR8<y>(value);
+    setFlags(value == 0, 0, (value & NIBBLE_MASK) == 0, -1);
+  } else if constexpr (x == 0 && z == 5) { /* DEC r */
+    uint8_t value = toU8(readR8<y>() - 1);
+    writeR8<y>(value);
+    setFlags(value == 0, 1, (value & NIBBLE_MASK) == NIBBLE_MASK, -1);
+  } else if constexpr (x == 0 && z == 6) { /* LD r,d8 */
+    writeR8<y>(fetch8());
+  } else if constexpr (x == 0 && z == 7) {
+    if constexpr (y < 4) { /* RLCA, RRCA, RLA, RRA */
+      r.a = shift<y>(r.a);
+      setFlags(0, -1, -1, -1);
+    } else if constexpr (y == 4) { /* DAA */
+      uint8_t u = 0;
+      int c = 0;
+      if (flagH() || (!flagN() && (r.a & NIBBLE_MASK) > 9)) {
+        u = 6;
+      }
+      if (flagC() || (!flagN() && r.a > 0x99)) {
+        u |= 0x60;
+        c = 1;
+      }
+      r.a = toU8(r.a + (flagN() ? -u : u));
+      setFlags(r.a == 0, -1, 0, c);
+    } else if constexpr (y == 5) { /* CPL */
+      r.a = static_cast<uint8_t>(~r.a);
+      setFlags(-1, 1, 1, -1);
+    } else if constexpr (y == 6) { /* SCF */
+      setFlags(-1, 0, 0, 1);
+    } else { /* CCF */
+      setFlags(-1, 0, 0, flagC() ^ 1);
+    }
+  } else if constexpr (z == 0) {
+    if constexpr (y < 4) { /* RET cc */
+      cycle(1);
+      if (cond<y>()) {
+        ret();
+      }
+    } else if constexpr (y == 4) { /* LDH (a8),A */
+      uint8_t offset = fetch8();
+      memory_.write8(IO_REGISTERS_START | offset, r.a);
+      cycle(1);
+    } else if constexpr (y == 5) { /* ADD SP,r8 */
+      auto val = static_cast<int8_t>(fetch8());
+      int h = (r.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
+      int c = (r.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
+      r.sp = static_cast<uint16_t>(static_cast<int>(r.sp) + val);
+      cycle(1);
+      cycle(1);
+      setFlags(0, 0, h, c);
+    } else if constexpr (y == 6) { /* LDH A,(a8) */
+      uint8_t offset = fetch8();
+      r.a = memory_.read8(IO_REGISTERS_START | offset);
+      cycle(1);
+    } else { /* LD HL,SP+r8 */
+      auto val = static_cast<int8_t>(fetch8());
+      uint8_t h = (r.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
+      uint8_t c = (r.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
+      setFlags(0, 0, h, c);
+      r.setHl(static_cast<uint16_t>(static_cast<int>(r.sp) + val));
+      cycle(1);
+    }
+  } else if constexpr (z == 1) {
+    if constexpr (q == 0) { /* POP rr */
+      setRp2<p>(pop16());
+    } else if constexpr (p == 0) { /* RET */
+      ret();
+    } else if constexpr (p == 1) { /* RETI */
+      state.ime = true;
+      ret();
+    } else if constexpr (p == 2) { /* JP HL */
+      r.pc = r.hl();
+    } else { /* LD SP,HL */
+      r.sp = r.hl();
+      cycle(1);
+    }
+  } else if constexpr (z == 2) {
+    if constexpr (y < 4) { /* JP cc,a16 */
+      uint16_t address = fetch16();
+      if (cond<y>()) {
+        r.pc = address;
+        cycle(1);
+      }
+    } else if constexpr (y == 4) { /* LD (C),A */
+      memory_.write8(IO_REGISTERS_START | r.c, r.a);
+      cycle(1);
+    } else if constexpr (y == 5) { /* LD (a16),A */
+      memory_.write8(fetch16(), r.a);
+      cycle(1);
+    } else if constexpr (y == 6) { /* LD A,(C) */
+      r.a = memory_.read8(IO_REGISTERS_START | r.c);
+      cycle(1);
+    } else { /* LD A,(a16) */
+      r.a = memory_.read8(fetch16());
+      cycle(1);
+    }
+  } else if constexpr (z == 3) {
+    if constexpr (y == 0) { /* JP a16 */
+      r.pc = fetch16();
+      cycle(1);
+    } else if constexpr (y == 1) { /* CB prefix */
+      dispatchCB();
+    } else if constexpr (y == 6) { /* DI */
+      state.ime = false;
+      state.imeScheduled = false;
+    } else if constexpr (y == 7) { /* EI */
+      state.imeScheduled = true;
+    } else {
+      unknownInstruction();
+    }
+  } else if constexpr (z == 4) {
+    if constexpr (y < 4) { /* CALL cc,a16 */
+      uint16_t address = fetch16();
+      if (cond<y>()) {
+        call(address);
+      }
+    } else {
+      unknownInstruction();
+    }
+  } else if constexpr (z == 5) {
+    if constexpr (q == 0) { /* PUSH rr */
+      push16(rp2<p>());
+      cycle(1);
+    } else if constexpr (p == 0) { /* CALL a16 */
+      call(fetch16());
+    } else {
+      unknownInstruction();
+    }
+  } else if constexpr (z == 6) { /* ALU A,d8 */
+    alu<y>(fetch8());
+  } else { /* RST */
+    call(y * 8);
+  }
+}
+
+template <uint8_t Op>
+inline void CPU::executeCB() {
+  constexpr uint8_t x = Op >> 6;
+  constexpr uint8_t y = (Op >> 3) & 7;
+  constexpr uint8_t z = Op & 7;
+
+  uint8_t value = readR8<z>();
+  if constexpr (x == 0) { /* RLC..SRL */
+    writeR8<z>(shift<y>(value));
+  } else if constexpr (x == 1) { /* BIT */
+    setFlags(!(value & (1 << y)), 0, 1, -1);
+  } else if constexpr (x == 2) { /* RES */
+    writeR8<z>(toU8(value & ~(1 << y)));
+  } else { /* SET */
+    writeR8<z>(toU8(value | (1 << y)));
+  }
+}
+
+void CPU::dispatchCB() {
+  uint8_t sub = fetch8();
+  // clang-format off
+  switch (sub) {
+    case 0x00: executeCB<0x00>(); break;
+    case 0x01: executeCB<0x01>(); break;
+    case 0x02: executeCB<0x02>(); break;
+    case 0x03: executeCB<0x03>(); break;
+    case 0x04: executeCB<0x04>(); break;
+    case 0x05: executeCB<0x05>(); break;
+    case 0x06: executeCB<0x06>(); break;
+    case 0x07: executeCB<0x07>(); break;
+    case 0x08: executeCB<0x08>(); break;
+    case 0x09: executeCB<0x09>(); break;
+    case 0x0A: executeCB<0x0A>(); break;
+    case 0x0B: executeCB<0x0B>(); break;
+    case 0x0C: executeCB<0x0C>(); break;
+    case 0x0D: executeCB<0x0D>(); break;
+    case 0x0E: executeCB<0x0E>(); break;
+    case 0x0F: executeCB<0x0F>(); break;
+    case 0x10: executeCB<0x10>(); break;
+    case 0x11: executeCB<0x11>(); break;
+    case 0x12: executeCB<0x12>(); break;
+    case 0x13: executeCB<0x13>(); break;
+    case 0x14: executeCB<0x14>(); break;
+    case 0x15: executeCB<0x15>(); break;
+    case 0x16: executeCB<0x16>(); break;
+    case 0x17: executeCB<0x17>(); break;
+    case 0x18: executeCB<0x18>(); break;
+    case 0x19: executeCB<0x19>(); break;
+    case 0x1A: executeCB<0x1A>(); break;
+    case 0x1B: executeCB<0x1B>(); break;
+    case 0x1C: executeCB<0x1C>(); break;
+    case 0x1D: executeCB<0x1D>(); break;
+    case 0x1E: executeCB<0x1E>(); break;
+    case 0x1F: executeCB<0x1F>(); break;
+    case 0x20: executeCB<0x20>(); break;
+    case 0x21: executeCB<0x21>(); break;
+    case 0x22: executeCB<0x22>(); break;
+    case 0x23: executeCB<0x23>(); break;
+    case 0x24: executeCB<0x24>(); break;
+    case 0x25: executeCB<0x25>(); break;
+    case 0x26: executeCB<0x26>(); break;
+    case 0x27: executeCB<0x27>(); break;
+    case 0x28: executeCB<0x28>(); break;
+    case 0x29: executeCB<0x29>(); break;
+    case 0x2A: executeCB<0x2A>(); break;
+    case 0x2B: executeCB<0x2B>(); break;
+    case 0x2C: executeCB<0x2C>(); break;
+    case 0x2D: executeCB<0x2D>(); break;
+    case 0x2E: executeCB<0x2E>(); break;
+    case 0x2F: executeCB<0x2F>(); break;
+    case 0x30: executeCB<0x30>(); break;
+    case 0x31: executeCB<0x31>(); break;
+    case 0x32: executeCB<0x32>(); break;
+    case 0x33: executeCB<0x33>(); break;
+    case 0x34: executeCB<0x34>(); break;
+    case 0x35: executeCB<0x35>(); break;
+    case 0x36: executeCB<0x36>(); break;
+    case 0x37: executeCB<0x37>(); break;
+    case 0x38: executeCB<0x38>(); break;
+    case 0x39: executeCB<0x39>(); break;
+    case 0x3A: executeCB<0x3A>(); break;
+    case 0x3B: executeCB<0x3B>(); break;
+    case 0x3C: executeCB<0x3C>(); break;
+    case 0x3D: executeCB<0x3D>(); break;
+    case 0x3E: executeCB<0x3E>(); break;
+    case 0x3F: executeCB<0x3F>(); break;
+    case 0x40: executeCB<0x40>(); break;
+    case 0x41: executeCB<0x41>(); break;
+    case 0x42: executeCB<0x42>(); break;
+    case 0x43: executeCB<0x43>(); break;
+    case 0x44: executeCB<0x44>(); break;
+    case 0x45: executeCB<0x45>(); break;
+    case 0x46: executeCB<0x46>(); break;
+    case 0x47: executeCB<0x47>(); break;
+    case 0x48: executeCB<0x48>(); break;
+    case 0x49: executeCB<0x49>(); break;
+    case 0x4A: executeCB<0x4A>(); break;
+    case 0x4B: executeCB<0x4B>(); break;
+    case 0x4C: executeCB<0x4C>(); break;
+    case 0x4D: executeCB<0x4D>(); break;
+    case 0x4E: executeCB<0x4E>(); break;
+    case 0x4F: executeCB<0x4F>(); break;
+    case 0x50: executeCB<0x50>(); break;
+    case 0x51: executeCB<0x51>(); break;
+    case 0x52: executeCB<0x52>(); break;
+    case 0x53: executeCB<0x53>(); break;
+    case 0x54: executeCB<0x54>(); break;
+    case 0x55: executeCB<0x55>(); break;
+    case 0x56: executeCB<0x56>(); break;
+    case 0x57: executeCB<0x57>(); break;
+    case 0x58: executeCB<0x58>(); break;
+    case 0x59: executeCB<0x59>(); break;
+    case 0x5A: executeCB<0x5A>(); break;
+    case 0x5B: executeCB<0x5B>(); break;
+    case 0x5C: executeCB<0x5C>(); break;
+    case 0x5D: executeCB<0x5D>(); break;
+    case 0x5E: executeCB<0x5E>(); break;
+    case 0x5F: executeCB<0x5F>(); break;
+    case 0x60: executeCB<0x60>(); break;
+    case 0x61: executeCB<0x61>(); break;
+    case 0x62: executeCB<0x62>(); break;
+    case 0x63: executeCB<0x63>(); break;
+    case 0x64: executeCB<0x64>(); break;
+    case 0x65: executeCB<0x65>(); break;
+    case 0x66: executeCB<0x66>(); break;
+    case 0x67: executeCB<0x67>(); break;
+    case 0x68: executeCB<0x68>(); break;
+    case 0x69: executeCB<0x69>(); break;
+    case 0x6A: executeCB<0x6A>(); break;
+    case 0x6B: executeCB<0x6B>(); break;
+    case 0x6C: executeCB<0x6C>(); break;
+    case 0x6D: executeCB<0x6D>(); break;
+    case 0x6E: executeCB<0x6E>(); break;
+    case 0x6F: executeCB<0x6F>(); break;
+    case 0x70: executeCB<0x70>(); break;
+    case 0x71: executeCB<0x71>(); break;
+    case 0x72: executeCB<0x72>(); break;
+    case 0x73: executeCB<0x73>(); break;
+    case 0x74: executeCB<0x74>(); break;
+    case 0x75: executeCB<0x75>(); break;
+    case 0x76: executeCB<0x76>(); break;
+    case 0x77: executeCB<0x77>(); break;
+    case 0x78: executeCB<0x78>(); break;
+    case 0x79: executeCB<0x79>(); break;
+    case 0x7A: executeCB<0x7A>(); break;
+    case 0x7B: executeCB<0x7B>(); break;
+    case 0x7C: executeCB<0x7C>(); break;
+    case 0x7D: executeCB<0x7D>(); break;
+    case 0x7E: executeCB<0x7E>(); break;
+    case 0x7F: executeCB<0x7F>(); break;
+    case 0x80: executeCB<0x80>(); break;
+    case 0x81: executeCB<0x81>(); break;
+    case 0x82: executeCB<0x82>(); break;
+    case 0x83: executeCB<0x83>(); break;
+    case 0x84: executeCB<0x84>(); break;
+    case 0x85: executeCB<0x85>(); break;
+    case 0x86: executeCB<0x86>(); break;
+    case 0x87: executeCB<0x87>(); break;
+    case 0x88: executeCB<0x88>(); break;
+    case 0x89: executeCB<0x89>(); break;
+    case 0x8A: executeCB<0x8A>(); break;
+    case 0x8B: executeCB<0x8B>(); break;
+    case 0x8C: executeCB<0x8C>(); break;
+    case 0x8D: executeCB<0x8D>(); break;
+    case 0x8E: executeCB<0x8E>(); break;
+    case 0x8F: executeCB<0x8F>(); break;
+    case 0x90: executeCB<0x90>(); break;
+    case 0x91: executeCB<0x91>(); break;
+    case 0x92: executeCB<0x92>(); break;
+    case 0x93: executeCB<0x93>(); break;
+    case 0x94: executeCB<0x94>(); break;
+    case 0x95: executeCB<0x95>(); break;
+    case 0x96: executeCB<0x96>(); break;
+    case 0x97: executeCB<0x97>(); break;
+    case 0x98: executeCB<0x98>(); break;
+    case 0x99: executeCB<0x99>(); break;
+    case 0x9A: executeCB<0x9A>(); break;
+    case 0x9B: executeCB<0x9B>(); break;
+    case 0x9C: executeCB<0x9C>(); break;
+    case 0x9D: executeCB<0x9D>(); break;
+    case 0x9E: executeCB<0x9E>(); break;
+    case 0x9F: executeCB<0x9F>(); break;
+    case 0xA0: executeCB<0xA0>(); break;
+    case 0xA1: executeCB<0xA1>(); break;
+    case 0xA2: executeCB<0xA2>(); break;
+    case 0xA3: executeCB<0xA3>(); break;
+    case 0xA4: executeCB<0xA4>(); break;
+    case 0xA5: executeCB<0xA5>(); break;
+    case 0xA6: executeCB<0xA6>(); break;
+    case 0xA7: executeCB<0xA7>(); break;
+    case 0xA8: executeCB<0xA8>(); break;
+    case 0xA9: executeCB<0xA9>(); break;
+    case 0xAA: executeCB<0xAA>(); break;
+    case 0xAB: executeCB<0xAB>(); break;
+    case 0xAC: executeCB<0xAC>(); break;
+    case 0xAD: executeCB<0xAD>(); break;
+    case 0xAE: executeCB<0xAE>(); break;
+    case 0xAF: executeCB<0xAF>(); break;
+    case 0xB0: executeCB<0xB0>(); break;
+    case 0xB1: executeCB<0xB1>(); break;
+    case 0xB2: executeCB<0xB2>(); break;
+    case 0xB3: executeCB<0xB3>(); break;
+    case 0xB4: executeCB<0xB4>(); break;
+    case 0xB5: executeCB<0xB5>(); break;
+    case 0xB6: executeCB<0xB6>(); break;
+    case 0xB7: executeCB<0xB7>(); break;
+    case 0xB8: executeCB<0xB8>(); break;
+    case 0xB9: executeCB<0xB9>(); break;
+    case 0xBA: executeCB<0xBA>(); break;
+    case 0xBB: executeCB<0xBB>(); break;
+    case 0xBC: executeCB<0xBC>(); break;
+    case 0xBD: executeCB<0xBD>(); break;
+    case 0xBE: executeCB<0xBE>(); break;
+    case 0xBF: executeCB<0xBF>(); break;
+    case 0xC0: executeCB<0xC0>(); break;
+    case 0xC1: executeCB<0xC1>(); break;
+    case 0xC2: executeCB<0xC2>(); break;
+    case 0xC3: executeCB<0xC3>(); break;
+    case 0xC4: executeCB<0xC4>(); break;
+    case 0xC5: executeCB<0xC5>(); break;
+    case 0xC6: executeCB<0xC6>(); break;
+    case 0xC7: executeCB<0xC7>(); break;
+    case 0xC8: executeCB<0xC8>(); break;
+    case 0xC9: executeCB<0xC9>(); break;
+    case 0xCA: executeCB<0xCA>(); break;
+    case 0xCB: executeCB<0xCB>(); break;
+    case 0xCC: executeCB<0xCC>(); break;
+    case 0xCD: executeCB<0xCD>(); break;
+    case 0xCE: executeCB<0xCE>(); break;
+    case 0xCF: executeCB<0xCF>(); break;
+    case 0xD0: executeCB<0xD0>(); break;
+    case 0xD1: executeCB<0xD1>(); break;
+    case 0xD2: executeCB<0xD2>(); break;
+    case 0xD3: executeCB<0xD3>(); break;
+    case 0xD4: executeCB<0xD4>(); break;
+    case 0xD5: executeCB<0xD5>(); break;
+    case 0xD6: executeCB<0xD6>(); break;
+    case 0xD7: executeCB<0xD7>(); break;
+    case 0xD8: executeCB<0xD8>(); break;
+    case 0xD9: executeCB<0xD9>(); break;
+    case 0xDA: executeCB<0xDA>(); break;
+    case 0xDB: executeCB<0xDB>(); break;
+    case 0xDC: executeCB<0xDC>(); break;
+    case 0xDD: executeCB<0xDD>(); break;
+    case 0xDE: executeCB<0xDE>(); break;
+    case 0xDF: executeCB<0xDF>(); break;
+    case 0xE0: executeCB<0xE0>(); break;
+    case 0xE1: executeCB<0xE1>(); break;
+    case 0xE2: executeCB<0xE2>(); break;
+    case 0xE3: executeCB<0xE3>(); break;
+    case 0xE4: executeCB<0xE4>(); break;
+    case 0xE5: executeCB<0xE5>(); break;
+    case 0xE6: executeCB<0xE6>(); break;
+    case 0xE7: executeCB<0xE7>(); break;
+    case 0xE8: executeCB<0xE8>(); break;
+    case 0xE9: executeCB<0xE9>(); break;
+    case 0xEA: executeCB<0xEA>(); break;
+    case 0xEB: executeCB<0xEB>(); break;
+    case 0xEC: executeCB<0xEC>(); break;
+    case 0xED: executeCB<0xED>(); break;
+    case 0xEE: executeCB<0xEE>(); break;
+    case 0xEF: executeCB<0xEF>(); break;
+    case 0xF0: executeCB<0xF0>(); break;
+    case 0xF1: executeCB<0xF1>(); break;
+    case 0xF2: executeCB<0xF2>(); break;
+    case 0xF3: executeCB<0xF3>(); break;
+    case 0xF4: executeCB<0xF4>(); break;
+    case 0xF5: executeCB<0xF5>(); break;
+    case 0xF6: executeCB<0xF6>(); break;
+    case 0xF7: executeCB<0xF7>(); break;
+    case 0xF8: executeCB<0xF8>(); break;
+    case 0xF9: executeCB<0xF9>(); break;
+    case 0xFA: executeCB<0xFA>(); break;
+    case 0xFB: executeCB<0xFB>(); break;
+    case 0xFC: executeCB<0xFC>(); break;
+    case 0xFD: executeCB<0xFD>(); break;
+    case 0xFE: executeCB<0xFE>(); break;
+    case 0xFF: executeCB<0xFF>(); break;
+  }
+  // clang-format on
 }
 
 void CPU::step() {
@@ -240,1673 +776,266 @@ void CPU::step() {
     }
     cycle(1);
 
+    // clang-format off
     switch (opcode) {
-      case 0x00: { /* NOP */
-      } break;
-
-      case 0x01: { /* LD BC,d16 */
-        uint8_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint8_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        state.registers.c = lo;
-        state.registers.b = hi;
-      } break;
-
-      case 0x02: { /* LD (BC),A */
-        memory_.write8(state.registers.bc(), state.registers.a);
-        cycle(1);
-      } break;
-
-      case 0x03: { /* INC BC */
-        state.registers.setBc(state.registers.bc() + 1);
-        cycle(1);
-      } break;
-
-      case 0x04: { /* INC B */
-        state.registers.b++;
-        setFlags(state.registers.b == 0, 0,
-                 (state.registers.b & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x05: { /* DEC B */
-        state.registers.b--;
-        setFlags(state.registers.b == 0, 1,
-                 (state.registers.b & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x06: { /* LD B,d8 */
-        state.registers.b = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x07: { /* RLCA */
-        uint8_t u = state.registers.a;
-        bool c = (u >> 7) & 1;
-        u = static_cast<uint8_t>((u << 1) | c);
-        state.registers.a = u;
-        setFlags(0, 0, 0, c);
-      } break;
-
-      case 0x08: { /* LD (a16),SP */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        uint16_t addr = toWord(hi, lo);
-        state.registers.pc += 2;
-        memory_.write8(addr, lowByte(state.registers.sp));
-        cycle(1);
-        memory_.write8(static_cast<uint16_t>(addr + 1),
-                       highByte(state.registers.sp));
-        cycle(1);
-      } break;
-
-      case 0x09: { /* ADD HL,BC */
-        uint32_t hl = state.registers.hl();
-        uint32_t bc = state.registers.bc();
-        uint32_t result = hl + bc;
-        cycle(1);
-        int h = (hl & HALF_CARRY_16_MASK) + (bc & HALF_CARRY_16_MASK) >=
-                HALF_CARRY_16_THRESHOLD;
-        int c = result >= CARRY_16_THRESHOLD;
-        state.registers.setHl(result & WORD_MASK);
-        setFlags(-1, 0, h, c);
-      } break;
-
-      case 0x0A: { /* LD A,(BC) */
-        state.registers.a = memory_.read8(state.registers.bc());
-        cycle(1);
-      } break;
-
-      case 0x0B: { /* DEC BC */
-        state.registers.setBc(state.registers.bc() - 1);
-        cycle(1);
-      } break;
-
-      case 0x0C: { /* INC C */
-        state.registers.c++;
-        setFlags(state.registers.c == 0, 0,
-                 (state.registers.c & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x0D: { /* DEC C */
-        state.registers.c--;
-        setFlags(state.registers.c == 0, 1,
-                 (state.registers.c & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x0E: { /* LD C,d8 */
-        state.registers.c = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x0F: { /* RRCA */
-        uint8_t b = state.registers.a & 1;
-        state.registers.a >>= 1;
-        state.registers.a |= toU8(b << 7);
-        setFlags(0, 0, 0, b);
-      } break;
-
-      case 0x10: { /* STOP */
-        (void)memory_.read8(state.registers.pc++);
-        memory_.write8(TIMER_DIV_REGISTER, 0);
-      } break;
-
-      case 0x11: { /* LD DE,d16 */
-        uint8_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint8_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        state.registers.e = lo;
-        state.registers.d = hi;
-      } break;
-
-      case 0x12: { /* LD (DE),A */
-        memory_.write8(state.registers.de(), state.registers.a);
-        cycle(1);
-      } break;
-
-      case 0x13: { /* INC DE */
-        state.registers.setDe(state.registers.de() + 1);
-        cycle(1);
-      } break;
-
-      case 0x14: { /* INC D */
-        state.registers.d++;
-        setFlags(state.registers.d == 0, 0,
-                 (state.registers.d & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x15: { /* DEC D */
-        state.registers.d--;
-        setFlags(state.registers.d == 0, 1,
-                 (state.registers.d & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x16: { /* LD D,d8 */
-        state.registers.d = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x17: { /* RLA */
-        uint8_t u = state.registers.a;
-        uint8_t cf = flagC();
-        uint8_t c = (u >> 7) & 1;
-        state.registers.a = static_cast<uint8_t>((u << 1) | cf);
-        setFlags(0, 0, 0, c);
-      } break;
-
-      case 0x18: { /* JR r8 */
-        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
-        cycle(1);
-      } break;
-
-      case 0x19: { /* ADD HL,DE */
-        uint32_t hl = state.registers.hl();
-        uint32_t de = state.registers.de();
-        uint32_t result = hl + de;
-        cycle(1);
-        int h = (hl & HALF_CARRY_16_MASK) + (de & HALF_CARRY_16_MASK) >=
-                HALF_CARRY_16_THRESHOLD;
-        int c = result >= CARRY_16_THRESHOLD;
-        state.registers.setHl(result & WORD_MASK);
-        setFlags(-1, 0, h, c);
-      } break;
-
-      case 0x1A: { /* LD A,(DE) */
-        state.registers.a = memory_.read8(state.registers.de());
-        cycle(1);
-      } break;
-
-      case 0x1B: { /* DEC DE */
-        state.registers.setDe(state.registers.de() - 1);
-        cycle(1);
-      } break;
-
-      case 0x1C: { /* INC E */
-        state.registers.e++;
-        setFlags(state.registers.e == 0, 0,
-                 (state.registers.e & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x1D: { /* DEC E */
-        state.registers.e--;
-        setFlags(state.registers.e == 0, 1,
-                 (state.registers.e & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x1E: { /* LD E,d8 */
-        state.registers.e = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x1F: { /* RRA */
-        uint8_t carry = flagC();
-        uint8_t new_c = state.registers.a & 1;
-        state.registers.a >>= 1;
-        state.registers.a |= toU8(carry << 7);
-        setFlags(0, 0, 0, new_c);
-      } break;
-
-      case 0x20: { /* JR NZ,r8 */
-        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        if (!flagZ()) {
-          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
-          cycle(1);
-        }
-      } break;
-
-      case 0x21: { /* LD HL,d16 */
-        uint8_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint8_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        state.registers.l = lo;
-        state.registers.h = hi;
-      } break;
-
-      case 0x22: { /* LD (HL+),A */
-        uint16_t hl = state.registers.hl();
-        memory_.write8(hl, state.registers.a);
-        state.registers.setHl(hl + 1);
-        cycle(1);
-      } break;
-
-      case 0x23: { /* INC HL */
-        state.registers.setHl(state.registers.hl() + 1);
-        cycle(1);
-      } break;
-
-      case 0x24: { /* INC H */
-        state.registers.h++;
-        setFlags(state.registers.h == 0, 0,
-                 (state.registers.h & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x25: { /* DEC H */
-        state.registers.h--;
-        setFlags(state.registers.h == 0, 1,
-                 (state.registers.h & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x26: { /* LD H,d8 */
-        state.registers.h = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x27: { /* DAA */
-        uint8_t u = 0;
-        int c = 0;
-        if (flagH() || (!flagN() && (state.registers.a & NIBBLE_MASK) > 9)) {
-          u = 6;
-        }
-        if (flagC() || (!flagN() && state.registers.a > 0x99)) {
-          u |= 0x60;
-          c = 1;
-        }
-        state.registers.a = toU8(state.registers.a + (flagN() ? -u : u));
-        setFlags(state.registers.a == 0, -1, 0, c);
-      } break;
-
-      case 0x28: { /* JR Z,r8 */
-        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        if (flagZ()) {
-          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
-          cycle(1);
-        }
-      } break;
-
-      case 0x29: { /* ADD HL,HL */
-        uint32_t hl = state.registers.hl();
-        uint32_t result = hl + hl;
-        cycle(1);
-        int h = (hl & HALF_CARRY_16_MASK) + (hl & HALF_CARRY_16_MASK) >=
-                HALF_CARRY_16_THRESHOLD;
-        int c = result >= CARRY_16_THRESHOLD;
-        state.registers.setHl(result & WORD_MASK);
-        setFlags(-1, 0, h, c);
-      } break;
-
-      case 0x2A: { /* LD A,(HL+) */
-        uint16_t hl = state.registers.hl();
-        state.registers.a = memory_.read8(hl);
-        cycle(1);
-        state.registers.setHl(hl + 1);
-      } break;
-
-      case 0x2B: { /* DEC HL */
-        state.registers.setHl(state.registers.hl() - 1);
-        cycle(1);
-      } break;
-
-      case 0x2C: { /* INC L */
-        state.registers.l++;
-        setFlags(state.registers.l == 0, 0,
-                 (state.registers.l & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x2D: { /* DEC L */
-        state.registers.l--;
-        setFlags(state.registers.l == 0, 1,
-                 (state.registers.l & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x2E: { /* LD L,d8 */
-        state.registers.l = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x2F: { /* CPL */
-        state.registers.a = static_cast<uint8_t>(~state.registers.a);
-        setFlags(-1, 1, 1, -1);
-      } break;
-
-      case 0x30: { /* JR NC,r8 */
-        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        if (!flagC()) {
-          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
-          cycle(1);
-        }
-      } break;
-
-      case 0x31: { /* LD SP,d16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        state.registers.sp = toWord(hi, lo);
-      } break;
-
-      case 0x32: { /* LD (HL-),A */
-        uint16_t hl = state.registers.hl();
-        memory_.write8(hl, state.registers.a);
-        state.registers.setHl(hl - 1);
-        cycle(1);
-      } break;
-
-      case 0x33: { /* INC SP */
-        state.registers.sp++;
-        cycle(1);
-      } break;
-
-      case 0x34: { /* INC (HL) */
-        uint16_t hl = state.registers.hl();
-        uint8_t val = memory_.read8(hl);
-        cycle(1);
-        val++;
-        memory_.write8(hl, val);
-        cycle(1);
-        setFlags(val == 0, 0, (val & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x35: { /* DEC (HL) */
-        uint16_t hl = state.registers.hl();
-        uint8_t val = memory_.read8(hl);
-        cycle(1);
-        val--;
-        memory_.write8(hl, val);
-        cycle(1);
-        setFlags(val == 0, 1, (val & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x36: { /* LD (HL),d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        memory_.write8(state.registers.hl(), val);
-        cycle(1);
-      } break;
-
-      case 0x37: { /* SCF */
-        setFlags(-1, 0, 0, 1);
-      } break;
-
-      case 0x38: { /* JR C,r8 */
-        auto rel = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        if (flagC()) {
-          state.registers.pc = static_cast<uint16_t>(state.registers.pc + rel);
-          cycle(1);
-        }
-      } break;
-
-      case 0x39: { /* ADD HL,SP */
-        uint32_t hl = state.registers.hl();
-        uint32_t sp = state.registers.sp;
-        uint32_t result = hl + sp;
-        cycle(1);
-        int h = (hl & HALF_CARRY_16_MASK) + (sp & HALF_CARRY_16_MASK) >=
-                HALF_CARRY_16_THRESHOLD;
-        int c = result >= CARRY_16_THRESHOLD;
-        state.registers.setHl(result & WORD_MASK);
-        setFlags(-1, 0, h, c);
-      } break;
-
-      case 0x3A: { /* LD A,(HL-) */
-        uint16_t hl = state.registers.hl();
-        state.registers.a = memory_.read8(hl);
-        cycle(1);
-        state.registers.setHl(hl - 1);
-      } break;
-
-      case 0x3B: { /* DEC SP */
-        state.registers.sp--;
-        cycle(1);
-      } break;
-
-      case 0x3C: { /* INC A */
-        state.registers.a++;
-        setFlags(state.registers.a == 0, 0,
-                 (state.registers.a & NIBBLE_MASK) == 0, -1);
-      } break;
-
-      case 0x3D: { /* DEC A */
-        state.registers.a--;
-        setFlags(state.registers.a == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) == NIBBLE_MASK, -1);
-      } break;
-
-      case 0x3E: { /* LD A,d8 */
-        state.registers.a = memory_.read8(state.registers.pc++);
-        cycle(1);
-      } break;
-
-      case 0x3F: { /* CCF */
-        setFlags(-1, 0, 0, flagC() ^ 1);
-      } break;
-
-      case 0x40: /* LD B,B */
-        state.registers.b = state.registers.b;
-        break;
-      case 0x41: /* LD B,C */
-        state.registers.b = state.registers.c;
-        break;
-      case 0x42: /* LD B,D */
-        state.registers.b = state.registers.d;
-        break;
-      case 0x43: /* LD B,E */
-        state.registers.b = state.registers.e;
-        break;
-      case 0x44: /* LD B,H */
-        state.registers.b = state.registers.h;
-        break;
-      case 0x45: /* LD B,L */
-        state.registers.b = state.registers.l;
-        break;
-      case 0x46: /* LD B,(HL) */
-        state.registers.b = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x47: /* LD B,A */
-        state.registers.b = state.registers.a;
-        break;
-      case 0x48: /* LD C,B */
-        state.registers.c = state.registers.b;
-        break;
-      case 0x49: /* LD C,C */
-        state.registers.c = state.registers.c;
-        break;
-      case 0x4A: /* LD C,D */
-        state.registers.c = state.registers.d;
-        break;
-      case 0x4B: /* LD C,E */
-        state.registers.c = state.registers.e;
-        break;
-      case 0x4C: /* LD C,H */
-        state.registers.c = state.registers.h;
-        break;
-      case 0x4D: /* LD C,L */
-        state.registers.c = state.registers.l;
-        break;
-      case 0x4E: /* LD C,(HL) */
-        state.registers.c = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x4F: /* LD C,A */
-        state.registers.c = state.registers.a;
-        break;
-      case 0x50: /* LD D,B */
-        state.registers.d = state.registers.b;
-        break;
-      case 0x51: /* LD D,C */
-        state.registers.d = state.registers.c;
-        break;
-      case 0x52: /* LD D,D */
-        state.registers.d = state.registers.d;
-        break;
-      case 0x53: /* LD D,E */
-        state.registers.d = state.registers.e;
-        break;
-      case 0x54: /* LD D,H */
-        state.registers.d = state.registers.h;
-        break;
-      case 0x55: /* LD D,L */
-        state.registers.d = state.registers.l;
-        break;
-      case 0x56: /* LD D,(HL) */
-        state.registers.d = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x57: /* LD D,A */
-        state.registers.d = state.registers.a;
-        break;
-      case 0x58: /* LD E,B */
-        state.registers.e = state.registers.b;
-        break;
-      case 0x59: /* LD E,C */
-        state.registers.e = state.registers.c;
-        break;
-      case 0x5A: /* LD E,D */
-        state.registers.e = state.registers.d;
-        break;
-      case 0x5B: /* LD E,E */
-        state.registers.e = state.registers.e;
-        break;
-      case 0x5C: /* LD E,H */
-        state.registers.e = state.registers.h;
-        break;
-      case 0x5D: /* LD E,L */
-        state.registers.e = state.registers.l;
-        break;
-      case 0x5E: /* LD E,(HL) */
-        state.registers.e = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x5F: /* LD E,A */
-        state.registers.e = state.registers.a;
-        break;
-      case 0x60: /* LD H,B */
-        state.registers.h = state.registers.b;
-        break;
-      case 0x61: /* LD H,C */
-        state.registers.h = state.registers.c;
-        break;
-      case 0x62: /* LD H,D */
-        state.registers.h = state.registers.d;
-        break;
-      case 0x63: /* LD H,E */
-        state.registers.h = state.registers.e;
-        break;
-      case 0x64: /* LD H,H */
-        state.registers.h = state.registers.h;
-        break;
-      case 0x65: /* LD H,L */
-        state.registers.h = state.registers.l;
-        break;
-      case 0x66: /* LD H,(HL) */
-        state.registers.h = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x67: /* LD H,A */
-        state.registers.h = state.registers.a;
-        break;
-      case 0x68: /* LD L,B */
-        state.registers.l = state.registers.b;
-        break;
-      case 0x69: /* LD L,C */
-        state.registers.l = state.registers.c;
-        break;
-      case 0x6A: /* LD L,D */
-        state.registers.l = state.registers.d;
-        break;
-      case 0x6B: /* LD L,E */
-        state.registers.l = state.registers.e;
-        break;
-      case 0x6C: /* LD L,H */
-        state.registers.l = state.registers.h;
-        break;
-      case 0x6D: /* LD L,L */
-        state.registers.l = state.registers.l;
-        break;
-      case 0x6E: /* LD L,(HL) */
-        state.registers.l = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x6F: /* LD L,A */
-        state.registers.l = state.registers.a;
-        break;
-      case 0x70: /* LD (HL),B */
-        memory_.write8(state.registers.hl(), state.registers.b);
-        cycle(1);
-        break;
-      case 0x71: /* LD (HL),C */
-        memory_.write8(state.registers.hl(), state.registers.c);
-        cycle(1);
-        break;
-      case 0x72: /* LD (HL),D */
-        memory_.write8(state.registers.hl(), state.registers.d);
-        cycle(1);
-        break;
-      case 0x73: /* LD (HL),E */
-        memory_.write8(state.registers.hl(), state.registers.e);
-        cycle(1);
-        break;
-      case 0x74: /* LD (HL),H */
-        memory_.write8(state.registers.hl(), state.registers.h);
-        cycle(1);
-        break;
-      case 0x75: /* LD (HL),L */
-        memory_.write8(state.registers.hl(), state.registers.l);
-        cycle(1);
-        break;
-
-      case 0x76: { /* HALT */
-        if (!state.ime && interrupts_.anyPending()) {
-          state.haltBug = true;
-        } else {
-          state.halted = true;
-        }
-      } break;
-
-      case 0x77: /* LD (HL),A */
-        memory_.write8(state.registers.hl(), state.registers.a);
-        cycle(1);
-        break;
-      case 0x78: /* LD A,B */
-        state.registers.a = state.registers.b;
-        break;
-      case 0x79: /* LD A,C */
-        state.registers.a = state.registers.c;
-        break;
-      case 0x7A: /* LD A,D */
-        state.registers.a = state.registers.d;
-        break;
-      case 0x7B: /* LD A,E */
-        state.registers.a = state.registers.e;
-        break;
-      case 0x7C: /* LD A,H */
-        state.registers.a = state.registers.h;
-        break;
-      case 0x7D: /* LD A,L */
-        state.registers.a = state.registers.l;
-        break;
-      case 0x7E: /* LD A,(HL) */
-        state.registers.a = memory_.read8(state.registers.hl());
-        cycle(1);
-        break;
-      case 0x7F: /* LD A,A */
-        state.registers.a = state.registers.a;
-        break;
-
-      // ADD A,r  (0x80-0x87)
-      case 0x80: { /* ADD A,B */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.b;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x81: { /* ADD A,C */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.c;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x82: { /* ADD A,D */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.d;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x83: { /* ADD A,E */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.e;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x84: { /* ADD A,H */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.h;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x85: { /* ADD A,L */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.l;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x86: { /* ADD A,(HL) */
-        uint16_t a = state.registers.a;
-        uint16_t val = memory_.read8(state.registers.hl());
-        cycle(1);
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-      case 0x87: { /* ADD A,A */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.a;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-
-      // ADC A,r  (0x88-0x8F)
-      case 0x88: { /* ADC A,B */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.b;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x89: { /* ADC A,C */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.c;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8A: { /* ADC A,D */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.d;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8B: { /* ADC A,E */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.e;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8C: { /* ADC A,H */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.h;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8D: { /* ADC A,L */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.l;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8E: { /* ADC A,(HL) */
-        uint16_t a = state.registers.a;
-        uint16_t val = memory_.read8(state.registers.hl());
-        cycle(1);
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-      case 0x8F: { /* ADC A,A */
-        uint16_t a = state.registers.a;
-        uint16_t val = state.registers.a;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-
-      // SUB A,r  (0x90-0x97)
-      case 0x90: { /* SUB B */
-        int a = state.registers.a;
-        int val = state.registers.b;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x91: { /* SUB C */
-        int a = state.registers.a;
-        int val = state.registers.c;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x92: { /* SUB D */
-        int a = state.registers.a;
-        int val = state.registers.d;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x93: { /* SUB E */
-        int a = state.registers.a;
-        int val = state.registers.e;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x94: { /* SUB H */
-        int a = state.registers.a;
-        int val = state.registers.h;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x95: { /* SUB L */
-        int a = state.registers.a;
-        int val = state.registers.l;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x96: { /* SUB (HL) */
-        int a = state.registers.a;
-        int val = memory_.read8(state.registers.hl());
-        cycle(1);
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-      case 0x97: { /* SUB A */
-        int a = state.registers.a;
-        int val = state.registers.a;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-
-      // SBC A,r  (0x98-0x9F)
-      case 0x98: { /* SBC A,B */
-        int a = state.registers.a;
-        int val = state.registers.b;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x99: { /* SBC A,C */
-        int a = state.registers.a;
-        int val = state.registers.c;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9A: { /* SBC A,D */
-        int a = state.registers.a;
-        int val = state.registers.d;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9B: { /* SBC A,E */
-        int a = state.registers.a;
-        int val = state.registers.e;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9C: { /* SBC A,H */
-        int a = state.registers.a;
-        int val = state.registers.h;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9D: { /* SBC A,L */
-        int a = state.registers.a;
-        int val = state.registers.l;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9E: { /* SBC A,(HL) */
-        int a = state.registers.a;
-        int val = memory_.read8(state.registers.hl());
-        cycle(1);
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-      case 0x9F: { /* SBC A,A */
-        int a = state.registers.a;
-        int val = state.registers.a;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-
-      // AND A,r  (0xA0-0xA7)
-      case 0xA0: /* AND B */
-        state.registers.a &= state.registers.b;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA1: /* AND C */
-        state.registers.a &= state.registers.c;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA2: /* AND D */
-        state.registers.a &= state.registers.d;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA3: /* AND E */
-        state.registers.a &= state.registers.e;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA4: /* AND H */
-        state.registers.a &= state.registers.h;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA5: /* AND L */
-        state.registers.a &= state.registers.l;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-      case 0xA6: /* AND (HL) */
-      {
-        uint8_t v = memory_.read8(state.registers.hl());
-        cycle(1);
-        state.registers.a &= v;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-      } break;
-      case 0xA7: /* AND A */
-        state.registers.a &= state.registers.a;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-        break;
-
-      // XOR A,r  (0xA8-0xAF)
-      case 0xA8: /* XOR B */
-        state.registers.a ^= state.registers.b;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xA9: /* XOR C */
-        state.registers.a ^= state.registers.c;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xAA: /* XOR D */
-        state.registers.a ^= state.registers.d;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xAB: /* XOR E */
-        state.registers.a ^= state.registers.e;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xAC: /* XOR H */
-        state.registers.a ^= state.registers.h;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xAD: /* XOR L */
-        state.registers.a ^= state.registers.l;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xAE: /* XOR (HL) */
-      {
-        uint8_t v = memory_.read8(state.registers.hl());
-        cycle(1);
-        state.registers.a ^= v;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-      } break;
-      case 0xAF: /* XOR A */
-        state.registers.a ^= state.registers.a;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-
-      // OR A,r  (0xB0-0xB7)
-      case 0xB0: /* OR B */
-        state.registers.a |= state.registers.b;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB1: /* OR C */
-        state.registers.a |= state.registers.c;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB2: /* OR D */
-        state.registers.a |= state.registers.d;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB3: /* OR E */
-        state.registers.a |= state.registers.e;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB4: /* OR H */
-        state.registers.a |= state.registers.h;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB5: /* OR L */
-        state.registers.a |= state.registers.l;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-      case 0xB6: /* OR (HL) */
-      {
-        uint8_t v = memory_.read8(state.registers.hl());
-        cycle(1);
-        state.registers.a |= v;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-      } break;
-      case 0xB7: /* OR A */
-        state.registers.a |= state.registers.a;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-        break;
-
-      // CP A,r  (0xB8-0xBF)
-      case 0xB8: { /* CP B */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.b);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.b & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xB9: { /* CP C */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.c);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.c & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBA: { /* CP D */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.d);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.d & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBB: { /* CP E */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.e);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.e & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBC: { /* CP H */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.h);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.h & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBD: { /* CP L */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.l);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.l & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBE: { /* CP (HL) */
-        uint8_t val = memory_.read8(state.registers.hl());
-        cycle(1);
-        int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
-        setFlags(tmp == 0, 1,
-                 (static_cast<int>(state.registers.a) & NIBBLE_MASK) -
-                         (static_cast<int>(val) & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-      case 0xBF: { /* CP A */
-        int tmp = static_cast<int>(state.registers.a) -
-                  static_cast<int>(state.registers.a);
-        setFlags(tmp == 0, 1,
-                 (state.registers.a & NIBBLE_MASK) -
-                         (state.registers.a & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-
-      case 0xC0: { /* RET NZ */
-        cycle(1);
-        if (!flagZ()) {
-          uint16_t lo = stackPop8();
-          cycle(1);
-          uint16_t hi = stackPop8();
-          cycle(1);
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xC1: { /* POP BC */
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.setBc(toWord(hi, lo));
-      } break;
-
-      case 0xC2: { /* JP NZ,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (!flagZ()) {
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xC3: { /* JP a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc = toWord(hi, lo);
-        cycle(1);
-      } break;
-
-      case 0xC4: { /* CALL NZ,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (!flagZ()) {
-          cycle(1);
-          stackPush8(highByte(state.registers.pc));
-          cycle(1);
-          stackPush8(lowByte(state.registers.pc));
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xC5: { /* PUSH BC */
-        auto hi = static_cast<uint8_t>(state.registers.bc() >> 8);
-        cycle(1);
-        stackPush8(hi);
-        auto lo = static_cast<uint8_t>(state.registers.bc() & BYTE_MASK);
-        cycle(1);
-        stackPush8(lo);
-        cycle(1);
-      } break;
-
-      case 0xC6: { /* ADD A,d8 */
-        uint16_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        uint16_t a = state.registers.a;
-        state.registers.a = toU8(a + val);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) > NIBBLE_MASK,
-                 a + val > BYTE_MASK);
-      } break;
-
-      case 0xC7: { /* RST 00H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x00;
-        cycle(1);
-      } break;
-
-      case 0xC8: { /* RET Z */
-        cycle(1);
-        if (flagZ()) {
-          uint16_t lo = stackPop8();
-          cycle(1);
-          uint16_t hi = stackPop8();
-          cycle(1);
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xC9: { /* RET */
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.pc = toWord(hi, lo);
-        cycle(1);
-      } break;
-
-      case 0xCA: { /* JP Z,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (flagZ()) {
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xCB: { /* CB prefix */
-        executeCB();
-      } break;
-
-      case 0xCC: { /* CALL Z,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (flagZ()) {
-          cycle(1);
-          stackPush8(highByte(state.registers.pc));
-          cycle(1);
-          stackPush8(lowByte(state.registers.pc));
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xCD: { /* CALL a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = toWord(hi, lo);
-        cycle(1);
-      } break;
-
-      case 0xCE: { /* ADC A,d8 */
-        uint16_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        uint16_t a = state.registers.a;
-        uint16_t c = flagC();
-        state.registers.a = toU8(a + val + c);
-        setFlags(state.registers.a == 0, 0,
-                 (a & NIBBLE_MASK) + (val & NIBBLE_MASK) + c > NIBBLE_MASK,
-                 a + val + c > BYTE_MASK);
-      } break;
-
-      case 0xCF: { /* RST 08H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x08;
-        cycle(1);
-      } break;
-
-      case 0xD0: { /* RET NC */
-        cycle(1);
-        if (!flagC()) {
-          uint16_t lo = stackPop8();
-          cycle(1);
-          uint16_t hi = stackPop8();
-          cycle(1);
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xD1: { /* POP DE */
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.setDe(toWord(hi, lo));
-      } break;
-
-      case 0xD2: { /* JP NC,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (!flagC()) {
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xD3: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xD4: { /* CALL NC,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (!flagC()) {
-          cycle(1);
-          stackPush8(highByte(state.registers.pc));
-          cycle(1);
-          stackPush8(lowByte(state.registers.pc));
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xD5: { /* PUSH DE */
-        auto hi = static_cast<uint8_t>(state.registers.de() >> 8);
-        cycle(1);
-        stackPush8(hi);
-        auto lo = static_cast<uint8_t>(state.registers.de() & BYTE_MASK);
-        cycle(1);
-        stackPush8(lo);
-        cycle(1);
-      } break;
-
-      case 0xD6: { /* SUB d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        int a = state.registers.a;
-        state.registers.a = toU8(a - val);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) < 0, a - val < 0);
-      } break;
-
-      case 0xD7: { /* RST 10H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x10;
-        cycle(1);
-      } break;
-
-      case 0xD8: { /* RET C */
-        cycle(1);
-        if (flagC()) {
-          uint16_t lo = stackPop8();
-          cycle(1);
-          uint16_t hi = stackPop8();
-          cycle(1);
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xD9: { /* RETI */
-        state.ime = true;
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.pc = toWord(hi, lo);
-        cycle(1);
-      } break;
-
-      case 0xDA: { /* JP C,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (flagC()) {
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xDB: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xDC: { /* CALL C,a16 */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        if (flagC()) {
-          cycle(1);
-          stackPush8(highByte(state.registers.pc));
-          cycle(1);
-          stackPush8(lowByte(state.registers.pc));
-          state.registers.pc = toWord(hi, lo);
-          cycle(1);
-        }
-      } break;
-
-      case 0xDD: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xDE: { /* SBC A,d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        int a = state.registers.a;
-        int c = flagC();
-        state.registers.a = toU8(a - val - c);
-        setFlags(state.registers.a == 0, 1,
-                 (a & NIBBLE_MASK) - (val & NIBBLE_MASK) - c < 0,
-                 a - val - c < 0);
-      } break;
-
-      case 0xDF: { /* RST 18H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x18;
-        cycle(1);
-      } break;
-
-      case 0xE0: { /* LDH (a8),A */
-        uint8_t offset = memory_.read8(state.registers.pc++);
-        cycle(1);
-        memory_.write8(IO_REGISTERS_START | offset, state.registers.a);
-        cycle(1);
-      } break;
-
-      case 0xE1: { /* POP HL */
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.setHl(toWord(hi, lo));
-      } break;
-
-      case 0xE2: { /* LD (C),A */
-        memory_.write8(IO_REGISTERS_START | state.registers.c,
-                       state.registers.a);
-        cycle(1);
-      } break;
-
-      case 0xE3:   /* UNUSED */
-      case 0xE4: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xE5: { /* PUSH HL */
-        auto hi = static_cast<uint8_t>(state.registers.hl() >> 8);
-        cycle(1);
-        stackPush8(hi);
-        auto lo = static_cast<uint8_t>(state.registers.hl() & BYTE_MASK);
-        cycle(1);
-        stackPush8(lo);
-        cycle(1);
-      } break;
-
-      case 0xE6: { /* AND d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        state.registers.a &= val;
-        setFlags(state.registers.a == 0, 0, 1, 0);
-      } break;
-
-      case 0xE7: { /* RST 20H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x20;
-        cycle(1);
-      } break;
-
-      case 0xE8: { /* ADD SP,r8 */
-        auto val = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        int h =
-            (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
-        int c = (state.registers.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
-        state.registers.sp =
-            static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val);
-        cycle(1);
-        cycle(1);
-        setFlags(0, 0, h, c);
-      } break;
-
-      case 0xE9: { /* JP HL */
-        state.registers.pc = state.registers.hl();
-      } break;
-
-      case 0xEA: { /* LD (a16),A */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.pc += 2;
-        memory_.write8(toWord(hi, lo), state.registers.a);
-        cycle(1);
-      } break;
-
-      case 0xEB:   /* UNUSED */
-      case 0xEC:   /* UNUSED */
-      case 0xED: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xEE: { /* XOR d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        state.registers.a ^= val;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-      } break;
-
-      case 0xEF: { /* RST 28H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x28;
-        cycle(1);
-      } break;
-
-      case 0xF0: { /* LDH A,(a8) */
-        uint8_t offset = memory_.read8(state.registers.pc++);
-        cycle(1);
-        state.registers.a = memory_.read8(IO_REGISTERS_START | offset);
-        cycle(1);
-      } break;
-
-      case 0xF1: { /* POP AF */
-        uint16_t lo = stackPop8();
-        cycle(1);
-        uint16_t hi = stackPop8();
-        cycle(1);
-        state.registers.setAf(toWord(hi, lo & HIGH_NIBBLE_MASK));
-      } break;
-
-      case 0xF2: { /* LD A,(C) */
-        state.registers.a =
-            memory_.read8(IO_REGISTERS_START | state.registers.c);
-        cycle(1);
-      } break;
-
-      case 0xF3: { /* DI */
-        state.ime = false;
-        state.imeScheduled = false;
-      } break;
-
-      case 0xF4: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xF5: { /* PUSH AF */
-        auto hi = static_cast<uint8_t>(state.registers.af() >> 8);
-        cycle(1);
-        stackPush8(hi);
-        auto lo = static_cast<uint8_t>(state.registers.af() & BYTE_MASK);
-        cycle(1);
-        stackPush8(lo);
-        cycle(1);
-      } break;
-
-      case 0xF6: { /* OR d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        state.registers.a |= val;
-        setFlags(state.registers.a == 0, 0, 0, 0);
-      } break;
-
-      case 0xF7: { /* RST 30H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x30;
-        cycle(1);
-      } break;
-
-      case 0xF8: { /* LD HL,SP+r8 */
-        auto val = static_cast<int8_t>(memory_.read8(state.registers.pc++));
-        cycle(1);
-        uint8_t H =
-            (state.registers.sp & NIBBLE_MASK) + (val & NIBBLE_MASK) >= 0x10;
-        uint8_t C =
-            (state.registers.sp & BYTE_MASK) + (val & BYTE_MASK) >= 0x100;
-        setFlags(0, 0, H, C);
-        state.registers.setHl(
-            static_cast<uint16_t>(static_cast<int>(state.registers.sp) + val));
-        cycle(1);
-      } break;
-
-      case 0xF9: { /* LD SP,HL */
-        state.registers.sp = state.registers.hl();
-        cycle(1);
-      } break;
-
-      case 0xFA: { /* LD A,(a16) */
-        uint16_t lo = memory_.read8(state.registers.pc);
-        cycle(1);
-        uint16_t hi = memory_.read8(state.registers.pc + 1);
-        cycle(1);
-        state.registers.a = memory_.read8(toWord(hi, lo));
-        cycle(1);
-        state.registers.pc += 2;
-      } break;
-
-      case 0xFB: { /* EI */
-        state.imeScheduled = true;
-      } break;
-
-      case 0xFC:   /* UNUSED */
-      case 0xFD: { /* UNUSED */
-        throw std::runtime_error("Unknown Instruction Type");
-      } break;
-
-      case 0xFE: { /* CP d8 */
-        uint8_t val = memory_.read8(state.registers.pc++);
-        cycle(1);
-        int tmp = static_cast<int>(state.registers.a) - static_cast<int>(val);
-        setFlags(tmp == 0, 1,
-                 (static_cast<int>(state.registers.a) & NIBBLE_MASK) -
-                         (static_cast<int>(val) & NIBBLE_MASK) <
-                     0,
-                 tmp < 0);
-      } break;
-
-      case 0xFF: { /* RST 38H */
-        cycle(1);
-        stackPush8(highByte(state.registers.pc));
-        cycle(1);
-        stackPush8(lowByte(state.registers.pc));
-        state.registers.pc = 0x38;
-        cycle(1);
-      } break;
-
-      default:
-        break;
+      case 0x00: execute<0x00>(); break;
+      case 0x01: execute<0x01>(); break;
+      case 0x02: execute<0x02>(); break;
+      case 0x03: execute<0x03>(); break;
+      case 0x04: execute<0x04>(); break;
+      case 0x05: execute<0x05>(); break;
+      case 0x06: execute<0x06>(); break;
+      case 0x07: execute<0x07>(); break;
+      case 0x08: execute<0x08>(); break;
+      case 0x09: execute<0x09>(); break;
+      case 0x0A: execute<0x0A>(); break;
+      case 0x0B: execute<0x0B>(); break;
+      case 0x0C: execute<0x0C>(); break;
+      case 0x0D: execute<0x0D>(); break;
+      case 0x0E: execute<0x0E>(); break;
+      case 0x0F: execute<0x0F>(); break;
+      case 0x10: execute<0x10>(); break;
+      case 0x11: execute<0x11>(); break;
+      case 0x12: execute<0x12>(); break;
+      case 0x13: execute<0x13>(); break;
+      case 0x14: execute<0x14>(); break;
+      case 0x15: execute<0x15>(); break;
+      case 0x16: execute<0x16>(); break;
+      case 0x17: execute<0x17>(); break;
+      case 0x18: execute<0x18>(); break;
+      case 0x19: execute<0x19>(); break;
+      case 0x1A: execute<0x1A>(); break;
+      case 0x1B: execute<0x1B>(); break;
+      case 0x1C: execute<0x1C>(); break;
+      case 0x1D: execute<0x1D>(); break;
+      case 0x1E: execute<0x1E>(); break;
+      case 0x1F: execute<0x1F>(); break;
+      case 0x20: execute<0x20>(); break;
+      case 0x21: execute<0x21>(); break;
+      case 0x22: execute<0x22>(); break;
+      case 0x23: execute<0x23>(); break;
+      case 0x24: execute<0x24>(); break;
+      case 0x25: execute<0x25>(); break;
+      case 0x26: execute<0x26>(); break;
+      case 0x27: execute<0x27>(); break;
+      case 0x28: execute<0x28>(); break;
+      case 0x29: execute<0x29>(); break;
+      case 0x2A: execute<0x2A>(); break;
+      case 0x2B: execute<0x2B>(); break;
+      case 0x2C: execute<0x2C>(); break;
+      case 0x2D: execute<0x2D>(); break;
+      case 0x2E: execute<0x2E>(); break;
+      case 0x2F: execute<0x2F>(); break;
+      case 0x30: execute<0x30>(); break;
+      case 0x31: execute<0x31>(); break;
+      case 0x32: execute<0x32>(); break;
+      case 0x33: execute<0x33>(); break;
+      case 0x34: execute<0x34>(); break;
+      case 0x35: execute<0x35>(); break;
+      case 0x36: execute<0x36>(); break;
+      case 0x37: execute<0x37>(); break;
+      case 0x38: execute<0x38>(); break;
+      case 0x39: execute<0x39>(); break;
+      case 0x3A: execute<0x3A>(); break;
+      case 0x3B: execute<0x3B>(); break;
+      case 0x3C: execute<0x3C>(); break;
+      case 0x3D: execute<0x3D>(); break;
+      case 0x3E: execute<0x3E>(); break;
+      case 0x3F: execute<0x3F>(); break;
+      case 0x40: execute<0x40>(); break;
+      case 0x41: execute<0x41>(); break;
+      case 0x42: execute<0x42>(); break;
+      case 0x43: execute<0x43>(); break;
+      case 0x44: execute<0x44>(); break;
+      case 0x45: execute<0x45>(); break;
+      case 0x46: execute<0x46>(); break;
+      case 0x47: execute<0x47>(); break;
+      case 0x48: execute<0x48>(); break;
+      case 0x49: execute<0x49>(); break;
+      case 0x4A: execute<0x4A>(); break;
+      case 0x4B: execute<0x4B>(); break;
+      case 0x4C: execute<0x4C>(); break;
+      case 0x4D: execute<0x4D>(); break;
+      case 0x4E: execute<0x4E>(); break;
+      case 0x4F: execute<0x4F>(); break;
+      case 0x50: execute<0x50>(); break;
+      case 0x51: execute<0x51>(); break;
+      case 0x52: execute<0x52>(); break;
+      case 0x53: execute<0x53>(); break;
+      case 0x54: execute<0x54>(); break;
+      case 0x55: execute<0x55>(); break;
+      case 0x56: execute<0x56>(); break;
+      case 0x57: execute<0x57>(); break;
+      case 0x58: execute<0x58>(); break;
+      case 0x59: execute<0x59>(); break;
+      case 0x5A: execute<0x5A>(); break;
+      case 0x5B: execute<0x5B>(); break;
+      case 0x5C: execute<0x5C>(); break;
+      case 0x5D: execute<0x5D>(); break;
+      case 0x5E: execute<0x5E>(); break;
+      case 0x5F: execute<0x5F>(); break;
+      case 0x60: execute<0x60>(); break;
+      case 0x61: execute<0x61>(); break;
+      case 0x62: execute<0x62>(); break;
+      case 0x63: execute<0x63>(); break;
+      case 0x64: execute<0x64>(); break;
+      case 0x65: execute<0x65>(); break;
+      case 0x66: execute<0x66>(); break;
+      case 0x67: execute<0x67>(); break;
+      case 0x68: execute<0x68>(); break;
+      case 0x69: execute<0x69>(); break;
+      case 0x6A: execute<0x6A>(); break;
+      case 0x6B: execute<0x6B>(); break;
+      case 0x6C: execute<0x6C>(); break;
+      case 0x6D: execute<0x6D>(); break;
+      case 0x6E: execute<0x6E>(); break;
+      case 0x6F: execute<0x6F>(); break;
+      case 0x70: execute<0x70>(); break;
+      case 0x71: execute<0x71>(); break;
+      case 0x72: execute<0x72>(); break;
+      case 0x73: execute<0x73>(); break;
+      case 0x74: execute<0x74>(); break;
+      case 0x75: execute<0x75>(); break;
+      case 0x76: execute<0x76>(); break;
+      case 0x77: execute<0x77>(); break;
+      case 0x78: execute<0x78>(); break;
+      case 0x79: execute<0x79>(); break;
+      case 0x7A: execute<0x7A>(); break;
+      case 0x7B: execute<0x7B>(); break;
+      case 0x7C: execute<0x7C>(); break;
+      case 0x7D: execute<0x7D>(); break;
+      case 0x7E: execute<0x7E>(); break;
+      case 0x7F: execute<0x7F>(); break;
+      case 0x80: execute<0x80>(); break;
+      case 0x81: execute<0x81>(); break;
+      case 0x82: execute<0x82>(); break;
+      case 0x83: execute<0x83>(); break;
+      case 0x84: execute<0x84>(); break;
+      case 0x85: execute<0x85>(); break;
+      case 0x86: execute<0x86>(); break;
+      case 0x87: execute<0x87>(); break;
+      case 0x88: execute<0x88>(); break;
+      case 0x89: execute<0x89>(); break;
+      case 0x8A: execute<0x8A>(); break;
+      case 0x8B: execute<0x8B>(); break;
+      case 0x8C: execute<0x8C>(); break;
+      case 0x8D: execute<0x8D>(); break;
+      case 0x8E: execute<0x8E>(); break;
+      case 0x8F: execute<0x8F>(); break;
+      case 0x90: execute<0x90>(); break;
+      case 0x91: execute<0x91>(); break;
+      case 0x92: execute<0x92>(); break;
+      case 0x93: execute<0x93>(); break;
+      case 0x94: execute<0x94>(); break;
+      case 0x95: execute<0x95>(); break;
+      case 0x96: execute<0x96>(); break;
+      case 0x97: execute<0x97>(); break;
+      case 0x98: execute<0x98>(); break;
+      case 0x99: execute<0x99>(); break;
+      case 0x9A: execute<0x9A>(); break;
+      case 0x9B: execute<0x9B>(); break;
+      case 0x9C: execute<0x9C>(); break;
+      case 0x9D: execute<0x9D>(); break;
+      case 0x9E: execute<0x9E>(); break;
+      case 0x9F: execute<0x9F>(); break;
+      case 0xA0: execute<0xA0>(); break;
+      case 0xA1: execute<0xA1>(); break;
+      case 0xA2: execute<0xA2>(); break;
+      case 0xA3: execute<0xA3>(); break;
+      case 0xA4: execute<0xA4>(); break;
+      case 0xA5: execute<0xA5>(); break;
+      case 0xA6: execute<0xA6>(); break;
+      case 0xA7: execute<0xA7>(); break;
+      case 0xA8: execute<0xA8>(); break;
+      case 0xA9: execute<0xA9>(); break;
+      case 0xAA: execute<0xAA>(); break;
+      case 0xAB: execute<0xAB>(); break;
+      case 0xAC: execute<0xAC>(); break;
+      case 0xAD: execute<0xAD>(); break;
+      case 0xAE: execute<0xAE>(); break;
+      case 0xAF: execute<0xAF>(); break;
+      case 0xB0: execute<0xB0>(); break;
+      case 0xB1: execute<0xB1>(); break;
+      case 0xB2: execute<0xB2>(); break;
+      case 0xB3: execute<0xB3>(); break;
+      case 0xB4: execute<0xB4>(); break;
+      case 0xB5: execute<0xB5>(); break;
+      case 0xB6: execute<0xB6>(); break;
+      case 0xB7: execute<0xB7>(); break;
+      case 0xB8: execute<0xB8>(); break;
+      case 0xB9: execute<0xB9>(); break;
+      case 0xBA: execute<0xBA>(); break;
+      case 0xBB: execute<0xBB>(); break;
+      case 0xBC: execute<0xBC>(); break;
+      case 0xBD: execute<0xBD>(); break;
+      case 0xBE: execute<0xBE>(); break;
+      case 0xBF: execute<0xBF>(); break;
+      case 0xC0: execute<0xC0>(); break;
+      case 0xC1: execute<0xC1>(); break;
+      case 0xC2: execute<0xC2>(); break;
+      case 0xC3: execute<0xC3>(); break;
+      case 0xC4: execute<0xC4>(); break;
+      case 0xC5: execute<0xC5>(); break;
+      case 0xC6: execute<0xC6>(); break;
+      case 0xC7: execute<0xC7>(); break;
+      case 0xC8: execute<0xC8>(); break;
+      case 0xC9: execute<0xC9>(); break;
+      case 0xCA: execute<0xCA>(); break;
+      case 0xCB: execute<0xCB>(); break;
+      case 0xCC: execute<0xCC>(); break;
+      case 0xCD: execute<0xCD>(); break;
+      case 0xCE: execute<0xCE>(); break;
+      case 0xCF: execute<0xCF>(); break;
+      case 0xD0: execute<0xD0>(); break;
+      case 0xD1: execute<0xD1>(); break;
+      case 0xD2: execute<0xD2>(); break;
+      case 0xD3: execute<0xD3>(); break;
+      case 0xD4: execute<0xD4>(); break;
+      case 0xD5: execute<0xD5>(); break;
+      case 0xD6: execute<0xD6>(); break;
+      case 0xD7: execute<0xD7>(); break;
+      case 0xD8: execute<0xD8>(); break;
+      case 0xD9: execute<0xD9>(); break;
+      case 0xDA: execute<0xDA>(); break;
+      case 0xDB: execute<0xDB>(); break;
+      case 0xDC: execute<0xDC>(); break;
+      case 0xDD: execute<0xDD>(); break;
+      case 0xDE: execute<0xDE>(); break;
+      case 0xDF: execute<0xDF>(); break;
+      case 0xE0: execute<0xE0>(); break;
+      case 0xE1: execute<0xE1>(); break;
+      case 0xE2: execute<0xE2>(); break;
+      case 0xE3: execute<0xE3>(); break;
+      case 0xE4: execute<0xE4>(); break;
+      case 0xE5: execute<0xE5>(); break;
+      case 0xE6: execute<0xE6>(); break;
+      case 0xE7: execute<0xE7>(); break;
+      case 0xE8: execute<0xE8>(); break;
+      case 0xE9: execute<0xE9>(); break;
+      case 0xEA: execute<0xEA>(); break;
+      case 0xEB: execute<0xEB>(); break;
+      case 0xEC: execute<0xEC>(); break;
+      case 0xED: execute<0xED>(); break;
+      case 0xEE: execute<0xEE>(); break;
+      case 0xEF: execute<0xEF>(); break;
+      case 0xF0: execute<0xF0>(); break;
+      case 0xF1: execute<0xF1>(); break;
+      case 0xF2: execute<0xF2>(); break;
+      case 0xF3: execute<0xF3>(); break;
+      case 0xF4: execute<0xF4>(); break;
+      case 0xF5: execute<0xF5>(); break;
+      case 0xF6: execute<0xF6>(); break;
+      case 0xF7: execute<0xF7>(); break;
+      case 0xF8: execute<0xF8>(); break;
+      case 0xF9: execute<0xF9>(); break;
+      case 0xFA: execute<0xFA>(); break;
+      case 0xFB: execute<0xFB>(); break;
+      case 0xFC: execute<0xFC>(); break;
+      case 0xFD: execute<0xFD>(); break;
+      case 0xFE: execute<0xFE>(); break;
+      case 0xFF: execute<0xFF>(); break;
     }
+    // clang-format on
   }
 
   if (state.ime) [[unlikely]] {
