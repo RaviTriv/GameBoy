@@ -37,7 +37,7 @@ class MBC {
   static std::vector<uint8_t> empty;
 };
 
-class MBC0 : public MBC {
+class MBC0 final : public MBC {
  public:
   MBC0(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram)
       : MBC(rom, ram, 0, 0) {}
@@ -47,7 +47,7 @@ class MBC0 : public MBC {
   void load(std::istream& in) override;
 };
 
-class MBC1 : public MBC {
+class MBC1 final : public MBC {
  private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
@@ -68,7 +68,7 @@ class MBC1 : public MBC {
   void load(std::istream& in) override;
 };
 
-class MBC2 : public MBC {
+class MBC2 final : public MBC {
  private:
   bool ramEnabled = false;
   uint8_t romBank = 1;
@@ -87,7 +87,7 @@ class MBC2 : public MBC {
   void load(std::istream& in) override;
 };
 
-class MBC3 : public MBC {
+class MBC3 final : public MBC {
  private:
   static constexpr std::size_t RTC_REGISTERS = 5;
   static constexpr uint32_t RTC_CYCLES_PER_SECOND = 1U << 20;
@@ -121,7 +121,7 @@ class MBC3 : public MBC {
   void load(std::istream& in) override;
 };
 
-class MBC5 : public MBC {
+class MBC5 final : public MBC {
  private:
   bool ramEnabled = false;
   [[= serial::skip]] bool rumble = false;

@@ -103,8 +103,3 @@ void Bus::writePageFF(uint16_t address, uint8_t value) {
     ram_.writeHRAM(address, value);
   }
 }
-
-void Bus::write16(uint16_t address, uint16_t value) {
-  write8(address, lowByte(value));
-  write8(static_cast<uint16_t>(address + 1), highByte(value));
-}

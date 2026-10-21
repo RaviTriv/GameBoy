@@ -47,13 +47,12 @@ constexpr std::array<RegionType, 256> buildPageTable() {
 
 inline constexpr auto PAGE_TABLE = buildPageTable();
 
-class Bus : public IMemAccess {
+class Bus final : public IMemAccess {
  public:
   Bus(Cartridge& cartridge, Interrupts& interrupts, DMA& dma, IO& io, PPU& ppu,
       RAM& ram);
   [[nodiscard]] uint8_t read8(uint16_t address) override;
   void write8(uint16_t address, uint8_t value) override;
-  void write16(uint16_t address, uint16_t value) override;
 
  private:
   Cartridge& cartridge_;
