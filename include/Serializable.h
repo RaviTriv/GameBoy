@@ -11,13 +11,6 @@
 #include <type_traits>
 #include <vector>
 
-class Serializable {
- public:
-  virtual ~Serializable() = default;
-  virtual void save(std::ostream& out) const = 0;
-  virtual void load(std::istream& in) = 0;
-};
-
 namespace serial {
 
 template <typename T>
@@ -157,6 +150,10 @@ consteval bool isSaved() {
 }
 
 }  // namespace detail
+
+consteval bool isSkipped(std::meta::info member) {
+  return detail::isSkipped(member);
+}
 
 template <typename T>
 void saveFields(std::ostream& out, const T& obj);

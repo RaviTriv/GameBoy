@@ -12,7 +12,7 @@ struct StereoSample {
   uint8_t right;
 };
 
-class APU : public Serializable {
+class APU {
   struct Registers {
     uint8_t NR52 = 0;
     uint8_t NR51 = 0;
@@ -38,8 +38,8 @@ class APU : public Serializable {
   void tick();
 
   std::size_t popSamples(StereoSample* out, std::size_t count);
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
   static constexpr int audioFreq = 44100;
 

@@ -5,7 +5,7 @@
 
 #include "Serializable.h"
 
-class Gamepad : public Serializable {
+class Gamepad {
  public:
   [[nodiscard]] bool isBPressed() const;
   [[nodiscard]] bool isAPressed() const;
@@ -29,8 +29,8 @@ class Gamepad : public Serializable {
   [[nodiscard]] bool directionSel() const;
   void setSel(uint8_t value);
   [[nodiscard]] uint8_t getOutput() const;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
  private:
   [[= serial::skip]] std::atomic<uint8_t> buttons{0};

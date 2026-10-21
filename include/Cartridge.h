@@ -52,7 +52,7 @@ struct RomHeader {
 };
 
 class MBC;
-class Cartridge : public Serializable {
+class Cartridge {
  public:
   struct State {
     [[= serial::skip]] std::array<char, 1024> filename;
@@ -70,8 +70,8 @@ class Cartridge : public Serializable {
   [[nodiscard]] bool hasBattery() const;
   void saveBattery(std::ostream& out) const;
   void loadBattery(std::istream& in);
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
  private:
   State state;

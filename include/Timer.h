@@ -6,7 +6,7 @@
 #include "Interrupts.h"
 #include "Serializable.h"
 
-class Timer : public Serializable {
+class Timer {
   struct State {
     uint16_t div = 0;
     uint8_t tima = 0;
@@ -20,8 +20,8 @@ class Timer : public Serializable {
   void tick();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
  private:
   State state;

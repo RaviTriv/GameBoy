@@ -10,7 +10,7 @@
 #include "Serializable.h"
 
 class IMemAccess;
-class CPU : public Serializable {
+class CPU {
  public:
   struct State {
     struct Registers registers;
@@ -30,8 +30,8 @@ class CPU : public Serializable {
       void* cycleCallbackCtx);
 
   void step();
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
  private:
   [[= serial::skip]] Interrupts& interrupts_;

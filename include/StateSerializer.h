@@ -3,19 +3,20 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
 
 class Cartridge;
-class Serializable;
 
 class StateSerializer {
  public:
   struct Section {
     std::string name;
-    Serializable* component;
+    std::function<void(std::ostream&)> save;
+    std::function<void(std::istream&)> load;
   };
 
   explicit StateSerializer(std::vector<Section> sections);
@@ -37,6 +38,6 @@ class StateSerializer {
                                         const std::string& extension);
 
   static constexpr std::array<char, 4> MAGIC = {'G', 'B', 'S', 'T'};
-  static constexpr uint32_t VERSION = 4;
+  static constexpr uint32_t VERSION = 5;
   static constexpr uint32_t MAX_HEADER_LENGTH = 256;
 };

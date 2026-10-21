@@ -15,7 +15,7 @@
 #include "./Serializable.h"
 
 class LCD;
-class PPU : public Serializable {
+class PPU {
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
  public:
@@ -47,8 +47,8 @@ class PPU : public Serializable {
   [[nodiscard]] const Frame& acquireFrontFrame();
   [[nodiscard]] const Frame& getPublishedFrame() const;
 
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
  private:
   State state;

@@ -1,9 +1,11 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <cstdint>
 #include <functional>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "Apu.h"
 #include "Bus.h"
@@ -17,6 +19,7 @@
 #include "Lcd.h"
 #include "Ppu.h"
 #include "Ram.h"
+#include "Serializable.h"
 #include "StateSerializer.h"
 #include "Timer.h"
 
@@ -53,6 +56,7 @@ class Machine {
  private:
   static void cycleCallback(void* self, int cycles);
   void cycle(int cycles);
+  std::vector<StateSerializer::Section> saveSections();
 
   Interrupts interrupts_;
   Cartridge cartridge_;
@@ -63,9 +67,9 @@ class Machine {
   LCD lcd_;
   PPU ppu_;
   Timer timer_;
-  IO io_;
-  Bus bus_;
+  [[= serial::skip]] IO io_;
+  [[= serial::skip]] Bus bus_;
   CPU cpu_;
-  StateSerializer serializer_;
-  uint64_t cycles_ = 0;
+  [[= serial::skip]] StateSerializer serializer_;
+  [[= serial::skip]] uint64_t cycles_ = 0;
 };

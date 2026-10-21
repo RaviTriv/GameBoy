@@ -7,7 +7,7 @@
 #include "Serializable.h"
 
 class DMA;
-class LCD : public Serializable {
+class LCD {
  public:
   enum PaletteType { BGP = 0, OBP0 = 1, OBP1 = 2 };
 
@@ -68,8 +68,8 @@ class LCD : public Serializable {
   void setLycFlag(bool value);
   [[nodiscard]] bool isLcdEnabled() const;
   EnableTransition consumeEnableTransition();
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 
   [[nodiscard]] uint8_t getLy() const;
   void setLy(uint8_t value);

@@ -8,9 +8,11 @@
 
 #include "Serializable.h"
 
-class MBC : public Serializable {
+class MBC {
  public:
-  ~MBC() override = default;
+  virtual ~MBC() = default;
+  virtual void save(std::ostream& out) const = 0;
+  virtual void load(std::istream& in) = 0;
   [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
   virtual void write(uint16_t address, uint8_t value) = 0;
   virtual void saveBattery(std::ostream& out) const;

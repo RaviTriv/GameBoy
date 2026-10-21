@@ -95,7 +95,7 @@ void StateSerializer::writeSections(std::ostream& out) const {
   serial::write(out, static_cast<uint32_t>(sections_.size()));
   for (const auto& section : sections_) {
     std::ostringstream payload;
-    section.component->save(payload);
+    section.save(payload);
     const std::string bytes = payload.str();
 
     serial::write(out, static_cast<uint8_t>(section.name.size()));
@@ -126,7 +126,7 @@ void StateSerializer::readSections(std::istream& in) {
     uint32_t size = 0;
     serial::read(in, size);
     std::istringstream payload(readString(in, size));
-    section.component->load(payload);
+    section.load(payload);
     if (payload.peek() != std::istringstream::traits_type::eof()) {
       throw std::runtime_error("Section " + section.name +
                                " has unexpected trailing data");
