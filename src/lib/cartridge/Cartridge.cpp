@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "EnumName.h"
@@ -22,15 +23,15 @@
 #include "Mbc.h"
 #include "Serializable.h"
 
-Cartridge::Cartridge(std::string_view romPath) { loadCartridge(romPath); }
+Cartridge::Cartridge(std::string_view romPath)
+    : Cartridge(readRomFile(romPath)) {}
 
-Cartridge::Cartridge(std::vector<uint8_t> rom) {
-  state.romData = std::move(rom);
-  state.romSize = state.romData.size();
-  initFromRom();
+Cartridge::Cartridge(std::vector<uint8_t> rom)
+    : state(parseRom(std::move(rom))), mbc(createMbc()) {
+  outputCartridgeInfo();
 }
 
-void Cartridge::loadCartridge(std::string_view romPath) {
+std::vector<uint8_t> Cartridge::readRomFile(std::string_view romPath) {
   std::ifstream cartridge(std::string(romPath),
                           std::ios::binary | std::ios::ate);
 
@@ -42,121 +43,122 @@ void Cartridge::loadCartridge(std::string_view romPath) {
   if (size < 0) {
     throw std::runtime_error("Failed to read cartridge size.");
   }
-  state.romSize = static_cast<std::size_t>(size);
 
   cartridge.seekg(0, std::ios::beg);
 
-  state.romData.resize(state.romSize);
+  std::vector<uint8_t> rom(static_cast<std::size_t>(size));
 
-  if (!cartridge.read(reinterpret_cast<char*>(state.romData.data()),
-                      static_cast<std::streamsize>(state.romSize))) {
+  if (!cartridge.read(reinterpret_cast<char*>(rom.data()),
+                      static_cast<std::streamsize>(rom.size()))) {
     throw std::runtime_error("Failed to load cartridge data.");
   };
 
-  initFromRom();
+  return rom;
 }
 
-void Cartridge::initFromRom() {
-  if (state.romSize < MIN_ROM_SIZE) {
+Cartridge::State Cartridge::parseRom(std::vector<uint8_t> romBytes) {
+  State parsed{};
+  parsed.romData = std::move(romBytes);
+  parsed.romSize = parsed.romData.size();
+
+  if (parsed.romSize < MIN_ROM_SIZE) {
     throw std::runtime_error("Cartridge is too small to contain a ROM header.");
   }
 
-  if (state.romSize < 0x8000 || state.romSize % 0x4000 != 0) {
+  if (parsed.romSize < 0x8000 || parsed.romSize % 0x4000 != 0) {
     std::ostringstream message;
-    message << "Cartridge ROM size " << state.romSize
+    message << "Cartridge ROM size " << parsed.romSize
             << " bytes is invalid: must be at least 0x8000 and a multiple of "
                "0x4000.";
     throw std::runtime_error(message.str());
   }
 
-  state.header = std::make_unique<RomHeader>();
+  parsed.header = std::make_unique<RomHeader>();
 
-  const uint8_t* rom = state.romData.data();
+  const uint8_t* rom = parsed.romData.data();
 
-  std::copy_n(rom + ROM_HEADER_OFFSET, 4, state.header->entry.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET, 4, parsed.header->entry.begin());
 
-  std::copy_n(rom + ROM_HEADER_OFFSET + 0x04, 0x30, state.header->logo.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET + 0x04, 0x30,
+              parsed.header->logo.begin());
 
-  std::copy_n(rom + ROM_HEADER_OFFSET + 0x34, 16, state.header->title.begin());
+  std::copy_n(rom + ROM_HEADER_OFFSET + 0x34, 16, parsed.header->title.begin());
 
-  state.header->newLicenseeCode = static_cast<uint16_t>(
+  parsed.header->newLicenseeCode = static_cast<uint16_t>(
       (rom[ROM_HEADER_OFFSET + 0x44] << 8) | rom[ROM_HEADER_OFFSET + 0x45]);
-  state.header->sgbFlag = rom[ROM_HEADER_OFFSET + 0x46];
-  state.header->type =
+  parsed.header->sgbFlag = rom[ROM_HEADER_OFFSET + 0x46];
+  parsed.header->type =
       static_cast<CartridgeType>(rom[ROM_HEADER_OFFSET + 0x47]);
-  state.header->romSize = rom[ROM_HEADER_OFFSET + 0x48];
-  state.header->ramSize = rom[ROM_HEADER_OFFSET + 0x49];
-  state.header->destCode = rom[ROM_HEADER_OFFSET + 0x4A];
-  state.header->licenseeCode = rom[ROM_HEADER_OFFSET + 0x4B];
-  state.header->version = rom[ROM_HEADER_OFFSET + 0x4C];
-  state.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
-  state.header->globalChecksum = static_cast<uint16_t>(
+  parsed.header->romSize = rom[ROM_HEADER_OFFSET + 0x48];
+  parsed.header->ramSize = rom[ROM_HEADER_OFFSET + 0x49];
+  parsed.header->destCode = rom[ROM_HEADER_OFFSET + 0x4A];
+  parsed.header->licenseeCode = rom[ROM_HEADER_OFFSET + 0x4B];
+  parsed.header->version = rom[ROM_HEADER_OFFSET + 0x4C];
+  parsed.header->checksum = rom[ROM_HEADER_OFFSET + 0x4D];
+  parsed.header->globalChecksum = static_cast<uint16_t>(
       (rom[ROM_HEADER_OFFSET + 0x4E] << 8) | rom[ROM_HEADER_OFFSET + 0x4F]);
 
   uint8_t checksum = 0;
   for (std::size_t i = 0x134; i <= 0x14C; i++) {
     checksum = static_cast<uint8_t>(checksum - rom[i] - 1);
   }
-  if (checksum != state.header->checksum) {
+  if (checksum != parsed.header->checksum) {
     Logger::GetLogger()->warn(
         "Header checksum mismatch: expected 0x{:02X}, computed 0x{:02X}",
-        state.header->checksum, checksum);
+        parsed.header->checksum, checksum);
   }
 
+  int ramBanks = getRamBanksCount(parsed.romData.at(0x149));
+  parsed.ramData.resize(static_cast<std::size_t>(ramBanks) * 0x2000);
+
+  return parsed;
+}
+
+AnyMbc Cartridge::createMbc() {
   int romBanks = std::max(2, static_cast<int>(state.romSize / 0x4000));
   int ramBanks = getRamBanksCount(state.romData.at(0x149));
-
-  state.ramData.resize(static_cast<std::size_t>(ramBanks) * 0x2000);
 
   switch (state.header->type) {
     case CartridgeType::ROM_ONLY:
     case CartridgeType::ROM_RAM:
     case CartridgeType::ROM_RAM_BATTERY:
-      mbc = std::make_unique<MBC0>(state.romData, state.ramData);
-      break;
+      return AnyMbc(std::in_place_type<MBC0>, state.romData, state.ramData);
     case CartridgeType::MBC1:
     case CartridgeType::MBC1_RAM:
     case CartridgeType::MBC1_RAM_BATTERY:
-      mbc = std::make_unique<MBC1>(state.romData, state.ramData, romBanks,
-                                   ramBanks, isMbc1Multicart());
-      break;
+      return AnyMbc(std::in_place_type<MBC1>, state.romData, state.ramData,
+                    romBanks, ramBanks, isMbc1Multicart());
     case CartridgeType::MBC2:
     case CartridgeType::MBC2_BATTERY:
-      mbc = std::make_unique<MBC2>(state.romData, state.ramData, romBanks,
-                                   ramBanks);
-      break;
+      return AnyMbc(std::in_place_type<MBC2>, state.romData, state.ramData,
+                    romBanks, ramBanks);
     case CartridgeType::MBC3:
     case CartridgeType::MBC3_RAM:
     case CartridgeType::MBC3_RAM_BATTERY:
-      mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks,
-                                   ramBanks, false);
-      break;
+      return AnyMbc(std::in_place_type<MBC3>, state.romData, state.ramData,
+                    romBanks, ramBanks, false);
     case CartridgeType::MBC3_TIMER_BATTERY:
     case CartridgeType::MBC3_TIMER_RAM_BATTERY:
-      mbc = std::make_unique<MBC3>(state.romData, state.ramData, romBanks,
-                                   ramBanks, true);
-      break;
+      return AnyMbc(std::in_place_type<MBC3>, state.romData, state.ramData,
+                    romBanks, ramBanks, true);
     case CartridgeType::MBC5:
     case CartridgeType::MBC5_RAM:
     case CartridgeType::MBC5_RAM_BATTERY:
-      mbc = std::make_unique<MBC5>(state.romData, state.ramData, romBanks,
-                                   ramBanks, false);
-      break;
+      return AnyMbc(std::in_place_type<MBC5>, state.romData, state.ramData,
+                    romBanks, ramBanks, false);
     case CartridgeType::MBC5_RUMBLE:
     case CartridgeType::MBC5_RUMBLE_RAM:
     case CartridgeType::MBC5_RUMBLE_RAM_BATTERY:
-      mbc = std::make_unique<MBC5>(state.romData, state.ramData, romBanks,
-                                   ramBanks, true);
-      break;
+      return AnyMbc(std::in_place_type<MBC5>, state.romData, state.ramData,
+                    romBanks, ramBanks, true);
     default: {
       std::ostringstream message;
       message << "Unsupported cartridge type: 0x" << std::hex
               << std::setfill('0') << std::setw(2)
-              << static_cast<int>(rom[ROM_HEADER_OFFSET + 0x47]);
+              << static_cast<int>(state.header->type);
       throw std::runtime_error(message.str());
     }
   }
-  outputCartridgeInfo();
 }
 
 void Cartridge::outputCartridgeInfo() {
@@ -185,15 +187,20 @@ bool Cartridge::isMbc1Multicart() const {
   return logos > 1;
 }
 
-uint8_t Cartridge::read(uint16_t address) const { return mbc->read(address); }
-
-void Cartridge::write(uint16_t address, uint8_t value) {
-  mbc->write(address, value);
+uint8_t Cartridge::read(uint16_t address) const {
+  return std::visit([address](const auto& chip) { return chip.read(address); },
+                    mbc);
 }
 
-void Cartridge::tick(int cycles) { mbc->tick(cycles); }
+void Cartridge::write(uint16_t address, uint8_t value) {
+  std::visit([address, value](auto& chip) { chip.write(address, value); }, mbc);
+}
 
-int Cartridge::getRamBanksCount(uint8_t type) const {
+void Cartridge::tick(int cycles) {
+  std::visit([cycles](auto& chip) { chip.tick(cycles); }, mbc);
+}
+
+int Cartridge::getRamBanksCount(uint8_t type) {
   switch (type) {
     case 0x00:
     case 0x01:
@@ -244,12 +251,20 @@ bool Cartridge::hasBattery() const {
   }
 }
 
-void Cartridge::saveBattery(std::ostream& out) const { mbc->saveBattery(out); }
+void Cartridge::saveBattery(std::ostream& out) const {
+  std::visit([&out](const auto& chip) { chip.saveBattery(out); }, mbc);
+}
 
-void Cartridge::loadBattery(std::istream& in) { mbc->loadBattery(in); }
+void Cartridge::loadBattery(std::istream& in) {
+  std::visit([&in](auto& chip) { chip.loadBattery(in); }, mbc);
+}
 
 void Cartridge::save(std::ostream& out) const {
   serial::saveFields(out, *this);
+  std::visit([&out](const auto& chip) { chip.save(out); }, mbc);
 }
 
-void Cartridge::load(std::istream& in) { serial::loadFields(in, *this); }
+void Cartridge::load(std::istream& in) {
+  serial::loadFields(in, *this);
+  std::visit([&in](auto& chip) { chip.load(in); }, mbc);
+}

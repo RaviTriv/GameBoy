@@ -2,22 +2,21 @@
 #pragma once
 
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <ostream>
+#include <variant>
 #include <vector>
 
 #include "Serializable.h"
 
 class MBC {
  public:
-  virtual ~MBC() = default;
-  virtual void save(std::ostream& out) const = 0;
-  virtual void load(std::istream& in) = 0;
-  [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
-  virtual void write(uint16_t address, uint8_t value) = 0;
-  virtual void saveBattery(std::ostream& out) const;
-  virtual void loadBattery(std::istream& in);
-  virtual void tick(int /*cycles*/) {}
+  void saveBattery(std::ostream& out) const;
+  void loadBattery(std::istream& in);
+  void tick(int /*cycles*/) {}
   explicit MBC(std::vector<uint8_t>& rom) : romData(rom), ramData(empty) {}
   MBC(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
       uint16_t ramBanks)
@@ -41,10 +40,10 @@ class MBC0 final : public MBC {
  public:
   MBC0(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram)
       : MBC(rom, ram, 0, 0) {}
-  [[nodiscard]] uint8_t read(uint16_t address) const override;
-  void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  void write(uint16_t address, uint8_t value);
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class MBC1 final : public MBC {
@@ -62,10 +61,10 @@ class MBC1 final : public MBC {
        uint16_t ramBanks, bool isMulticart)
       : MBC(rom, ram, romBanks, ramBanks), multicart(isMulticart) {}
 
-  [[nodiscard]] uint8_t read(uint16_t address) const override;
-  void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  void write(uint16_t address, uint8_t value);
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class MBC2 final : public MBC {
@@ -79,12 +78,12 @@ class MBC2 final : public MBC {
        uint16_t ramBanks)
       : MBC(rom, ram, romBanks, ramBanks) {}
 
-  [[nodiscard]] uint8_t read(uint16_t address) const override;
-  void write(uint16_t address, uint8_t value) override;
-  void saveBattery(std::ostream& out) const override;
-  void loadBattery(std::istream& in) override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  void write(uint16_t address, uint8_t value);
+  void saveBattery(std::ostream& out) const;
+  void loadBattery(std::istream& in);
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class MBC3 final : public MBC {
@@ -112,13 +111,13 @@ class MBC3 final : public MBC {
        uint16_t ramBanks, bool withRtc)
       : MBC(rom, ram, romBanks, ramBanks), hasRtc(withRtc) {}
 
-  [[nodiscard]] uint8_t read(uint16_t address) const override;
-  void write(uint16_t address, uint8_t value) override;
-  void tick(int cycles) override;
-  void saveBattery(std::ostream& out) const override;
-  void loadBattery(std::istream& in) override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  void write(uint16_t address, uint8_t value);
+  void tick(int cycles);
+  void saveBattery(std::ostream& out) const;
+  void loadBattery(std::istream& in);
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
 
 class MBC5 final : public MBC {
@@ -135,8 +134,30 @@ class MBC5 final : public MBC {
        uint16_t ramBanks, bool hasRumble)
       : MBC(rom, ram, romBanks, ramBanks), rumble(hasRumble) {}
 
-  [[nodiscard]] uint8_t read(uint16_t address) const override;
-  void write(uint16_t address, uint8_t value) override;
-  void save(std::ostream& out) const override;
-  void load(std::istream& in) override;
+  [[nodiscard]] uint8_t read(uint16_t address) const;
+  void write(uint16_t address, uint8_t value);
+  void save(std::ostream& out) const;
+  void load(std::istream& in);
 };
+
+template <typename M>
+concept MbcChip =
+    std::derived_from<M, MBC> &&
+    requires(M chip, const M constChip, uint16_t address, uint8_t value,
+             int cycles, std::ostream& out, std::istream& in) {
+      { constChip.read(address) } -> std::same_as<uint8_t>;
+      chip.write(address, value);
+      chip.tick(cycles);
+      constChip.saveBattery(out);
+      chip.loadBattery(in);
+      constChip.save(out);
+      chip.load(in);
+    };
+
+static_assert(MbcChip<MBC0>);
+static_assert(MbcChip<MBC1>);
+static_assert(MbcChip<MBC2>);
+static_assert(MbcChip<MBC3>);
+static_assert(MbcChip<MBC5>);
+
+using AnyMbc = std::variant<MBC0, MBC1, MBC2, MBC3, MBC5>;

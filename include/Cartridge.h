@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "./EnumName.h"
@@ -63,6 +64,11 @@ class Cartridge {
   };
   explicit Cartridge(std::string_view romPath);
   explicit Cartridge(std::vector<uint8_t> rom);
+  Cartridge(const Cartridge&) = delete ("the MBC holds references into state");
+  Cartridge& operator=(const Cartridge&) = delete ("the MBC holds references into state");
+  Cartridge(Cartridge&&) = delete ("the MBC holds references into state");
+  Cartridge& operator=(Cartridge&&) = delete ("the MBC holds references into state");
+  ~Cartridge() = default;
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   void tick(int cycles);
@@ -75,14 +81,15 @@ class Cartridge {
 
  private:
   State state;
-  std::unique_ptr<MBC> mbc;
+  [[= serial::skip]] AnyMbc mbc;
   static constexpr size_t ROM_HEADER_OFFSET = 0x100;
 
-  void loadCartridge(std::string_view romPath);
-  void initFromRom();
+  [[nodiscard]] static std::vector<uint8_t> readRomFile(std::string_view romPath);
+  [[nodiscard]] static State parseRom(std::vector<uint8_t> rom);
+  [[nodiscard]] AnyMbc createMbc();
   static constexpr std::size_t MIN_ROM_SIZE = 0x150;
 
-  [[nodiscard]] int getRamBanksCount(uint8_t type) const;
+  [[nodiscard]] static int getRamBanksCount(uint8_t type);
   [[nodiscard]] bool isMbc1Multicart() const;
 
   void outputCartridgeInfo();
