@@ -61,7 +61,7 @@ void Pipeline::fetchTile() {
   state.mapX = calculateMapX();
   state.tileY = calculateTileY();
 
-  state.entryCount = 0;
+  state.fetchedEntries.clear();
 
   if (ctx->bgWindowEnabled) {
     state.bgwBuffer[0] = readVram(bgw0ReadAddress());
@@ -73,7 +73,7 @@ void Pipeline::fetchTile() {
     }
   }
 
-  if (ctx->objEnabled && ctx->spriteCount > 0) {
+  if (ctx->objEnabled && !ctx->sprites.empty()) {
     loadSpriteTile();
   }
 
@@ -136,7 +136,7 @@ void Pipeline::pushPixel() {
 }
 
 uint32_t Pipeline::fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
-  for (std::size_t i = 0; i < state.entryCount; i++) {
+  for (std::size_t i = 0; i < state.fetchedEntries.size(); i++) {
     int spriteX = (state.fetchedEntries[i].x - 8) + (ctx->scrollX % 8);
 
     if ((spriteX + 8) < static_cast<int>(state.fifoX)) {
@@ -199,17 +199,12 @@ void Pipeline::loadWindowTile() {
 }
 
 void Pipeline::loadSpriteTile() {
-  for (uint8_t s = 0; s < ctx->spriteCount; s++) {
-    const auto& entry = ctx->sprites[s];
+  for (const auto& entry : ctx->sprites) {
     int spriteX = (entry.x - 8) + (ctx->scrollX % 8);
     if ((std::cmp_greater_equal(spriteX, state.fetchX) &&
          spriteX < state.fetchX + 8) ||
         ((spriteX + 8) >= state.fetchX && (spriteX + 8) < state.fetchX + 8)) {
-      state.fetchedEntries[state.entryCount] = entry;
-      state.entryCount++;
-    }
-    if (state.entryCount >= 10) {
-      break;
+      state.fetchedEntries.unchecked_push_back(entry);
     }
   }
 }
@@ -218,7 +213,7 @@ void Pipeline::loadSpriteData(uint8_t offset) {
   int curY = ctx->ly;
   uint8_t spriteHeight = ctx->objHeight;
 
-  for (std::size_t i = 0; i < state.entryCount; i++) {
+  for (std::size_t i = 0; i < state.fetchedEntries.size(); i++) {
     auto tileY =
         static_cast<uint8_t>(((curY + 16) - state.fetchedEntries[i].y) * 2);
 
@@ -312,9 +307,4 @@ void Pipeline::oamReset() {
 
 void Pipeline::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void Pipeline::load(std::istream& in) {
-  serial::loadFields(in, *this);
-  if (state.entryCount > state.fetchedEntries.size()) {
-    throw std::runtime_error("Invalid pipeline sprite count in save file");
-  }
-}
+void Pipeline::load(std::istream& in) { serial::loadFields(in, *this); }

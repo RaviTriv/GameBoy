@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+
+inline constexpr std::size_t MAX_LINE_SPRITES = 10;
 
 struct OamFlagsBits {
   uint8_t cgbPn : 3;

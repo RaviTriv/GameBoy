@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <inplace_vector>
 #include <utility>
 
 #include "./Common.h"
@@ -27,9 +28,8 @@ class PPU {
 
     uint32_t lineTicks = 0;
     uint8_t windowLine = 0;
-    uint8_t lineSpritesCount = 0;
     uint32_t spritePenalty{0};
-    std::array<OAM_ENTRY, 10> currentLineSprites{};
+    std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> lineSprites;
     ScanlineContext scanlineCtx{};
   };
   PPU(Interrupts& interrupts, LCD& lcd);

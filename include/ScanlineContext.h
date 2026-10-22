@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 
 #include "OamTypes.h"
 #include "Serializable.h"
@@ -30,8 +31,7 @@ struct ScanlineContext {
   std::array<uint32_t, 4> ob1Colors{};
   std::array<uint32_t, 4> ob2Colors{};
 
-  [[= serial::skip]] const OAM_ENTRY* sprites = nullptr;
-  uint8_t spriteCount = 0;
+  [[= serial::skip]] std::span<const OAM_ENTRY> sprites;
 
   [[= serial::skip]] const uint32_t* lineTicks = nullptr;
 };

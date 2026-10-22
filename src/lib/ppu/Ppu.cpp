@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <istream>
 #include <ostream>
-#include <stdexcept>
+#include <utility>
 
 #include "Common.h"
 #include "Interrupts.h"
@@ -153,23 +153,17 @@ void PPU::loadLineSprites() {
   for (std::size_t i = 0; i < 40; i++) {
     OAM_ENTRY entry = state.oamRam[i];
 
-    if (state.lineSpritesCount >= 10) {
+    if (state.lineSprites.size() == state.lineSprites.capacity()) {
       break;
     }
 
     if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16) {
-      uint8_t insertPos = 0;
-      while (insertPos < state.lineSpritesCount &&
-             state.currentLineSprites[insertPos].x <= entry.x) {
-        insertPos++;
+      auto& sprites = state.lineSprites;
+      sprites.unchecked_push_back(entry);
+      for (auto pos = sprites.size() - 1;
+           pos > 0 && sprites[pos - 1].x > entry.x; pos--) {
+        std::swap(sprites[pos], sprites[pos - 1]);
       }
-
-      for (uint8_t j = state.lineSpritesCount; j > insertPos; j--) {
-        state.currentLineSprites[j] = state.currentLineSprites[j - 1];
-      }
-
-      state.currentLineSprites[insertPos] = entry;
-      state.lineSpritesCount++;
     }
   }
 }
@@ -191,20 +185,19 @@ void PPU::buildScanlineContext() {
   state.scanlineCtx.bgColors = lcd_.getBgColors();
   state.scanlineCtx.ob1Colors = lcd_.getOb1Colors();
   state.scanlineCtx.ob2Colors = lcd_.getOb2Colors();
-  state.scanlineCtx.sprites = state.currentLineSprites.data();
-  state.scanlineCtx.spriteCount = state.lineSpritesCount;
+  state.scanlineCtx.sprites = state.lineSprites;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 }
 
 void PPU::oamMode() {
   if (state.lineTicks == 1) {
-    state.lineSpritesCount = 0;
+    state.lineSprites.clear();
     loadLineSprites();
   }
 
   if (state.lineTicks >= 80) {
     lcd_.setLcdMode(LCD::MODE::DRAWING);
-    state.spritePenalty = state.lineSpritesCount * 6;
+    state.spritePenalty = static_cast<uint32_t>(state.lineSprites.size() * 6);
 
     buildScanlineContext();
     pipeline.beginScanline(state.scanlineCtx, frames[backIndex]);
@@ -284,11 +277,7 @@ void PPU::save(std::ostream& out) const {
 
 void PPU::load(std::istream& in) {
   serial::loadFields(in, *this);
-  if (state.lineSpritesCount > state.currentLineSprites.size() ||
-      state.scanlineCtx.spriteCount > state.currentLineSprites.size()) {
-    throw std::runtime_error("Invalid PPU sprite count in save file");
-  }
-  state.scanlineCtx.sprites = state.currentLineSprites.data();
+  state.scanlineCtx.sprites = state.lineSprites;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 
   serial::read(in, frames[backIndex]);

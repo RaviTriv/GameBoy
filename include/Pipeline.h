@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <inplace_vector>
 #include <istream>
 #include <ostream>
 #include <span>
@@ -32,12 +33,11 @@ class Pipeline {
     uint8_t fetchX = 0;
     std::array<uint8_t, 3> bgwBuffer{};
     std::array<uint8_t, 20> objectBuffer{};
-    std::array<OAM_ENTRY, 10> fetchedEntries{};
+    std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> fetchedEntries;
     uint8_t mapX = 0;
     uint8_t mapY = 0;
     uint8_t tileX = 0;
     uint8_t tileY = 0;
-    uint8_t entryCount = 0;
   };
   explicit Pipeline(VramView vram);
   void beginScanline(const ScanlineContext& ctx, FrameView target);

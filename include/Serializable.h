@@ -2,7 +2,9 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
+#include <inplace_vector>
 #include <istream>
 #include <memory>
 #include <meta>
@@ -65,6 +67,11 @@ template <typename T>
 inline constexpr bool isAtomic<std::atomic<T>> = true;
 
 template <typename T>
+inline constexpr bool isInplaceVector = false;
+template <typename T, std::size_t N>
+inline constexpr bool isInplaceVector<std::inplace_vector<T, N>> = true;
+
+template <typename T>
 inline constexpr bool isUniquePtr = false;
 template <typename T>
 inline constexpr bool isUniquePtr<std::unique_ptr<T>> = true;
@@ -101,7 +108,16 @@ consteval bool isRaw() {
   }
 }
 
-enum class Kind { Delegate, Atomic, Bytes, Owned, Raw, Fields, Unsupported };
+enum class Kind {
+  Delegate,
+  Atomic,
+  Bytes,
+  InplaceVector,
+  Owned,
+  Raw,
+  Fields,
+  Unsupported
+};
 
 template <typename T>
 consteval Kind kindOf() {
@@ -113,6 +129,8 @@ consteval Kind kindOf() {
     return Kind::Atomic;
   } else if constexpr (std::is_same_v<T, std::vector<uint8_t>>) {
     return Kind::Bytes;
+  } else if constexpr (isInplaceVector<T>) {
+    return Kind::InplaceVector;
   } else if constexpr (isUniquePtr<T>) {
     static_assert(SelfSerializing<typename T::element_type>,
                   "serial: unique_ptr members must point to a type with "
@@ -169,6 +187,11 @@ void saveValue(std::ostream& out, const T& value) {
     write(out, value.load(std::memory_order_relaxed));
   } else if constexpr (kind == detail::Kind::Bytes) {
     writeBytes(out, value);
+  } else if constexpr (kind == detail::Kind::InplaceVector) {
+    write(out, static_cast<uint64_t>(value.size()));
+    for (const auto& element : value) {
+      saveValue(out, element);
+    }
   } else if constexpr (kind == detail::Kind::Owned) {
     value->save(out);
   } else if constexpr (kind == detail::Kind::Raw) {
@@ -189,6 +212,16 @@ void loadValue(std::istream& in, T& value) {
     value.store(loaded, std::memory_order_relaxed);
   } else if constexpr (kind == detail::Kind::Bytes) {
     readBytes(in, value);
+  } else if constexpr (kind == detail::Kind::InplaceVector) {
+    uint64_t size = 0;
+    read(in, size);
+    if (size > value.capacity()) {
+      throw std::runtime_error("Save state list exceeds its capacity");
+    }
+    value.resize(static_cast<std::size_t>(size));
+    for (auto& element : value) {
+      loadValue(in, element);
+    }
   } else if constexpr (kind == detail::Kind::Owned) {
     value->load(in);
   } else if constexpr (kind == detail::Kind::Raw) {
