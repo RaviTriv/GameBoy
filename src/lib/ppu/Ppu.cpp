@@ -179,7 +179,7 @@ bool PPU::isOamBlocked() const {
   if (state.skipOamScan) {
     return lcd_.getLcdMode() == LCD::MODE::DRAWING;
   }
-  return state.mode == LCD::MODE::OAM || state.mode == LCD::MODE::DRAWING;
+  return state.mode == LCD::MODE::OAM || isDrawing();
 }
 
 bool PPU::isVramBlocked() const {
@@ -189,7 +189,16 @@ bool PPU::isVramBlocked() const {
   if (state.skipOamScan) {
     return lcd_.getLcdMode() == LCD::MODE::DRAWING;
   }
-  return state.mode == LCD::MODE::DRAWING;
+  return isDrawing();
+}
+
+bool PPU::isDrawing() const {
+  return state.mode == LCD::MODE::DRAWING &&
+         lcd_.getLcdMode() != LCD::MODE::HBLANK;
+}
+
+bool PPU::isWriteBlocked() const {
+  return lcd_.isLcdEnabled() && lcd_.getLcdMode() == LCD::MODE::DRAWING;
 }
 
 namespace {
@@ -215,6 +224,17 @@ void corruptWrite(Row cur, Row prev) {
   }
   std::ranges::copy(prev.subspan<WORD_BYTES>(),
                     cur.subspan<WORD_BYTES>().begin());
+}
+
+void corruptFirstRow(Row first, Row written, std::size_t word) {
+  for (std::size_t i = 0; i < WORD_BYTES; i++) {
+    const uint8_t a = first[i];
+    const uint8_t b = written[i];
+    const uint8_t c = written[word + i];
+    first[i] = static_cast<uint8_t>(((a ^ c) & (b ^ c)) ^ c);
+  }
+  std::ranges::copy(written.subspan<WORD_BYTES>(),
+                    first.subspan<WORD_BYTES>().begin());
 }
 
 void corruptRead(Row cur, Row prev) {
@@ -290,6 +310,18 @@ void PPU::oamWrite(uint16_t address, uint8_t value) {
   }
   auto* p = reinterpret_cast<uint8_t*>(state.oamRam.data());
   p[address] = value;
+}
+
+void PPU::cpuOamWrite(uint16_t address, uint8_t value) {
+  oamWrite(address, value);
+  const auto row = oamScanRow();
+  const std::size_t offset = address - OAM_START_ADDR;
+  if (!row || *row != 0 || offset < OAM_ROW_BYTES) {
+    return;
+  }
+  const std::span<uint8_t, OAM_BYTES> oam = oamBytes();
+  corruptFirstRow(rowAt(oam, 0), rowAt(oam, offset / Row::extent),
+                  offset & (Row::extent - WORD_BYTES));
 }
 
 uint8_t PPU::oamRead(uint16_t address) const {

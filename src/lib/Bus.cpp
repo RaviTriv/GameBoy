@@ -85,7 +85,9 @@ void Bus::write8(uint16_t address, uint8_t value) {
       cartridge_.write(address, value);
       return;
     case RegionType::VRAM:
-      ppu_.vramWrite(address, value);
+      if (!ppu_.isWriteBlocked()) {
+        ppu_.vramWrite(address, value);
+      }
       return;
     case RegionType::CartRAM:
       cartridge_.write(address, value);
@@ -110,10 +112,10 @@ void Bus::writePageFE(uint16_t address, uint8_t value) {
     return;
   }
   if (address <= OAM_END) {
-    if (dma_.isTransferring()) {
+    if (dma_.isTransferring() || ppu_.isWriteBlocked()) {
       return;
     }
-    ppu_.oamWrite(address, value);
+    ppu_.cpuOamWrite(address, value);
   }
 }
 

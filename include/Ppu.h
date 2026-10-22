@@ -45,10 +45,13 @@ class PPU {
   [[nodiscard]] uint32_t getCurrentFrame() const;
   [[nodiscard]] bool isOamBlocked() const;
   [[nodiscard]] bool isVramBlocked() const;
+  [[nodiscard]] bool isWriteBlocked() const;
   enum class OamBugAccess : uint8_t { Write, Read, ReadIdu };
   bool triggerOamBug(OamBugAccess access);
 
   void oamWrite(uint16_t addr, uint8_t value);
+  void cpuOamWrite(uint16_t addr, uint8_t value)
+      pre(addr >= OAM_START && addr <= OAM_END);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
   [[nodiscard]] uint8_t vramRead(uint16_t address) const
       pre(address >= VRAM_START && address <= VRAM_END);
@@ -110,6 +113,7 @@ class PPU {
   void updateStatLine(bool phased);
   void requestStat(bool phased);
   [[nodiscard]] std::optional<std::size_t> oamScanRow() const;
+  [[nodiscard]] bool isDrawing() const;
   [[nodiscard]] std::span<uint8_t, OAM_BYTES> oamBytes();
   void loadLineSprites();
   void setStatSource(uint8_t source, bool phased);
