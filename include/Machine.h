@@ -50,6 +50,7 @@ class Machine {
   [[nodiscard]] PPU& ppu() { return ppu_; }
   [[nodiscard]] const PPU& ppu() const { return ppu_; }
   [[nodiscard]] const LCD& lcd() const { return lcd_; }
+  [[nodiscard]] const CPU& cpu() const { return cpu_; }
   [[nodiscard]] IMemRead& memory() { return bus_; }
   [[nodiscard]] StateSerializer& serializer() { return serializer_; }
 

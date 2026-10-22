@@ -57,7 +57,7 @@ constexpr bool ASSERTS_DISABLED = false;
 
 enum class Result { Running, Pass, Fail };
 
-enum class Protocol { Blargg, Mooneye, Memory };
+enum class Protocol { Blargg, Mooneye, Memory, Registers, Hram };
 
 struct InputEvent {
   uint32_t frame = 0;
@@ -121,6 +121,15 @@ constexpr uint8_t MEMORY_SIGNATURE_2 = 0x61;
 constexpr uint8_t MEMORY_STILL_RUNNING = 0x80;
 constexpr uint8_t MEMORY_PASS_CODE = 0x00;
 
+constexpr uint8_t OPCODE_LD_B_B = 0x40;
+constexpr uint8_t OPCODE_LEGACY_MOONEYE_EXIT = 0xED;
+constexpr std::array<uint8_t, 6> FIBONACCI_SIGNATURE = {3, 5, 8, 13, 21, 34};
+constexpr uint32_t BREAK_SETTLE_FRAMES = 2;
+
+constexpr uint16_t HRAM_RESULT_ADDR = 0xFF82;
+constexpr uint8_t HRAM_PASS_CODE = 0x01;
+constexpr uint8_t HRAM_FAIL_CODE = 0xFF;
+
 class TestRunner {
  public:
   TestRunner(const std::string& romPath, Protocol protocol)
@@ -140,6 +149,9 @@ class TestRunner {
   }
 
   int run(uint64_t budget) {
+    if (protocol_ == Protocol::Registers) {
+      return runUntilSignature(budget);
+    }
     while (machine->cycles() < budget) {
       machine->step();
       switch (checkResult()) {
@@ -185,6 +197,32 @@ class TestRunner {
     while (machine->cycles() < mcycles) {
       machine->step();
     }
+  }
+
+  void runUntilBreak(uint64_t mcycles) {
+    while (machine->cycles() < mcycles) {
+      const uint8_t opcode = currentOpcode();
+      machine->step();
+      if (opcode == OPCODE_LD_B_B) {
+        runCycles(machine->cycles() +
+                  (BREAK_SETTLE_FRAMES * MCYCLES_PER_FRAME));
+        return;
+      }
+    }
+  }
+
+  int checkHramResult() {
+    const uint8_t code = machine->memory().read8(HRAM_RESULT_ADDR);
+    std::cout << "$FF82: " << std::hex << std::setw(2) << std::setfill('0')
+              << static_cast<int>(code) << std::dec << '\n';
+    if (code == HRAM_PASS_CODE) {
+      return 0;
+    }
+    if (code == HRAM_FAIL_CODE) {
+      return 1;
+    }
+    std::cerr << "no result written to $FF82\n";
+    return 2;
   }
 
   [[nodiscard]] const auto& videoBuffer() const {
@@ -243,6 +281,33 @@ class TestRunner {
       popped =
           machine->apu().popSamples(audioScratch.data(), audioScratch.size());
     } while (popped == audioScratch.size());
+  }
+
+  uint8_t currentOpcode() {
+    return machine->memory().read8(machine->cpu().registers().pc);
+  }
+
+  int runUntilSignature(uint64_t budget) {
+    while (machine->cycles() < budget) {
+      const uint8_t opcode = currentOpcode();
+      if (opcode == OPCODE_LEGACY_MOONEYE_EXIT) {
+        return reportRegisters();
+      }
+      machine->step();
+      if (opcode == OPCODE_LD_B_B) {
+        return reportRegisters();
+      }
+    }
+    std::cerr << "TIMEOUT after " << budget << " cycles\n";
+    return 2;
+  }
+
+  int reportRegisters() const {
+    const Registers& r = machine->cpu().registers();
+    const std::array<uint8_t, 6> actual = {r.b, r.c, r.d, r.e, r.h, r.l};
+    std::cout << "B=" << +r.b << " C=" << +r.c << " D=" << +r.d << " E=" << +r.e
+              << " H=" << +r.h << " L=" << +r.l << '\n';
+    return actual == FIBONACCI_SIGNATURE ? 0 : 1;
   }
 
   Result checkResult() {
@@ -538,6 +603,7 @@ int main(int argc, char** argv) {
     Protocol protocol = Protocol::Blargg;
     uint32_t frames = 0;
     bool frameMode = false;
+    bool untilBreak = false;
     bool printHash = false;
     std::string dumpPath;
     bool benchMode = false;
@@ -553,6 +619,12 @@ int main(int argc, char** argv) {
         protocol = Protocol::Mooneye;
       } else if (arg == "--memory") {
         protocol = Protocol::Memory;
+      } else if (arg == "--regs") {
+        protocol = Protocol::Registers;
+      } else if (arg == "--ff82") {
+        protocol = Protocol::Hram;
+      } else if (arg == "--until-break") {
+        untilBreak = true;
       } else if (arg == "--hash") {
         printHash = true;
       } else if (arg == "--frames") {
@@ -592,7 +664,8 @@ int main(int argc, char** argv) {
 
     if (romPath.empty()) {
       std::cerr << "Usage: test_runner <rom_path> [max_million_cycles] "
-                   "[--mooneye] [--memory] [--frames N] [--hash] "
+                   "[--mooneye] [--memory] [--regs] [--ff82 --frames N] "
+                   "[--frames N] [--until-break] [--hash] "
                    "[--dump path] [--input FRAME:BUTTON,...] [--bench "
                    "[--bench-frames N] "
                    "[--bench-runs R] [--bench-warmup W] "
@@ -628,8 +701,21 @@ int main(int argc, char** argv) {
     TestRunner runner(romPath, protocol);
     runner.setInput(std::move(input));
 
+    if (protocol == Protocol::Hram) {
+      if (!frameMode) {
+        std::cerr << "--ff82 needs --frames N\n";
+        return 3;
+      }
+      runner.runCycles(frames * MCYCLES_PER_FRAME);
+      return runner.checkHramResult();
+    }
+
     if (frameMode) {
-      runner.runFrames(frames);
+      if (untilBreak) {
+        runner.runUntilBreak(frames * MCYCLES_PER_FRAME);
+      } else {
+        runner.runFrames(frames);
+      }
       if (printHash) {
         std::cout << std::hex << std::setfill('0') << std::setw(16)
                   << hashFramebuffer(runner.videoBuffer()) << std::dec << '\n';

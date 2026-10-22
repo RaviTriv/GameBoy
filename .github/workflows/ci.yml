@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  blargg-tests:
-    name: Blargg CPU Test
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
     container: gcc:16.2.0
 
@@ -23,15 +23,11 @@ jobs:
         run: cmake --build build -j
 
       - name: Run test ROMs
-        run: ctest --test-dir build --output-on-failure -LE known_fail --output-junit results.xml
-
-      - name: Run known-fail ROMs
-        if: success() || failure()
-        run: ctest --test-dir build -L known_fail --output-junit known-fail.xml || true
+        run: ctest --test-dir build -j "$(nproc)" --output-junit results.xml
 
       - name: Test report
         if: always()
-        run: python3 .github/scripts/test_report.py build/results.xml --known-fail build/known-fail.xml
+        run: python3 .github/scripts/test_report.py build/results.xml
 
       - name: Upload test results
         if: always()
@@ -58,7 +54,7 @@ jobs:
         run: cmake --build build -j
 
       - name: Run test ROMs
-        run: ctest --test-dir build --output-on-failure -L "cpu|mbc" -LE known_fail
+        run: ctest --test-dir build -j "$(nproc)" --output-on-failure -L "cpu|mbc|savestate"
 
   clang-format:
     name: Clang Format

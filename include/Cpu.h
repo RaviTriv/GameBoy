@@ -25,6 +25,7 @@ class CPU {
       std::function_ref<void(int)> cycleCallback);
 
   void step();
+  [[nodiscard]] const Registers& registers() const { return state.registers; }
   void save(std::ostream& out) const;
   void load(std::istream& in);
 
