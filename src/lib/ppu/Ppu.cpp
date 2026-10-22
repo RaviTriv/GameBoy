@@ -17,11 +17,52 @@
 #include "OamTypes.h"
 #include "Serializable.h"
 
-PPU::PPU(Interrupts& interrupts, LCD& lcd)
+PPU::PPU(Interrupts& interrupts, LCD& lcd,
+         std::span<const uint8_t, HEADER_LOGO_SIZE> bootLogo)
     : interrupts_(interrupts), lcd_(lcd), pipeline(state.vram) {
   state.lineTicks = BOOT_LINE_TICKS;
   setMode(LCD::MODE::VBLANK);
   updateStatLine(false);
+  loadBootVram(bootLogo);
+}
+
+namespace {
+
+constexpr std::size_t BOOT_LOGO_TILES = 0x0010;
+constexpr std::size_t BOOT_MAP_ROW0 = 0x1904;
+constexpr std::size_t BOOT_MAP_ROW1 = 0x1924;
+constexpr std::size_t BOOT_MAP_REGISTERED = 0x1910;
+constexpr uint8_t BOOT_TILES_PER_ROW = 12;
+constexpr std::array<uint8_t, 8> BOOT_REGISTERED_TILE = {
+    0x3C, 0x42, 0xB9, 0xA5, 0xB9, 0xA5, 0x42, 0x3C};
+
+}  // namespace
+
+void PPU::loadBootVram(std::span<const uint8_t, HEADER_LOGO_SIZE> logo) {
+  std::size_t addr = BOOT_LOGO_TILES;
+  auto writeNibble = [&](uint8_t nibble) {
+    uint8_t row = 0;
+    for (int bit = 3; bit >= 0; bit--) {
+      row = static_cast<uint8_t>((row << 2) | (((nibble >> bit) & 1) * 0b11));
+    }
+    state.vram[addr] = row;
+    state.vram[addr + 2] = row;
+    addr += 4;
+  };
+  for (uint8_t value : logo) {
+    writeNibble(static_cast<uint8_t>(value >> 4));
+    writeNibble(static_cast<uint8_t>(value & NIBBLE_MASK));
+  }
+  for (uint8_t row : BOOT_REGISTERED_TILE) {
+    state.vram[addr] = row;
+    addr += 2;
+  }
+  for (uint8_t i = 0; i < BOOT_TILES_PER_ROW; i++) {
+    state.vram[BOOT_MAP_ROW0 + i] = static_cast<uint8_t>(i + 1);
+    state.vram[BOOT_MAP_ROW1 + i] =
+        static_cast<uint8_t>(i + 1 + BOOT_TILES_PER_ROW);
+  }
+  state.vram[BOOT_MAP_REGISTERED] = (2 * BOOT_TILES_PER_ROW) + 1;
 }
 
 const PPU::Frame& PPU::acquireFrontFrame() {
@@ -37,6 +78,10 @@ const PPU::Frame& PPU::getPublishedFrame() const {
 }
 
 void PPU::finishFrame() {
+  if (state.blankFrame) {
+    frames[backIndex].fill(BLANK_PIXEL);
+    state.blankFrame = false;
+  }
   publishFrame();
   currentFrame.fetch_add(1, std::memory_order_relaxed);
   if (onFrameComplete) {
@@ -67,7 +112,7 @@ void PPU::tick() {
       pipeline.reset();
       state.lineTicks = 0;
       pipeline.newFrame();
-      frames[backIndex].fill(0xFFFFFFFF);
+      frames[backIndex].fill(BLANK_PIXEL);
       finishFrame();
       return;
     case LCD::TURNED_ON:
@@ -76,6 +121,7 @@ void PPU::tick() {
       state.statSource = 0;
       compareLyc(0);
       state.skipOamScan = true;
+      state.blankFrame = true;
       state.lineTicks = LCD_ON_LINE_TICKS;
       pipeline.newFrame();
       state.lineSprites.clear();

@@ -4,11 +4,13 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
 
+#include "./Common.h"
 #include "./EnumName.h"
 #include "./Mbc.h"
 #include "./Serializable.h"
@@ -37,7 +39,7 @@ enum class CartridgeType : uint8_t {
 
 struct RomHeader {
   std::array<uint8_t, 4> entry;
-  std::array<uint8_t, 0x30> logo;
+  std::array<uint8_t, HEADER_LOGO_SIZE> logo;
   std::array<char, 16> title;
 
   uint16_t newLicenseeCode;
@@ -73,6 +75,7 @@ class Cartridge {
   void write(uint16_t address, uint8_t value);
   void tick(int cycles);
   [[nodiscard]] std::string getTitle() const;
+  [[nodiscard]] std::span<const uint8_t, HEADER_LOGO_SIZE> getLogo() const;
   [[nodiscard]] bool hasBattery() const;
   void saveBattery(std::ostream& out) const;
   void loadBattery(std::istream& in);

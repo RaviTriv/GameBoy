@@ -236,6 +236,10 @@ std::string Cartridge::getTitle() const {
   return result;
 }
 
+std::span<const uint8_t, HEADER_LOGO_SIZE> Cartridge::getLogo() const {
+  return state.header->logo;
+}
+
 bool Cartridge::hasBattery() const {
   switch (state.header->type) {
     case CartridgeType::MBC1_RAM_BATTERY:

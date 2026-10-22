@@ -34,7 +34,7 @@ def collect(root: Path):
 
     add(root / "dmg-acid2/dmg-acid2.gb", root / "dmg-acid2/dmg-acid2-dmg.png", "frames", 60)
     add(root / "strikethrough/strikethrough.gb", root / "strikethrough/strikethrough-dmg.png", "frames", 60)
-    add(root / "little-things-gb/firstwhite.gb", root / "little-things-gb/firstwhite-dmg-cgb.png", "frames", 20)
+    add(root / "little-things-gb/firstwhite.gb", root / "little-things-gb/firstwhite-dmg-cgb.png", "frames", 30)
     add(root / "mooneye-test-suite/manual-only/sprite_priority.gb",
         root / "mooneye-test-suite/manual-only/sprite_priority-dmg.png", "break", MAX_BREAK_FRAMES)
 

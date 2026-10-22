@@ -1,6 +1,6 @@
 dmg-acid2/dmg-acid2.gb	frames	60	17a0f9970ac4d084
 strikethrough/strikethrough.gb	frames	60	f341f71f02abeb7d
-little-things-gb/firstwhite.gb	frames	20	c850103d09c4eb25
+little-things-gb/firstwhite.gb	frames	30	c850103d09c4eb25
 mooneye-test-suite/manual-only/sprite_priority.gb	break	600	dc85eb0ac5efddb4
 scribbltests/lycscx/lycscx.gb	frames	30	d7a3a47a896a8325
 scribbltests/lycscy/lycscy.gb	frames	30	c850103d09c4eb25

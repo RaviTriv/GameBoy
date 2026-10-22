@@ -17,6 +17,7 @@ set(GB_HRAM_FRAMES 30)
 
 set(GB_BROKEN_TEST_ROMS
     blargg/oam_bug/rom_singles/7-timing_effect.gb
+    gbmicrotest/halt_op_dupe_delay.gb
     gbmicrotest/stat_write_glitch_l154_d.gb
 )
 

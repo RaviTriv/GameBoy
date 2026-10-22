@@ -17,7 +17,7 @@
 Machine::Machine(std::string_view romPath)
     : cartridge_(romPath),
       lcd_(dma_),
-      ppu_(interrupts_, lcd_),
+      ppu_(interrupts_, lcd_, cartridge_.getLogo()),
       timer_(interrupts_),
       io_(interrupts_, timer_, lcd_, gamepad_, apu_),
       bus_(cartridge_, interrupts_, dma_, io_, ppu_, ram_),

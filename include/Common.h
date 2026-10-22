@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 
 constexpr uint16_t ROM_START = 0x0000;
@@ -29,6 +30,8 @@ constexpr uint16_t HRAM_START = 0xFF80;
 constexpr uint16_t HRAM_END = 0xFFFE;
 
 constexpr uint16_t IE_REGISTER = 0xFFFF;
+
+constexpr std::size_t HEADER_LOGO_SIZE = 0x30;
 
 constexpr uint8_t NIBBLE_MASK = 0xF;
 constexpr uint8_t HIGH_NIBBLE_MASK = 0xF0;

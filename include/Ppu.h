@@ -30,6 +30,7 @@ class PPU {
 
     LCD::MODE mode = LCD::MODE::VBLANK;
     bool skipOamScan = false;
+    bool blankFrame = false;
     uint32_t lineTicks = 0;
     int16_t lyForComparison = 0;
     uint8_t statSource = LCD::LCDS_SRC::S_VBLANK;
@@ -38,7 +39,8 @@ class PPU {
     std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> lineSprites;
     ScanlineContext scanlineCtx{};
   };
-  PPU(Interrupts& interrupts, LCD& lcd);
+  PPU(Interrupts& interrupts, LCD& lcd,
+      std::span<const uint8_t, HEADER_LOGO_SIZE> bootLogo);
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
   [[nodiscard]] bool isOamBlocked() const;
@@ -94,10 +96,12 @@ class PPU {
   static constexpr int PIPELINE_LAG = 2;
   static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
   static constexpr uint8_t FRAME_FRESH_BIT = 0x4;
+  static constexpr uint32_t BLANK_PIXEL = 0xFFFFFFFF;
 
   void publishFrame()
       post(backIndex < frames.size() && backIndex != publishedIndex);
   void finishFrame();
+  void loadBootVram(std::span<const uint8_t, HEADER_LOGO_SIZE> logo);
   void setMode(LCD::MODE mode);
   void startLine();
   void incrementLY();
