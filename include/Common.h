@@ -65,7 +65,7 @@ constexpr uint16_t IF_REGISTER = 0xFF0F;
 constexpr uint8_t IF_UNUSED_BITS = 0xE0;
 
 constexpr uint16_t APU_START = 0xFF10;
-constexpr uint16_t APU_END = 0xFF26;
+constexpr uint16_t APU_END = 0xFF2F;
 
 constexpr uint16_t WAVE_RAM_START = 0xFF30;
 constexpr uint16_t WAVE_RAM_END = 0xFF3F;

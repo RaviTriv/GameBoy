@@ -15,22 +15,59 @@ const std::array<std::array<uint8_t, 8>, 4> SquareChannel::duties = {
      {1, 0, 0, 0, 0, 1, 1, 1},
      {0, 1, 1, 1, 1, 1, 1, 0}}};
 
-void Channel::updateTriggers(bool lengthTrigger, bool envelopeTrigger,
-                             bool sweepTrigger) {
-  triggerLength = lengthTrigger;
-  triggerEnvelope = envelopeTrigger;
-  triggerSweep = sweepTrigger;
+bool Channel::writeControl(uint8_t value, int maxLength,
+                           bool nextStepClocksLength) {
+  const bool wasLengthEnabled = (nrx4 & LENGTH_ENABLE_BIT) != 0;
+  const bool lengthEnabled = (value & LENGTH_ENABLE_BIT) != 0;
+  const bool trigger = (value & TRIGGER_BIT) != 0;
+  nrx4 = static_cast<uint8_t>(value & ~TRIGGER_BIT);
+
+  if (!nextStepClocksLength && !wasLengthEnabled && lengthEnabled &&
+      lengthTimer > 0) {
+    lengthTimer--;
+    if (lengthTimer == 0 && !trigger) {
+      enabled = false;
+    }
+  }
+
+  if (trigger && lengthTimer == 0) {
+    lengthTimer = maxLength;
+    if (lengthEnabled && !nextStepClocksLength) {
+      lengthTimer--;
+    }
+  }
+  return trigger;
 }
 
-void SquareChannel::reset() {
-  nrx4 &= static_cast<uint8_t>(~TRIGGER_BIT);
+void Channel::clockLength() {
+  if ((nrx4 & LENGTH_ENABLE_BIT) != 0 && lengthTimer > 0) {
+    lengthTimer--;
+    if (lengthTimer == 0) {
+      enabled = false;
+    }
+  }
+}
 
+bool Channel::envelopeDacEnabled() const {
+  return (nrx2 & ENVELOPE_DAC_MASK) != 0;
+}
+
+void Channel::triggerEnvelope(bool nextStepClocksEnvelope) {
   envelopeVolume = (nrx2 & ENVELOPE_VOLUME_MASK) >> ENVELOPE_VOLUME_SHIFT;
-  enabled = true;
-  if ((nrx1 & LENGTH_MASK) != 0) {
-    lengthTimer = MAX_LENGTH - (nrx1 & LENGTH_MASK);
+  const int period = nrx2 & ENVELOPE_PERIOD_MASK;
+  envelopeTimer = period != 0 ? period : ENVELOPE_PERIOD_ZERO;
+  if (nextStepClocksEnvelope) {
+    envelopeTimer++;
   }
   envelopeEnabled = true;
+}
+
+void SquareChannel::trigger(bool nextStepClocksEnvelope) {
+  enabled = envelopeDacEnabled();
+  freqTimer =
+      TIMER_MULTIPLIER *
+      (FREQ_BASE - (((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3));
+  triggerEnvelope(nextStepClocksEnvelope);
 
   sweepShadowFreq = static_cast<uint16_t>(
       ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3);
@@ -38,22 +75,17 @@ void SquareChannel::reset() {
   uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
   sweepTimer = period ? period : 8;
   sweepEnabled = (period != 0) || (shift != 0);
-  if (shift != 0) {
-    uint16_t overflowCheck = sweepCalculation();
-    if (overflowCheck >= SWEEP_OVERFLOW_THRESHOLD) {
-      enabled = false;
-    }
+  sweepNegateUsed = false;
+  if (shift != 0 && sweepCalculation() >= SWEEP_OVERFLOW_THRESHOLD) {
+    enabled = false;
   }
 }
 
-bool SquareChannel::lengthTimerAction() {
-  if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer) {
-    lengthTimer--;
-    if (lengthTimer <= 0) {
-      return false;
-    }
+void SquareChannel::writeSweep(uint8_t value) {
+  nrx0 = value;
+  if ((value & SWEEP_NEGATE_BIT) == 0 && sweepNegateUsed) {
+    enabled = false;
   }
-  return true;
 }
 
 uint8_t SquareChannel::getSample() const {
@@ -62,7 +94,7 @@ uint8_t SquareChannel::getSample() const {
 }
 
 void Channel::envelopeAction() {
-  if (triggerEnvelope && envelopeEnabled && (nrx2 & ENVELOPE_PERIOD_MASK)) {
+  if (envelopeEnabled && (nrx2 & ENVELOPE_PERIOD_MASK)) {
     envelopeTimer--;
     if (envelopeTimer <= 0) {
       envelopeTimer = nrx2 & ENVELOPE_PERIOD_MASK;
@@ -81,27 +113,23 @@ uint16_t SquareChannel::sweepCalculation() {
   uint8_t shift = nrx0 & SWEEP_SHIFT_MASK;
   auto delta = static_cast<uint16_t>(sweepShadowFreq >> shift);
   if (nrx0 & SWEEP_NEGATE_BIT) {
+    sweepNegateUsed = true;
     return sweepShadowFreq - delta;
   }
   return sweepShadowFreq + delta;
 }
 
 void SquareChannel::sweepAction() {
-  if (!triggerSweep || !sweepEnabled) {
-    return;
-  }
-
-  uint8_t period = (nrx0 & SWEEP_PERIOD_MASK) >> SWEEP_PERIOD_SHIFT;
-  if (period == 0) {
-    return;
-  }
-
   sweepTimer--;
   if (sweepTimer > 0) {
     return;
   }
 
-  sweepTimer = period;
+  uint8_t period = (nrx0 & SWEEP_PERIOD_MASK) >> SWEEP_PERIOD_SHIFT;
+  sweepTimer = period ? period : 8;
+  if (!sweepEnabled || period == 0) {
+    return;
+  }
 
   uint16_t newFreq = sweepCalculation();
   if (newFreq >= SWEEP_OVERFLOW_THRESHOLD) {
@@ -166,23 +194,31 @@ int SquareChannel::advanceTimer(int ticks) {
   return fires;
 }
 
-void WaveChannel::reset() {
-  nrx4 &= static_cast<uint8_t>(~TRIGGER_BIT);
-  enabled = true;
-  sample = 0;
-  if (!lengthTimer) {
-    lengthTimer = MAX_LENGTH - nrx1;
-  }
+int WaveChannel::period() const {
+  return WAVE_TIMER_MULTIPLIER *
+         (FREQ_BASE - (((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3));
 }
 
-bool WaveChannel::lengthTimerAction() {
-  if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer) {
-    lengthTimer--;
-    if (lengthTimer <= 0) {
-      return false;
+bool WaveChannel::justFetched() const { return ticksSinceFetch < FETCH_WINDOW; }
+
+std::size_t WaveChannel::currentByte() const { return sample / 2; }
+
+void WaveChannel::trigger(std::array<uint8_t, 16>& waveRam) {
+  if (enabled && freqTimer <= FETCH_WINDOW) {
+    const std::size_t next = ((sample + 1U) / 2) % waveRam.size();
+    if (next < CORRUPTION_BLOCK) {
+      waveRam[0] = waveRam[next];
+    } else {
+      const std::size_t block = next & ~std::size_t{CORRUPTION_BLOCK - 1};
+      for (std::size_t i = 0; i < CORRUPTION_BLOCK; i++) {
+        waveRam[i] = waveRam[block + i];
+      }
     }
   }
-  return true;
+  enabled = (nrx0 & DAC_ENABLE_BIT) != 0;
+  sample = 0;
+  ticksSinceFetch = UINT8_MAX;
+  freqTimer = period() + TRIGGER_DELAY;
 }
 
 uint8_t WaveChannel::getSample(uint8_t s) const {
@@ -190,69 +226,28 @@ uint8_t WaveChannel::getSample(uint8_t s) const {
 }
 
 int WaveChannel::advanceTimer(int ticks) {
-  if (ticks <= 0) {
-    return 0;
-  }
-
-  auto wavelen = static_cast<uint16_t>(
-      ((nrx4 & FREQ_HIGH_MASK) << FREQ_HIGH_SHIFT) | nrx3);
-  int period = TIMER_MULTIPLIER * (FREQ_BASE - wavelen);
-
   int fires = 0;
-
-  // if timer already expired, first tick is a reload+fire
-  if (freqTimer <= 0) {
-    freqTimer = period;
-    fires++;
-    ticks--;
+  for (int i = 0; i < ticks; i++) {
+    if (ticksSinceFetch < UINT8_MAX) {
+      ticksSinceFetch++;
+    }
+    if (--freqTimer <= 0) {
+      freqTimer = period();
+      sample = static_cast<uint8_t>((sample + 1) % WAVE_SAMPLE_COUNT);
+      ticksSinceFetch = 0;
+      fires++;
+    }
   }
-
-  if (ticks <= 0) {
-    return fires;
-  }
-
-  // fast path: no fires in remaining ticks
-  if (ticks < freqTimer) {
-    freqTimer -= ticks;
-    return fires;
-  }
-
-  // consume current timer, then batch the rest
-  ticks -= freqTimer;
-  fires++;
-  if (period > 0) {
-    fires += ticks / period;
-    freqTimer = period - (ticks % period);
-  } else {
-    fires += ticks;
-    freqTimer = 0;
-  }
-
   return fires;
 }
 
 const std::array<int, 8> NoiseChannel::divisor = {8,  16, 32, 48,
                                                   64, 80, 96, 112};
 
-void NoiseChannel::reset() {
-  nrx4 &= static_cast<uint8_t>(~TRIGGER_BIT);
-  if (!lengthTimer) {
-    lengthTimer = MAX_LENGTH - (nrx1 & LENGTH_MASK);
-  }
-  enabled = true;
+void NoiseChannel::trigger(bool nextStepClocksEnvelope) {
+  enabled = envelopeDacEnabled();
   lfsr = INITIAL_LFSR;
-  envelopeVolume = nrx2 >> ENVELOPE_VOLUME_SHIFT;
-  envelopeEnabled = true;
-}
-
-bool NoiseChannel::lengthTimerAction() {
-  if (triggerLength && ((nrx4 & LENGTH_ENABLE_BIT) != 0) && lengthTimer) {
-    lengthTimer--;
-    if (lengthTimer <= 0) {
-      return false;
-    }
-  }
-  return true;
+  triggerEnvelope(nextStepClocksEnvelope);
 }
 
 uint8_t NoiseChannel::getSample() const {

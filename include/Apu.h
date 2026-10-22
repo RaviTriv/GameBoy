@@ -14,7 +14,6 @@ struct StereoSample {
 
 class APU {
   struct Registers {
-    uint8_t NR52 = 0;
     uint8_t NR51 = 0;
     uint8_t NR50 = 0;
   };
@@ -49,15 +48,17 @@ class APU {
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;
-  bool triggerLength = false;
-  bool triggerEnvelope = false;
-  bool triggerSweep = false;
   uint32_t sampleTimer = 0;
   uint32_t pendingTicks = 0;
   static constexpr uint32_t CPU_CLOCK_HZ = 4194304;
   static constexpr uint32_t CPU_CYCLES_PER_SAMPLE = CPU_CLOCK_HZ / audioFreq;
 
   void flushChannelTimers();
+  void setPower(bool on);
+  void writeWhileOff(uint16_t address, uint8_t value);
+  [[nodiscard]] uint8_t readRegister(uint16_t address) const;
+  [[nodiscard]] bool nextStepClocksLength() const;
+  [[nodiscard]] bool nextStepClocksEnvelope() const;
   [[nodiscard]] StereoSample mixSample();
 
   [[nodiscard]] uint8_t getChannel3CurrentSample();
@@ -97,6 +98,16 @@ class APU {
   static constexpr uint16_t FRAME_SEQUENCER_CLOCK = 8192;
   static constexpr uint8_t FRAME_SEQUENCER_STEPS = 8;
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
+  static constexpr uint8_t SQUARE_LENGTH_MASK = 0x3F;
+  static constexpr int SQUARE_MAX_LENGTH = 64;
+  static constexpr int WAVE_MAX_LENGTH = 256;
+  static constexpr uint8_t NR52_UNUSED_BITS = 0x70;
+  static constexpr uint8_t FRAME_STEP_BEFORE_ENVELOPE = 6;
+  static constexpr uint8_t FRAME_STEP_BEFORE_FIRST = 7;
+  static constexpr std::array<uint8_t, 0x20> READ_MASKS = {
+      0x80, 0x3F, 0x00, 0xFF, 0xBF, 0xFF, 0x3F, 0x00, 0xFF, 0xBF, 0x7F,
+      0xFF, 0x9F, 0xFF, 0xBF, 0xFF, 0xFF, 0x00, 0x00, 0xBF, 0x00, 0x00,
+      0x70, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
   static constexpr uint8_t NR51_CH1_RIGHT = 0x01;
   static constexpr uint8_t NR51_CH2_RIGHT = 0x02;

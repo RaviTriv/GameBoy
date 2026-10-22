@@ -15,9 +15,6 @@ class Channel {
  protected:
   uint8_t nrx0 = 0, nrx1 = 0, nrx2 = 0, nrx3 = 0, nrx4 = 0;
   bool enabled = false;
-  bool triggerLength = false;
-  bool triggerEnvelope = false;
-  bool triggerSweep = false;
   int freqTimer = 0;
   int lengthTimer = 0;
   bool envelopeEnabled = false;
@@ -35,11 +32,16 @@ class Channel {
   static constexpr uint8_t ENVELOPE_PERIOD_MASK = 0x07;
   static constexpr uint8_t ENVELOPE_VOLUME_MASK = 0xF0;
   static constexpr uint8_t ENVELOPE_DIRECTION_BIT = 0x08;
+  static constexpr uint8_t ENVELOPE_DAC_MASK = 0xF8;
   static constexpr uint8_t MAX_VOLUME = 0x0F;
+  static constexpr int ENVELOPE_PERIOD_ZERO = 8;
+
+  bool writeControl(uint8_t value, int maxLength, bool nextStepClocksLength);
+  void triggerEnvelope(bool nextStepClocksEnvelope);
+  [[nodiscard]] bool envelopeDacEnabled() const;
 
  public:
-  void updateTriggers(bool lengthTrigger, bool envelopeTrigger,
-                      bool sweepTrigger);
+  void clockLength();
   void envelopeAction();
 };
 
@@ -64,13 +66,14 @@ class SquareChannel : public Channel {
   int sweepTimer = 0;
   uint16_t sweepShadowFreq = 0;
   bool sweepEnabled = false;
+  bool sweepNegateUsed = false;
 
   uint16_t sweepCalculation();
+  void writeSweep(uint8_t value);
 
  public:
-  void reset();
+  void trigger(bool nextStepClocksEnvelope);
   int advanceTimer(int ticks);
-  bool lengthTimerAction();
   void sweepAction();
   [[nodiscard]] uint8_t getSample() const;
   void save(std::ostream& out) const;
@@ -81,15 +84,23 @@ class WaveChannel : public Channel {
  private:
   friend class APU;
   uint8_t sample = 0;
+  uint8_t ticksSinceFetch = UINT8_MAX;
   static constexpr uint16_t MAX_LENGTH = 256;
   static constexpr uint8_t DAC_ENABLE_BIT = 0x80;
   static constexpr uint8_t DAC_ENABLE_SHIFT = 7;
   static constexpr uint8_t WAVE_SAMPLE_COUNT = 32;
+  static constexpr uint8_t WAVE_TIMER_MULTIPLIER = 2;
+  static constexpr int TRIGGER_DELAY = 6;
+  static constexpr int FETCH_WINDOW = 2;
+  static constexpr uint8_t CORRUPTION_BLOCK = 4;
+
+  [[nodiscard]] int period() const;
 
  public:
-  void reset();
+  void trigger(std::array<uint8_t, 16>& waveRam);
   int advanceTimer(int ticks);
-  bool lengthTimerAction();
+  [[nodiscard]] bool justFetched() const;
+  [[nodiscard]] std::size_t currentByte() const;
   [[nodiscard]] uint8_t getSample(uint8_t s) const;
   void save(std::ostream& out) const;
   void load(std::istream& in);
@@ -116,9 +127,8 @@ class NoiseChannel : public Channel {
   static constexpr uint8_t LFSR_7BIT_TAP = 6;
 
  public:
-  void reset();
+  void trigger(bool nextStepClocksEnvelope);
   int advanceTimer(int ticks);
-  bool lengthTimerAction();
   [[nodiscard]] uint8_t getSample() const;
   void save(std::ostream& out) const;
   void load(std::istream& in);
@@ -128,8 +138,7 @@ template <typename C>
 concept SoundChannel = std::derived_from<C, Channel> &&
                        requires(C channel, const C constChannel, int ticks,
                                 std::ostream& out, std::istream& in) {
-                         channel.reset();
-                         { channel.lengthTimerAction() } -> std::same_as<bool>;
+                         channel.clockLength();
                          { channel.advanceTimer(ticks) } -> std::same_as<int>;
                          constChannel.save(out);
                          channel.load(in);
