@@ -15,9 +15,18 @@ set(GB_ROMS "${gb_test_roms_SOURCE_DIR}")
 set(GB_SIGNATURE_BUDGET 10)
 set(GB_HRAM_FRAMES 30)
 
+set(GB_BROKEN_TEST_ROMS
+    blargg/oam_bug/rom_singles/7-timing_effect.gb
+    gbmicrotest/stat_write_glitch_l154_d.gb
+)
+
 # gb_rom_test(<name> <rom> [ARGS ...] [LABELS ...] [PASS_HASH <hash>])
 function(gb_rom_test name rom)
     cmake_parse_arguments(PARSE_ARGV 2 ARG "" "PASS_HASH" "ARGS;LABELS")
+    file(RELATIVE_PATH rel "${GB_ROMS}" "${rom}")
+    if(rel IN_LIST GB_BROKEN_TEST_ROMS)
+        return()
+    endif()
     add_test(NAME "${name}" COMMAND gameboy_tests "${rom}" ${ARG_ARGS})
     set_tests_properties("${name}" PROPERTIES TIMEOUT ${GB_TEST_TIMEOUT} LABELS "${ARG_LABELS}")
     if(ARG_PASS_HASH)

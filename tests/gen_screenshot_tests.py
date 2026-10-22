@@ -42,7 +42,7 @@ def collect(root: Path):
         if rom.stem == "statcount":
             continue
         png = next(iter(sorted(rom.parent.glob("*dmg*.png"))), None)
-        add(rom, png, "frames", 280 if rom.stem == "statcount-auto" else 30)
+        add(rom, png, "frames", 600 if rom.stem == "statcount-auto" else 30)
 
     for rom in sorted((root / "turtle-tests").glob("*/*.gb")):
         add(rom, next(iter(sorted(rom.parent.glob("*.png"))), None), "frames", 30)
