@@ -87,7 +87,7 @@ uint8_t Timer::read(uint16_t address) const {
     case TMA_REGISTER:
       return state.tma;
     case TAC_REGISTER:
-      return state.tac;
+      return state.tac | TAC_UNUSED_BITS;
     default:
       return 0;
   }

@@ -81,6 +81,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       state.lyCompare = value;
       break;
     case 0xFF46:
+      state.dma = value;
       dma_.start(value);
       break;
     case 0xFF47:

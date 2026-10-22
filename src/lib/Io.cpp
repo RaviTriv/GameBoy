@@ -28,7 +28,8 @@ uint8_t IO::read(uint16_t address) const {
   }
 
   if (address == SERIAL_CONTROL_REGISTER) {
-    return static_cast<uint8_t>(serialData[SERIAL_CONTROL_INDEX]);
+    return static_cast<uint8_t>(serialData[SERIAL_CONTROL_INDEX]) |
+           SC_UNUSED_BITS;
   }
 
   if ((address >= TIMER_START) && (address <= TIMER_END)) {
@@ -56,7 +57,7 @@ uint8_t IO::read(uint16_t address) const {
     return lcd_.read(address);
   }
 
-  return 0;
+  return INVALID_READ_VALUE;
 }
 
 void IO::write(uint16_t address, uint8_t value) {

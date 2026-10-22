@@ -15,6 +15,7 @@ class DMA {
     uint8_t byte = 0;
     uint8_t value = 0;
     uint8_t startDelay = 0;
+    uint8_t pendingValue = 0;
   };
 
  public:

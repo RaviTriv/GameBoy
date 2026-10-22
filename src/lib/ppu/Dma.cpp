@@ -5,33 +5,33 @@
 #include <ostream>
 #include <stdexcept>
 
+#include "Common.h"
 #include "IMemRead.h"
 #include "Ppu.h"
 #include "Serializable.h"
 
 void DMA::start(uint8_t start) {
-  state.isActive = true;
-  state.byte = 0;
-  state.value = start;
+  state.pendingValue = start;
   state.startDelay = START_DELAY;
 }
 
 void DMA::tick(IMemRead& memory, PPU& ppu) {
-  if (!state.isActive) {
-    return;
+  if (state.isActive) {
+    contract_assert(state.byte < OAM_SIZE);
+    auto source = static_cast<uint16_t>((state.value * 0x100) + state.byte);
+    if (source >= ECHO_RAM_START) {
+      source -= 0x2000;
+    }
+    ppu.oamWrite(state.byte, memory.read8(source));
+    state.byte++;
+    state.isActive = state.byte < OAM_SIZE;
   }
 
-  if (state.startDelay) {
-    state.startDelay--;
-    return;
+  if (state.startDelay && --state.startDelay == 0) {
+    state.isActive = true;
+    state.byte = 0;
+    state.value = state.pendingValue;
   }
-
-  contract_assert(state.byte < OAM_SIZE);
-  ppu.oamWrite(
-      state.byte,
-      memory.read8(static_cast<uint16_t>((state.value * 0x100) + state.byte)));
-  state.byte++;
-  state.isActive = state.byte < OAM_SIZE;
 }
 
 bool DMA::isTransferring() const { return state.isActive; }
