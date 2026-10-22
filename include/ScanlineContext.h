@@ -26,9 +26,9 @@ struct ScanlineContext {
   uint16_t bgWinDataArea = 0;
   uint16_t winMapArea = 0;
 
-  std::array<uint32_t, 4> bgColors{};
-  std::array<uint32_t, 4> ob1Colors{};
-  std::array<uint32_t, 4> ob2Colors{};
+  uint8_t bgPalette = 0;
+  uint8_t obj0Palette = 0;
+  uint8_t obj1Palette = 0;
 
   [[= serial::skip]] std::span<const OAM_ENTRY> sprites;
 

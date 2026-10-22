@@ -1,7 +1,6 @@
 #include "Lcd.h"
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <istream>
 #include <ostream>
@@ -23,11 +22,6 @@ LCD::LCD(DMA& dma) : dma_(dma) {
   state.palettes[PaletteType::OBP1].palette = 0xFF;
   state.windowX = 0;
   state.windowY = 0;
-  for (std::size_t i = 0; i < 4; i++) {
-    state.bgColors[i] = defaultColors[i];
-    state.ob1Colors[i] = defaultColors[i];
-    state.ob2Colors[i] = defaultColors[i];
-  }
 }
 
 uint8_t LCD::read(uint16_t address) const {
@@ -89,13 +83,13 @@ void LCD::write(uint16_t address, uint8_t value) {
       dma_.start(value);
       break;
     case 0xFF47:
-      updatePalettes(PaletteType::BGP, value);
+      state.palettes[PaletteType::BGP].palette = value;
       break;
     case 0xFF48:
-      updatePalettes(PaletteType::OBP0, value & 0b11111100);
+      state.palettes[PaletteType::OBP0].palette = value & 0b11111100;
       break;
     case 0xFF49:
-      updatePalettes(PaletteType::OBP1, value & 0b11111100);
+      state.palettes[PaletteType::OBP1].palette = value & 0b11111100;
       break;
     case 0xFF4A:
       state.windowY = value;
@@ -107,34 +101,6 @@ void LCD::write(uint16_t address, uint8_t value) {
       Logger::GetLogger()->error("LCD write to invalid address: 0x{:04X}",
                                  address);
       break;
-  }
-}
-
-void LCD::updatePalettes(PaletteType type, uint8_t value) {
-  state.palettes[type].palette = value;
-  switch (type) {
-    case BGP:
-      state.bgColors[0] = defaultColors.at(value & 0b11);
-      state.bgColors[1] = defaultColors.at((value >> 2) & 0b11);
-      state.bgColors[2] = defaultColors.at((value >> 4) & 0b11);
-      state.bgColors[3] = defaultColors.at((value >> 6) & 0b11);
-      break;
-    case OBP0:
-      state.ob1Colors[0] = defaultColors.at(value & 0b11);
-      state.ob1Colors[1] = defaultColors.at((value >> 2) & 0b11);
-      state.ob1Colors[2] = defaultColors.at((value >> 4) & 0b11);
-      state.ob1Colors[3] = defaultColors.at((value >> 6) & 0b11);
-      break;
-    case OBP1:
-      state.ob2Colors[0] = defaultColors.at(value & 0b11);
-      state.ob2Colors[1] = defaultColors.at((value >> 2) & 0b11);
-      state.ob2Colors[2] = defaultColors.at((value >> 4) & 0b11);
-      state.ob2Colors[3] = defaultColors.at((value >> 6) & 0b11);
-      break;
-    default:
-      Logger::GetLogger()->error("Invalid palette type: {}",
-                                 static_cast<int>(type));
-      return;
   }
 }
 
@@ -219,14 +185,6 @@ uint8_t LCD::getWindowX() const { return state.windowX; }
 
 uint8_t LCD::getWindowY() const { return state.windowY; }
 
-const std::array<uint32_t, 4>& LCD::getBgColors() const {
-  return state.bgColors;
-}
-
-const std::array<uint32_t, 4>& LCD::getOb1Colors() const {
-  return state.ob1Colors;
-}
-
-const std::array<uint32_t, 4>& LCD::getOb2Colors() const {
-  return state.ob2Colors;
+uint8_t LCD::getPalette(PaletteType type) const {
+  return state.palettes[type].palette;
 }

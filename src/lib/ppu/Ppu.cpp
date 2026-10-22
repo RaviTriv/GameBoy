@@ -385,9 +385,9 @@ void PPU::buildScanlineContext() {
   state.scanlineCtx.bgMapArea = lcd_.getBgMapArea();
   state.scanlineCtx.bgWinDataArea = lcd_.getBgWindowDataArea();
   state.scanlineCtx.winMapArea = lcd_.getWindowMapArea();
-  state.scanlineCtx.bgColors = lcd_.getBgColors();
-  state.scanlineCtx.ob1Colors = lcd_.getOb1Colors();
-  state.scanlineCtx.ob2Colors = lcd_.getOb2Colors();
+  state.scanlineCtx.bgPalette = lcd_.getPalette(LCD::BGP);
+  state.scanlineCtx.obj0Palette = lcd_.getPalette(LCD::OBP0);
+  state.scanlineCtx.obj1Palette = lcd_.getPalette(LCD::OBP1);
   state.scanlineCtx.sprites = state.lineSprites;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 }

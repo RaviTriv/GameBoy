@@ -66,6 +66,12 @@ class Pipeline {
     uint8_t windowTileX = 0;
     std::array<uint8_t, WINDOW_X_DELAY> windowXHistory{};
     uint8_t windowX = 0;
+    uint8_t bgPalette = 0;
+    uint8_t obj0Palette = 0;
+    uint8_t obj1Palette = 0;
+    uint8_t lateBgPalette = 0;
+    uint8_t lateObj0Palette = 0;
+    uint8_t lateObj1Palette = 0;
     bool lateWindowEnabled = false;
     bool lateBgEnabled = false;
     bool lateObjEnabled = false;

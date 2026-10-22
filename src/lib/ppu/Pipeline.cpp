@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <istream>
@@ -16,6 +17,12 @@ constexpr uint8_t OBJ_COLOR_MASK = 0x3;
 constexpr uint8_t OBJ_PALETTE = 0x4;
 constexpr uint8_t OBJ_PRIORITY = 0x8;
 constexpr uint8_t MAP_MASK = 0x1F;
+constexpr std::array<uint32_t, 4> DMG_COLORS = {0xFFFFFFFF, 0xFFAAAAAA,
+                                                0xFF555555, 0xFF000000};
+
+uint32_t paletteColor(uint8_t palette, uint8_t color) {
+  return DMG_COLORS[(palette >> (color * 2)) & 3];
+}
 }  // namespace
 
 Pipeline::Pipeline(VramView vram) : vram_(vram) {}
@@ -48,6 +55,13 @@ bool Pipeline::latchRegisters() {
   bool windowXChanged = windowX != state.windowX;
   state.windowX = windowX;
 
+  state.bgPalette = ctx->bgPalette | state.lateBgPalette;
+  state.obj0Palette = ctx->obj0Palette | state.lateObj0Palette;
+  state.obj1Palette = ctx->obj1Palette | state.lateObj1Palette;
+  state.lateBgPalette = ctx->bgPalette;
+  state.lateObj0Palette = ctx->obj0Palette;
+  state.lateObj1Palette = ctx->obj1Palette;
+
   state.windowEnabled = state.lateWindowEnabled;
   state.bgEnabled = state.lateBgEnabled;
   state.objEnabled = state.lateObjEnabled;
@@ -70,8 +84,11 @@ void Pipeline::process() {
   }
 
   if (state.objState != OBJ_STATE::IDLE) {
-    stepSpriteFetch();
-    return;
+    if (ctx->objEnabled) {
+      stepSpriteFetch();
+      return;
+    }
+    state.objState = OBJ_STATE::IDLE;
   }
 
   if (!state.stalled && state.wyTriggered) {
@@ -330,8 +347,16 @@ void Pipeline::renderPixel() {
     return;
   }
 
+  if (state.lineX == 0) {
+    state.bgEnabled = ctx->bgWindowEnabled;
+    state.objEnabled = ctx->objEnabled;
+    state.bgPalette = ctx->bgPalette;
+    state.obj0Palette = ctx->obj0Palette;
+    state.obj1Palette = ctx->obj1Palette;
+  }
+
   uint8_t bgColor = state.bgEnabled ? bg : 0;
-  uint32_t color = ctx->bgColors[bgColor];
+  uint32_t color = paletteColor(state.bgPalette, bgColor);
 
   uint8_t objColor = obj & OBJ_COLOR_MASK;
   bool drawObj = objColor != 0 && state.objEnabled;
@@ -339,8 +364,9 @@ void Pipeline::renderPixel() {
     drawObj = false;
   }
   if (drawObj) {
-    color = (obj & OBJ_PALETTE) != 0 ? ctx->ob2Colors[objColor]
-                                     : ctx->ob1Colors[objColor];
+    color = paletteColor(
+        (obj & OBJ_PALETTE) != 0 ? state.obj1Palette : state.obj0Palette,
+        objColor);
   }
 
   if (!preview_) {
@@ -422,6 +448,9 @@ void Pipeline::oamReset() {
   state.lateWindowEnabled = ctx->windowEnabled;
   state.lateBgEnabled = ctx->bgWindowEnabled;
   state.lateObjEnabled = ctx->objEnabled;
+  state.lateBgPalette = ctx->bgPalette;
+  state.lateObj0Palette = ctx->obj0Palette;
+  state.lateObj1Palette = ctx->obj1Palette;
   state.wxTriggered = false;
   state.windowFetching = false;
   state.insertBgPixel = false;

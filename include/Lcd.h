@@ -49,9 +49,6 @@ class LCD {
     std::array<PaletteRegister, 3> palettes{};
     uint8_t windowX = 0;
     uint8_t windowY = 0;
-    std::array<uint32_t, 4> bgColors{};
-    std::array<uint32_t, 4> ob1Colors{};
-    std::array<uint32_t, 4> ob2Colors{};
   };
 
   explicit LCD(DMA& dma);
@@ -82,18 +79,13 @@ class LCD {
   [[nodiscard]] uint8_t getScrollY() const;
   [[nodiscard]] uint8_t getWindowX() const;
   [[nodiscard]] uint8_t getWindowY() const;
-  [[nodiscard]] const std::array<uint32_t, 4>& getBgColors() const;
-  [[nodiscard]] const std::array<uint32_t, 4>& getOb1Colors() const;
-  [[nodiscard]] const std::array<uint32_t, 4>& getOb2Colors() const;
+  [[nodiscard]] uint8_t getPalette(PaletteType type) const;
 
  private:
   State state;
   bool lcdWasEnabled = true;
   [[= serial::skip]] uint8_t statWrites = NO_WRITE;
   [[= serial::skip]] DMA& dma_;
-  static constexpr std::array<uint32_t, 4> defaultColors = {
-      0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};
-  void updatePalettes(PaletteType type, uint8_t value);
   bool getBit(uint8_t value, int bit) const;
   void setBit(uint8_t& value, int bit, bool set);
 };
