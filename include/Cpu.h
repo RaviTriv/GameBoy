@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <stdexcept>
 
 #include "./Registers.h"
@@ -20,10 +21,8 @@ class CPU {
     bool haltBug = false;
   };
 
-  using CycleCallbackFn = void (*)(void*, int);
-
-  CPU(Interrupts& interrupts, IMemAccess& memory, CycleCallbackFn cycleCallback,
-      void* cycleCallbackCtx);
+  CPU(Interrupts& interrupts, IMemAccess& memory,
+      std::function_ref<void(int)> cycleCallback);
 
   void step();
   void save(std::ostream& out) const;
@@ -32,12 +31,11 @@ class CPU {
  private:
   [[= serial::skip]] Interrupts& interrupts_;
   [[= serial::skip]] IMemAccess& memory_;
-  [[= serial::skip]] CycleCallbackFn cycleCallback_;
-  [[= serial::skip]] void* cycleCallbackCtx_;
+  [[= serial::skip]] std::function_ref<void(int)> cycleCallback_;
 
   State state;
 
-  void cycle(int n) { cycleCallback_(cycleCallbackCtx_, n); }
+  void cycle(int n) { cycleCallback_(n); }
 
   uint8_t flagZ() const { return (state.registers.f >> 7) & 1; }
   uint8_t flagN() const { return (state.registers.f >> 6) & 1; }

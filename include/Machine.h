@@ -54,7 +54,6 @@ class Machine {
   [[nodiscard]] StateSerializer& serializer() { return serializer_; }
 
  private:
-  static void cycleCallback(void* self, int cycles);
   void cycle(int cycles);
   std::vector<StateSerializer::Section> saveSections();
 

@@ -2,13 +2,12 @@
 
 #include <cstdint>
 #include <functional>
-#include <utility>
 
-FramePacer::FramePacer(std::function<uint32_t()> getTicksFn,
-                       std::function<void(uint32_t)> delayFn,
+FramePacer::FramePacer(std::function_ref<uint32_t()> getTicksFn,
+                       std::function_ref<void(uint32_t)> delayFn,
                        uint32_t targetFps)
-    : getTicksFn_(std::move(getTicksFn)),
-      delayFn_(std::move(delayFn)),
+    : getTicksFn_(getTicksFn),
+      delayFn_(delayFn),
       targetFrameTime(1000 / targetFps) {}
 
 void FramePacer::onFrameComplete() {

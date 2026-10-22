@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cstdint>
+#include <functional>
 #include <istream>
 #include <meta>
 #include <ostream>
@@ -20,7 +21,7 @@ Machine::Machine(std::string_view romPath)
       timer_(interrupts_),
       io_(interrupts_, timer_, lcd_, gamepad_, apu_),
       bus_(cartridge_, interrupts_, dma_, io_, ppu_, ram_),
-      cpu_(interrupts_, bus_, &Machine::cycleCallback, this),
+      cpu_(interrupts_, bus_, {std::cw<&Machine::cycle>, *this}),
       serializer_(saveSections()) {}
 
 namespace {
@@ -61,10 +62,6 @@ std::vector<StateSerializer::Section> sectionsOf(Owner& owner) {
 
 std::vector<StateSerializer::Section> Machine::saveSections() {
   return sectionsOf(*this);
-}
-
-void Machine::cycleCallback(void* self, int cycles) {
-  static_cast<Machine*>(self)->cycle(cycles);
 }
 
 void Machine::cycle(int cycles) {

@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -45,9 +46,9 @@ void GameBoy::init(const std::string& romPath, bool enableTrace,
   ui = std::make_unique<UI>([this] { state.isRunning.store(false); },
                             [this] { pushCommand(SaveStateCommand{}); },
                             machine->ppu(), machine->gamepad(), machine->apu());
-  framePacer =
-      std::make_unique<FramePacer>([this] { return ui->getTicks(); },
-                                   [this](uint32_t ms) { ui->delay(ms); });
+  framePacer = std::make_unique<FramePacer>(
+      std::function_ref<uint32_t()>{std::cw<&UI::getTicks>, *ui},
+      std::function_ref<void(uint32_t)>{std::cw<&UI::delay>, *ui});
   framePacer->setFastForward(startFastForward);
   machine->setOnFrameComplete([this] { framePacer->onFrameComplete(); });
   ui->setToggleFastForward([this] { pushCommand(ToggleFastForwardCommand{}); });

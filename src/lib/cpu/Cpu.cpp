@@ -30,11 +30,8 @@ constexpr std::array<uint8_t Registers::*, 8> R8_REGISTERS = {
 }  // namespace
 
 CPU::CPU(Interrupts& interrupts, IMemAccess& memory,
-         CycleCallbackFn cycleCallback, void* cycleCallbackCtx)
-    : interrupts_(interrupts),
-      memory_(memory),
-      cycleCallback_(cycleCallback),
-      cycleCallbackCtx_(cycleCallbackCtx) {
+         std::function_ref<void(int)> cycleCallback)
+    : interrupts_(interrupts), memory_(memory), cycleCallback_(cycleCallback) {
   state.registers.a = 0x01;
   state.registers.f = 0xB0;
   state.registers.b = 0x00;
