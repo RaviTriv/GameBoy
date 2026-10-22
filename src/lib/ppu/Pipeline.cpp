@@ -24,7 +24,7 @@ uint8_t Pipeline::readVram(uint16_t address) const {
 }
 
 void Pipeline::process() {
-  if ((*ctx->lineTicks & 1) == 0) {
+  if ((*ctx->lineTicks & 1) != 0) {
     fetch();
   }
 
@@ -41,9 +41,6 @@ void Pipeline::fetch() {
       break;
     case FETCH_STATE::DATA1:
       fetchDataHigh();
-      break;
-    case FETCH_STATE::IDLE:
-      state.fetchState = FETCH_STATE::PUSH;
       break;
     case FETCH_STATE::PUSH:
       if (processTile()) {
@@ -90,7 +87,7 @@ void Pipeline::fetchDataLow() {
 void Pipeline::fetchDataHigh() {
   state.bgwBuffer[2] = readVram(bgw1ReadAddress() + 1);
   loadSpriteData(1);
-  state.fetchState = FETCH_STATE::IDLE;
+  state.fetchState = FETCH_STATE::PUSH;
 }
 
 bool Pipeline::processTile() {

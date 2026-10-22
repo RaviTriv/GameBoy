@@ -18,7 +18,7 @@ class Interrupts {
  public:
   struct State {
     uint8_t ie = 0;
-    uint8_t intf = 0;
+    uint8_t intf = 0x01;
   };
 
   [[nodiscard]] uint8_t ie() const { return state.ie; }

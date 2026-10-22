@@ -31,6 +31,7 @@ class APU {
   };
 
  public:
+  APU();
   void write(uint16_t address, uint8_t value);
   [[nodiscard]] uint8_t read(uint16_t address) const;
 
@@ -104,6 +105,12 @@ class APU {
   static constexpr uint8_t NR52_UNUSED_BITS = 0x70;
   static constexpr uint8_t FRAME_STEP_BEFORE_ENVELOPE = 6;
   static constexpr uint8_t FRAME_STEP_BEFORE_FIRST = 7;
+  static constexpr uint8_t BOOT_NR11 = 0x80;
+  static constexpr uint8_t BOOT_NR12 = 0xF3;
+  static constexpr uint8_t BOOT_NR13 = 0xC1;
+  static constexpr uint8_t BOOT_NR14 = 0x87;
+  static constexpr uint8_t BOOT_NR50 = 0x77;
+  static constexpr uint8_t BOOT_NR51 = 0xF3;
   static constexpr std::array<uint8_t, 0x20> READ_MASKS = {
       0x80, 0x3F, 0x00, 0xFF, 0xBF, 0xFF, 0x3F, 0x00, 0xFF, 0xBF, 0x7F,
       0xFF, 0x9F, 0xFF, 0xBF, 0xFF, 0xFF, 0x00, 0x00, 0xBF, 0x00, 0x00,

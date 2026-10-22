@@ -24,6 +24,9 @@ uint8_t Bus::read8(uint16_t address) {
     case RegionType::CartROM:
       return cartridge_.read(address);
     case RegionType::VRAM:
+      if (ppu_.isVramBlocked()) {
+        return INVALID_READ_VALUE;
+      }
       return ppu_.vramRead(address);
     case RegionType::CartRAM:
       return cartridge_.read(address);
@@ -41,7 +44,7 @@ uint8_t Bus::read8(uint16_t address) {
 
 uint8_t Bus::readPageFE(uint16_t address) {
   if (address <= OAM_END) {
-    if (dma_.isTransferring()) {
+    if (dma_.isTransferring() || ppu_.isOamBlocked()) {
       return 0xFF;
     }
     return ppu_.oamRead(address);

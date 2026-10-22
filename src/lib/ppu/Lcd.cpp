@@ -16,6 +16,7 @@ LCD::LCD(DMA& dma) : dma_(dma) {
   state.scrollY = 0;
   state.ly = 0;
   state.lyCompare = 0;
+  state.dma = 0xFF;
   state.palettes[PaletteType::BGP].palette = 0xFC;
   state.palettes[PaletteType::OBP0].palette = 0xFF;
   state.palettes[PaletteType::OBP1].palette = 0xFF;

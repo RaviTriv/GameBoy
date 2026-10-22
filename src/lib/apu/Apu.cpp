@@ -8,6 +8,17 @@
 #include "Channel.h"
 #include "Serializable.h"
 
+APU::APU() {
+  state.enabled = true;
+  state.channel1.nrx1 = BOOT_NR11;
+  state.channel1.nrx2 = BOOT_NR12;
+  state.channel1.nrx3 = BOOT_NR13;
+  state.channel1.nrx4 = BOOT_NR14;
+  state.channel1.enabled = true;
+  state.registers.NR50 = BOOT_NR50;
+  state.registers.NR51 = BOOT_NR51;
+}
+
 uint8_t APU::readRegister(uint16_t address) const {
   switch (address) {
     case NR10_REGISTER:

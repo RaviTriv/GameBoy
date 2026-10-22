@@ -10,12 +10,12 @@
 
 #include "./Common.h"
 #include "./Interrupts.h"
+#include "./Lcd.h"
 #include "./OamTypes.h"
 #include "./Pipeline.h"
 #include "./ScanlineContext.h"
 #include "./Serializable.h"
 
-class LCD;
 class PPU {
   static constexpr int BUFFER_SIZE = XRES * YRES;
 
@@ -26,15 +26,19 @@ class PPU {
     std::array<OAM_ENTRY, 40> oamRam{};
     std::array<uint8_t, 0x2000> vram{};
 
+    LCD::MODE mode = LCD::MODE::VBLANK;
+    bool skipOamScan = false;
     uint32_t lineTicks = 0;
     uint8_t windowLine = 0;
-    uint32_t spritePenalty{0};
+    uint32_t mode3Penalty{0};
     std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> lineSprites;
     ScanlineContext scanlineCtx{};
   };
   PPU(Interrupts& interrupts, LCD& lcd);
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
+  [[nodiscard]] bool isOamBlocked() const;
+  [[nodiscard]] bool isVramBlocked() const;
 
   void oamWrite(uint16_t addr, uint8_t value);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
@@ -70,14 +74,29 @@ class PPU {
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
+  static constexpr uint32_t LINE_153_LYC_CLEAR_TICKS = 8;
+  static constexpr uint32_t LINE_153_LYC_COMPARE_TICKS = 12;
+  static constexpr uint32_t BOOT_LINE_TICKS = 400;
+  static constexpr uint32_t STAT_MODE_DELAY = 4;
+  static constexpr uint32_t LCD_ON_LINE_TICKS = 4;
+  static constexpr uint32_t SPRITE_FETCH_PENALTY = 6;
+  static constexpr uint32_t OFFSCREEN_SPRITE_PENALTY = 11;
+  static constexpr uint32_t WINDOW_PENALTY = 6;
+  static constexpr uint8_t MAX_WINDOW_X = 166;
   static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
   static constexpr uint8_t FRAME_FRESH_BIT = 0x4;
 
   void publishFrame()
       post(backIndex < frames.size() && backIndex != publishedIndex);
   void finishFrame();
+  void setMode(LCD::MODE mode);
+  void startLine();
   void incrementLY();
+  void compareLyc(uint8_t ly);
   void loadLineSprites();
+  [[nodiscard]] uint32_t calculateSpritePenalty() const;
+  [[nodiscard]] uint32_t calculateWindowPenalty() const;
+  void enterVBlank();
   void buildScanlineContext();
 
   void oamMode();

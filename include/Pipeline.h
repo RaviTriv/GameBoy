@@ -20,7 +20,7 @@ class Pipeline {
   constexpr static int PIXEL_TILE_DIMENSION = 8;
   constexpr static std::size_t MAX_LINE_SPRITES = 10;
 
-  enum class FETCH_STATE { TILE, DATA0, DATA1, IDLE, PUSH };
+  enum class FETCH_STATE { TILE, DATA0, DATA1, PUSH };
 
  public:
   using VramView = std::span<const uint8_t, 0x2000>;
