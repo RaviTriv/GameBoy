@@ -38,8 +38,10 @@ class PPU {
 
   void oamWrite(uint16_t addr, uint8_t value);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
-  [[nodiscard]] uint8_t vramRead(uint16_t address) const;
-  void vramWrite(uint16_t address, uint8_t value);
+  [[nodiscard]] uint8_t vramRead(uint16_t address) const
+      pre(address >= VRAM_START && address <= VRAM_END);
+  void vramWrite(uint16_t address, uint8_t value)
+      pre(address >= VRAM_START && address <= VRAM_END);
 
   void setOnFrameComplete(std::function<void()> callback) {
     onFrameComplete = std::move(callback);
@@ -71,7 +73,8 @@ class PPU {
   static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
   static constexpr uint8_t FRAME_FRESH_BIT = 0x4;
 
-  void publishFrame();
+  void publishFrame()
+      post(backIndex < frames.size() && backIndex != publishedIndex);
   void finishFrame();
   void incrementLY();
   void loadLineSprites();

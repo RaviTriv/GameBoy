@@ -19,8 +19,8 @@ class PixelFifo {
  public:
   PixelFifo();
 
-  void push(uint32_t pixel);
-  [[nodiscard]] uint32_t pop();
+  void push(uint32_t pixel) pre(!isFull());
+  [[nodiscard]] uint32_t pop() pre(!isEmpty());
 
   [[nodiscard]] bool isEmpty() const;
   [[nodiscard]] bool isFull() const;

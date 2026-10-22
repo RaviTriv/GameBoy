@@ -277,6 +277,9 @@ void PPU::save(std::ostream& out) const {
 
 void PPU::load(std::istream& in) {
   serial::loadFields(in, *this);
+  if (state.scanlineCtx.ly >= YRES) {
+    throw std::runtime_error("Invalid PPU scanline in save file");
+  }
   state.scanlineCtx.sprites = state.lineSprites;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 

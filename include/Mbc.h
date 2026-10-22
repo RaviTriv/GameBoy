@@ -19,13 +19,12 @@ class MBC {
   void tick(int /*cycles*/) {}
   explicit MBC(std::vector<uint8_t>& rom) : romData(rom), ramData(empty) {}
   MBC(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram, uint16_t romBanks,
-      uint16_t ramBanks)
-      : romBanksCount(romBanks),
-        ramBanksCount(ramBanks),
-        romData(rom),
-        ramData(ram) {}
+      uint16_t ramBanks);
 
  protected:
+  static constexpr std::size_t ROM_BANK_SIZE = 0x4000;
+  static constexpr std::size_t RAM_BANK_SIZE = 0x2000;
+
   [[= serial::skip]] uint16_t romBanksCount = 0;
   [[= serial::skip]] uint16_t ramBanksCount = 0;
 
@@ -39,7 +38,8 @@ class MBC {
 class MBC0 final : public MBC {
  public:
   MBC0(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram)
-      : MBC(rom, ram, 0, 0) {}
+      : MBC(rom, ram, static_cast<uint16_t>(rom.size() / ROM_BANK_SIZE),
+            static_cast<uint16_t>(ram.size() / RAM_BANK_SIZE)) {}
   [[nodiscard]] uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
   void save(std::ostream& out) const;

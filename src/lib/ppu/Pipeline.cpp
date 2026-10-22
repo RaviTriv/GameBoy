@@ -127,6 +127,7 @@ void Pipeline::pushPixel() {
     uint32_t pixel = pixelFifo.pop();
 
     if (state.lineX >= ctx->scrollX % 8) {
+      contract_assert(bufferIndex() < target_.size());
       target_[bufferIndex()] = pixel;
       state.pushedCount++;
     }
@@ -307,4 +308,9 @@ void Pipeline::oamReset() {
 
 void Pipeline::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
-void Pipeline::load(std::istream& in) { serial::loadFields(in, *this); }
+void Pipeline::load(std::istream& in) {
+  serial::loadFields(in, *this);
+  if (state.pushedCount > XRES) {
+    throw std::runtime_error("Invalid pipeline pixel count in save file");
+  }
+}

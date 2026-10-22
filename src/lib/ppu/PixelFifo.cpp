@@ -13,10 +13,6 @@
 PixelFifo::PixelFifo() { buffer.fill(0); }
 
 void PixelFifo::push(uint32_t pixel) {
-  if (isFull()) {
-    return;
-  }
-
   buffer[tail] = pixel;
   tail = (tail + 1) % FIFO_CAPACITY;
 
@@ -24,10 +20,6 @@ void PixelFifo::push(uint32_t pixel) {
 }
 
 uint32_t PixelFifo::pop() {
-  if (isEmpty()) {
-    return 0;
-  }
-
   uint32_t pixel = buffer[head];
   head = (head + 1) % FIFO_CAPACITY;
 

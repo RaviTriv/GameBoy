@@ -65,11 +65,12 @@ Cartridge::State Cartridge::parseRom(std::vector<uint8_t> romBytes) {
     throw std::runtime_error("Cartridge is too small to contain a ROM header.");
   }
 
-  if (parsed.romSize < 0x8000 || parsed.romSize % 0x4000 != 0) {
+  if (parsed.romSize < 0x8000 || parsed.romSize > MAX_ROM_SIZE ||
+      parsed.romSize % 0x4000 != 0) {
     std::ostringstream message;
     message << "Cartridge ROM size " << parsed.romSize
-            << " bytes is invalid: must be at least 0x8000 and a multiple of "
-               "0x4000.";
+            << " bytes is invalid: must be 0x8000 to 0x800000 and a multiple "
+               "of 0x4000.";
     throw std::runtime_error(message.str());
   }
 

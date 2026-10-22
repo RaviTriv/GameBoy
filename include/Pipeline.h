@@ -18,6 +18,7 @@
 class Pipeline {
   constexpr static int BACKGROUND_MAP_DIMENSION = 32;
   constexpr static int PIXEL_TILE_DIMENSION = 8;
+  constexpr static std::size_t MAX_LINE_SPRITES = 10;
 
   enum class FETCH_STATE { TILE, DATA0, DATA1, IDLE, PUSH };
 
@@ -40,7 +41,9 @@ class Pipeline {
     uint8_t tileY = 0;
   };
   explicit Pipeline(VramView vram);
-  void beginScanline(const ScanlineContext& ctx, FrameView target);
+  void beginScanline(const ScanlineContext& ctx, FrameView target)
+      pre(ctx.ly < YRES && ctx.lineTicks != nullptr &&
+          ctx.sprites.size() <= MAX_LINE_SPRITES);
   void process();
   void reset();
   void oamReset();
@@ -63,7 +66,8 @@ class Pipeline {
   uint8_t calculateMapY() const;
   uint8_t calculateTileY() const;
   uint32_t bufferIndex() const;
-  [[nodiscard]] uint8_t readVram(uint16_t address) const;
+  [[nodiscard]] uint8_t readVram(uint16_t address) const
+      pre(address >= VRAM_START && address <= VRAM_END);
   uint16_t bgw0ReadAddress() const;
   uint16_t bgw1ReadAddress() const;
   uint16_t windowTileReadAddress(uint8_t wTileY) const;

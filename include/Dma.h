@@ -7,6 +7,9 @@
 class IMemRead;
 class PPU;
 class DMA {
+  static constexpr uint8_t OAM_SIZE = 0xA0;
+  static constexpr uint8_t START_DELAY = 2;
+
   struct State {
     bool isActive = false;
     uint8_t byte = 0;

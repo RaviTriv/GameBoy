@@ -12,6 +12,16 @@
 
 std::vector<uint8_t> MBC::empty;
 
+MBC::MBC(std::vector<uint8_t>& rom, std::vector<uint8_t>& ram,
+         uint16_t romBanks, uint16_t ramBanks)
+    : romBanksCount(romBanks),
+      ramBanksCount(ramBanks),
+      romData(rom),
+      ramData(ram) {
+  contract_assert(romBanks >= 2 && rom.size() == romBanks * ROM_BANK_SIZE);
+  contract_assert(ram.size() == ramBanks * RAM_BANK_SIZE);
+}
+
 void MBC::saveBattery(std::ostream& out) const {
   out.write(reinterpret_cast<const char*>(ramData.data()),
             static_cast<std::streamsize>(ramData.size()));
@@ -88,6 +98,7 @@ uint8_t MBC2::read(uint16_t address) const {
     return romData[address];
   }
   if (address < 0x8000) {
+    contract_assert(romBank < romBanksCount);
     return romData[static_cast<std::size_t>(romBank) * 0x4000 + address -
                    0x4000];
   }
@@ -195,6 +206,7 @@ uint8_t MBC3::read(uint16_t address) const {
     return romData[address];
   }
   if (address < 0x8000) {
+    contract_assert(romBank < romBanksCount);
     return romData[static_cast<std::size_t>(romBank) * 0x4000 + address -
                    0x4000];
   }

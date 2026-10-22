@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 
+#include "Common.h"
 #include "Serializable.h"
 
 class RAM {
@@ -12,10 +13,14 @@ class RAM {
     std::array<uint8_t, 0x80> hram = {};
   };
 
-  [[nodiscard]] uint8_t readWRAM(uint16_t address) const;
-  void writeWRAM(uint16_t address, uint8_t value);
-  [[nodiscard]] uint8_t readHRAM(uint16_t address) const;
-  void writeHRAM(uint16_t address, uint8_t value);
+  [[nodiscard]] uint8_t readWRAM(uint16_t address) const
+      pre(address >= WRAM_START && address <= WRAM_END);
+  void writeWRAM(uint16_t address, uint8_t value)
+      pre(address >= WRAM_START && address <= WRAM_END);
+  [[nodiscard]] uint8_t readHRAM(uint16_t address) const
+      pre(address >= HRAM_START && address <= HRAM_END);
+  void writeHRAM(uint16_t address, uint8_t value)
+      pre(address >= HRAM_START && address <= HRAM_END);
   void save(std::ostream& out) const;
   void load(std::istream& in);
 

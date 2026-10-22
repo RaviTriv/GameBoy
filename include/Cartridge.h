@@ -88,6 +88,7 @@ class Cartridge {
   [[nodiscard]] static State parseRom(std::vector<uint8_t> rom);
   [[nodiscard]] AnyMbc createMbc();
   static constexpr std::size_t MIN_ROM_SIZE = 0x150;
+  static constexpr std::size_t MAX_ROM_SIZE = 0x800000;
 
   [[nodiscard]] static int getRamBanksCount(uint8_t type);
   [[nodiscard]] bool isMbc1Multicart() const;
