@@ -6,7 +6,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <optional>
 #include <ostream>
+#include <span>
 #include <utility>
 
 #include "Common.h"
@@ -128,6 +130,95 @@ bool PPU::isVramBlocked() const {
     return lcd_.getLcdMode() == LCD::MODE::DRAWING;
   }
   return state.mode == LCD::MODE::DRAWING;
+}
+
+namespace {
+
+constexpr std::size_t WORD_BYTES = 2;
+constexpr std::size_t THIRD_WORD = 4;
+constexpr std::size_t FIRST_SECONDARY_ROW = 4;
+
+using Row = std::span<uint8_t, 8>;
+
+Row rowAt(std::span<uint8_t> oam, std::size_t row) {
+  return oam.subspan(row * Row::extent).first<Row::extent>();
+}
+
+void copyRow(Row from, Row to) { std::ranges::copy(from, to.begin()); }
+
+void corruptWrite(Row cur, Row prev) {
+  for (std::size_t i = 0; i < WORD_BYTES; i++) {
+    const uint8_t a = cur[i];
+    const uint8_t b = prev[i];
+    const uint8_t c = prev[THIRD_WORD + i];
+    cur[i] = static_cast<uint8_t>(((a ^ c) & (b ^ c)) ^ c);
+  }
+  std::ranges::copy(prev.subspan<WORD_BYTES>(),
+                    cur.subspan<WORD_BYTES>().begin());
+}
+
+void corruptRead(Row cur, Row prev) {
+  for (std::size_t i = 0; i < WORD_BYTES; i++) {
+    const uint8_t a = cur[i];
+    const uint8_t b = prev[i];
+    const uint8_t c = prev[THIRD_WORD + i];
+    cur[i] = static_cast<uint8_t>(b | (a & c));
+  }
+  std::ranges::copy(prev.subspan<WORD_BYTES>(),
+                    cur.subspan<WORD_BYTES>().begin());
+}
+
+void corruptReadIdu(Row cur, Row prev, Row prev2) {
+  for (std::size_t i = 0; i < WORD_BYTES; i++) {
+    const uint8_t a = prev2[i];
+    const uint8_t b = prev[i];
+    const uint8_t c = cur[i];
+    const uint8_t d = prev[THIRD_WORD + i];
+    prev[i] = static_cast<uint8_t>((b & (a | c | d)) | (a & c & d));
+  }
+  copyRow(prev, cur);
+  copyRow(prev, prev2);
+}
+
+}  // namespace
+
+bool PPU::triggerOamBug(OamBugAccess access) {
+  const auto row = oamScanRow();
+  if (!row || *row == 0) {
+    return false;
+  }
+  const std::span<uint8_t, OAM_BYTES> oam = oamBytes();
+  const Row cur = rowAt(oam, *row);
+  const Row prev = rowAt(oam, *row - 1);
+  switch (access) {
+    case OamBugAccess::Write:
+      corruptWrite(cur, prev);
+      break;
+    case OamBugAccess::ReadIdu:
+      if (*row >= FIRST_SECONDARY_ROW && *row < OAM_ROWS - 1) {
+        corruptReadIdu(cur, prev, rowAt(oam, *row - 2));
+      }
+      corruptRead(cur, prev);
+      break;
+    case OamBugAccess::Read:
+      corruptRead(cur, prev);
+      break;
+  }
+  return true;
+}
+
+std::optional<std::size_t> PPU::oamScanRow() const {
+  if (!lcd_.isLcdEnabled() || state.skipOamScan ||
+      state.mode != LCD::MODE::OAM) {
+    return std::nullopt;
+  }
+  return std::min<std::size_t>(
+      state.lineTicks / static_cast<uint32_t>(CLOCK_CYCLES), OAM_ROWS - 1);
+}
+
+std::span<uint8_t, PPU::OAM_BYTES> PPU::oamBytes() {
+  return std::span<uint8_t, OAM_BYTES>(
+      reinterpret_cast<uint8_t*>(state.oamRam.data()), OAM_BYTES);
 }
 
 void PPU::oamWrite(uint16_t address, uint8_t value) {

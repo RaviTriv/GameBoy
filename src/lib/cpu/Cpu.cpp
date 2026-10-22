@@ -52,14 +52,15 @@ inline void CPU::stackPush8(uint8_t val) {
   memory_.write8(state.registers.sp, val);
 }
 
-inline uint8_t CPU::stackPop8() {
-  uint8_t val = memory_.read8(state.registers.sp);
+inline uint8_t CPU::stackPop8(bool idu) {
+  uint8_t val = idu ? memory_.read8WithIdu(state.registers.sp)
+                    : memory_.read8(state.registers.sp);
   state.registers.sp++;
   return val;
 }
 
 inline uint8_t CPU::fetch8() {
-  uint8_t value = memory_.read8(state.registers.pc++);
+  uint8_t value = memory_.read8WithIdu(state.registers.pc++);
   cycle(1);
   return value;
 }
@@ -71,6 +72,7 @@ inline uint16_t CPU::fetch16() {
 }
 
 inline void CPU::push16(uint16_t value) {
+  memory_.idu(state.registers.sp);
   cycle(1);
   stackPush8(highByte(value));
   cycle(1);
@@ -78,9 +80,9 @@ inline void CPU::push16(uint16_t value) {
 }
 
 inline uint16_t CPU::pop16() {
-  uint8_t lo = stackPop8();
+  uint8_t lo = stackPop8(true);
   cycle(1);
-  uint8_t hi = stackPop8();
+  uint8_t hi = stackPop8(false);
   cycle(1);
   return toWord(hi, lo);
 }
@@ -114,7 +116,9 @@ void CPU::handleInterrupts() {
     state.registers.pc--;
     state.haltBug = false;
   }
-  cycle(3);
+  cycle(2);
+  memory_.idu(state.registers.sp);
+  cycle(1);
   uint16_t pc = state.registers.pc;
   stackPush8(highByte(pc));
   uint8_t pending = interrupts_.ie();
@@ -307,6 +311,7 @@ inline void CPU::execute() {
     } else { /* JR r8, JR cc,r8 */
       auto offset = static_cast<int8_t>(fetch8());
       if (y == 3 || cond<y & 3>()) {
+        memory_.idu(r.pc);
         r.pc = static_cast<uint16_t>(r.pc + offset);
         cycle(1);
       }
@@ -329,6 +334,8 @@ inline void CPU::execute() {
     uint16_t address = rp<p == 3 ? 2 : p>();
     if constexpr (q == 0) {
       memory_.write8(address, r.a);
+    } else if constexpr (p >= 2) {
+      r.a = memory_.read8WithIdu(address);
     } else {
       r.a = memory_.read8(address);
     }
@@ -339,6 +346,7 @@ inline void CPU::execute() {
     }
     cycle(1);
   } else if constexpr (x == 0 && z == 3) { /* INC rr / DEC rr */
+    memory_.idu(rp<p>());
     setRp<p>(static_cast<uint16_t>(rp<p>() + (q == 0 ? 1 : -1)));
     cycle(1);
   } else if constexpr (x == 0 && z == 4) { /* INC r */
@@ -416,6 +424,7 @@ inline void CPU::execute() {
     } else if constexpr (p == 2) { /* JP HL */
       r.pc = r.hl();
     } else { /* LD SP,HL */
+      memory_.idu(r.hl());
       r.sp = r.hl();
       cycle(1);
     }
@@ -773,7 +782,7 @@ void CPU::step() {
       opcode = memory_.read8(state.registers.pc);
       state.haltBug = false;
     } else {
-      opcode = memory_.read8(state.registers.pc++);
+      opcode = memory_.read8WithIdu(state.registers.pc++);
     }
     cycle(1);
 

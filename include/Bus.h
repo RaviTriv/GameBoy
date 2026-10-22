@@ -53,6 +53,8 @@ class Bus final : public IMemAccess {
       RAM& ram);
   [[nodiscard]] uint8_t read8(uint16_t address) override;
   void write8(uint16_t address, uint8_t value) override;
+  [[nodiscard]] uint8_t read8WithIdu(uint16_t address) override;
+  void idu(uint16_t address) override;
 
  private:
   Cartridge& cartridge_;

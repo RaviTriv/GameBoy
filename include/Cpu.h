@@ -62,7 +62,7 @@ class CPU {
   }
 
   inline void stackPush8(uint8_t val);
-  inline uint8_t stackPop8();
+  inline uint8_t stackPop8(bool idu);
 
   inline uint8_t fetch8();
   inline uint16_t fetch16();

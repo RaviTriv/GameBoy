@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <functional>
 #include <inplace_vector>
+#include <optional>
+#include <span>
 #include <utility>
 
 #include "./Common.h"
@@ -39,6 +41,8 @@ class PPU {
   [[nodiscard]] uint32_t getCurrentFrame() const;
   [[nodiscard]] bool isOamBlocked() const;
   [[nodiscard]] bool isVramBlocked() const;
+  enum class OamBugAccess : uint8_t { Write, Read, ReadIdu };
+  bool triggerOamBug(OamBugAccess access);
 
   void oamWrite(uint16_t addr, uint8_t value);
   [[nodiscard]] uint8_t oamRead(uint16_t addr) const;
@@ -72,6 +76,9 @@ class PPU {
 
   static constexpr uint16_t VRAM_START_ADDR = 0x8000;
   static constexpr uint16_t OAM_START_ADDR = 0xFE00;
+  static constexpr std::size_t OAM_BYTES = 0xA0;
+  static constexpr std::size_t OAM_ROW_BYTES = 8;
+  static constexpr std::size_t OAM_ROWS = OAM_BYTES / OAM_ROW_BYTES;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
   static constexpr uint32_t LINE_153_LYC_CLEAR_TICKS = 8;
@@ -93,6 +100,8 @@ class PPU {
   void startLine();
   void incrementLY();
   void compareLyc(uint8_t ly);
+  [[nodiscard]] std::optional<std::size_t> oamScanRow() const;
+  [[nodiscard]] std::span<uint8_t, OAM_BYTES> oamBytes();
   void loadLineSprites();
   [[nodiscard]] uint32_t calculateSpritePenalty() const;
   [[nodiscard]] uint32_t calculateWindowPenalty() const;

@@ -42,7 +42,24 @@ uint8_t Bus::read8(uint16_t address) {
   return INVALID_READ_VALUE;
 }
 
+uint8_t Bus::read8WithIdu(uint16_t address) {
+  if (PAGE_TABLE[address >> 8] == RegionType::MixedFE &&
+      ppu_.triggerOamBug(PPU::OamBugAccess::ReadIdu)) {
+    return INVALID_READ_VALUE;
+  }
+  return read8(address);
+}
+
+void Bus::idu(uint16_t address) {
+  if (PAGE_TABLE[address >> 8] == RegionType::MixedFE) {
+    ppu_.triggerOamBug(PPU::OamBugAccess::Write);
+  }
+}
+
 uint8_t Bus::readPageFE(uint16_t address) {
+  if (ppu_.triggerOamBug(PPU::OamBugAccess::Read)) {
+    return INVALID_READ_VALUE;
+  }
   if (address <= OAM_END) {
     if (dma_.isTransferring() || ppu_.isOamBlocked()) {
       return 0xFF;
@@ -89,6 +106,9 @@ void Bus::write8(uint16_t address, uint8_t value) {
 }
 
 void Bus::writePageFE(uint16_t address, uint8_t value) {
+  if (ppu_.triggerOamBug(PPU::OamBugAccess::Write)) {
+    return;
+  }
   if (address <= OAM_END) {
     if (dma_.isTransferring()) {
       return;
