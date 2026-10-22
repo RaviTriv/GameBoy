@@ -16,7 +16,6 @@ struct ScanlineContext {
 
   uint8_t windowX = 0;
   uint8_t windowY = 0;
-  uint8_t windowLine = 0;
 
   bool bgWindowEnabled = false;
   bool objEnabled = false;

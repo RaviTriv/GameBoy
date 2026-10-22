@@ -1,6 +1,5 @@
 #include "Ppu.h"
 
-#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -67,7 +66,7 @@ void PPU::tick() {
       setMode(LCD::MODE::HBLANK);
       pipeline.reset();
       state.lineTicks = 0;
-      state.windowLine = 0;
+      pipeline.newFrame();
       frames[backIndex].fill(0xFFFFFFFF);
       finishFrame();
       return;
@@ -78,7 +77,7 @@ void PPU::tick() {
       compareLyc(0);
       state.skipOamScan = true;
       state.lineTicks = LCD_ON_LINE_TICKS;
-      state.windowLine = 0;
+      pipeline.newFrame();
       state.lineSprites.clear();
       loadLineSprites();
       break;
@@ -91,6 +90,11 @@ void PPU::tick() {
   }
 
   state.lineTicks++;
+  if ((state.lineTicks % CLOCK_CYCLES) == 1 &&
+      state.mode != LCD::MODE::VBLANK && !pipeline.isWindowYTriggered()) {
+    pipeline.checkWindowY(lcd_.getLy(), lcd_.getWindowY(),
+                          lcd_.isWindowEnabled());
+  }
   switch (state.mode) {
     case LCD::MODE::OAM:
       oamMode();
@@ -266,11 +270,6 @@ uint8_t PPU::vramRead(uint16_t address) const {
 */
 
 void PPU::incrementLY() {
-  if (pipeline.isWindowVisible() && lcd_.getLy() >= lcd_.getWindowY() &&
-      lcd_.getLy() < lcd_.getWindowY() + YRES) {
-    state.windowLine++;
-  }
-
   lcd_.incrementLy();
   compareLyc(NO_LY);
 }
@@ -327,43 +326,12 @@ void PPU::loadLineSprites() {
   }
 }
 
-uint32_t PPU::calculateSpritePenalty() const {
-  if (!lcd_.isObjEnabled()) {
-    return 0;
-  }
-  uint32_t penalty = 0;
-  int lastTile = -1;
-  int fineScrollX = lcd_.getScrollX() % 8;
-  for (const auto& sprite : state.lineSprites) {
-    if (sprite.x >= XRES + 8) {
-      continue;
-    }
-    int pixel = sprite.x == 0 ? 0 : sprite.x + fineScrollX;
-    int tile = pixel / 8;
-    if (tile != lastTile) {
-      lastTile = tile;
-      penalty += static_cast<uint32_t>(std::max(0, 5 - (pixel % 8)));
-    }
-    penalty += SPRITE_FETCH_PENALTY;
-  }
-  return penalty;
-}
-
-uint32_t PPU::calculateWindowPenalty() const {
-  if (lcd_.isWindowEnabled() && lcd_.getWindowX() < MAX_WINDOW_X &&
-      lcd_.getLy() >= lcd_.getWindowY()) {
-    return lcd_.getWindowX() == 0 ? WINDOW_PENALTY + 1 : WINDOW_PENALTY;
-  }
-  return 0;
-}
-
 void PPU::buildScanlineContext() {
   state.scanlineCtx.scrollX = lcd_.getScrollX();
   state.scanlineCtx.scrollY = lcd_.getScrollY();
   state.scanlineCtx.ly = lcd_.getLy();
   state.scanlineCtx.windowX = lcd_.getWindowX();
   state.scanlineCtx.windowY = lcd_.getWindowY();
-  state.scanlineCtx.windowLine = state.windowLine;
   state.scanlineCtx.bgWindowEnabled = lcd_.isBgWindowEnabled();
   state.scanlineCtx.objEnabled = lcd_.isObjEnabled();
   state.scanlineCtx.windowEnabled = lcd_.isWindowEnabled();
@@ -395,7 +363,6 @@ void PPU::oamMode() {
 
   if (state.lineTicks >= 80 + (state.skipOamScan ? LCD_ON_MODE3_DELAY : 0)) {
     state.mode = LCD::MODE::DRAWING;
-    state.mode3Penalty = calculateSpritePenalty() + calculateWindowPenalty();
 
     buildScanlineContext();
     pipeline.beginScanline(state.scanlineCtx, frames[backIndex]);
@@ -409,28 +376,32 @@ void PPU::drawingMode() {
     lcd_.setLcdMode(LCD::MODE::DRAWING);
   }
 
-  if (pipeline.getPushedCount() < XRES) {
-    pipeline.process();
+  if ((state.lineTicks % CLOCK_CYCLES) == 1) {
+    buildScanlineContext();
+  }
+  pipeline.process();
+
+  if (!pipeline.finishesWithin(PIPELINE_LAG)) {
+    return;
   }
 
-  if (pipeline.getPushedCount() >= XRES) {
-    if (state.mode3Penalty > 0) {
-      state.mode3Penalty--;
-      return;
-    }
-
-    if (lcd_.getLcdMode() != LCD::MODE::HBLANK) {
-      lcd_.setLcdMode(LCD::MODE::HBLANK);
-      return;
-    }
-
-    pipeline.reset();
-    setMode(LCD::MODE::HBLANK);
-    setStatSource(LCD::LCDS_SRC::S_HBLANK, true);
+  if (lcd_.getLcdMode() != LCD::MODE::HBLANK) {
+    lcd_.setLcdMode(LCD::MODE::HBLANK);
+    return;
   }
+
+  setMode(LCD::MODE::HBLANK);
+  setStatSource(LCD::LCDS_SRC::S_HBLANK, true);
 }
 
 void PPU::hBlankMode() {
+  if (!pipeline.isLineDone()) {
+    if ((state.lineTicks % CLOCK_CYCLES) == 1) {
+      buildScanlineContext();
+    }
+    pipeline.process();
+  }
+
   if (state.lineTicks >= TICKS_PER_LINE) {
     incrementLY();
 
@@ -488,7 +459,7 @@ void PPU::vBlankMode() {
   if (state.lineTicks >= TICKS_PER_LINE) {
     if (lcd_.getLy() == 0) {
       startLine();
-      state.windowLine = 0;
+      pipeline.newFrame();
     } else {
       incrementLY();
     }
