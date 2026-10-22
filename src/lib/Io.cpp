@@ -1,12 +1,15 @@
 #include "Io.h"
 
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 #include "Apu.h"
 #include "Common.h"
 #include "Gamepad.h"
 #include "Interrupts.h"
 #include "Lcd.h"
+#include "Serializable.h"
 #include "Timer.h"
 
 IO::IO(Interrupts& interrupts, Timer& timer, LCD& lcd, Gamepad& gamepad,
@@ -15,7 +18,34 @@ IO::IO(Interrupts& interrupts, Timer& timer, LCD& lcd, Gamepad& gamepad,
       apu_(apu),
       timer_(timer),
       lcd_(lcd),
-      gamepad_(gamepad) {}
+      gamepad_(gamepad) {
+  serialClockHigh = serialClock();
+}
+
+bool IO::serialClock() const {
+  return (timer_.read(TIMER_DIV_REGISTER) & SERIAL_CLOCK_DIV_BIT) != 0;
+}
+
+void IO::tick() {
+  bool high = serialClock();
+  bool fell = serialClockHigh && !high;
+  serialClockHigh = high;
+  if (!fell || serialBitsLeft == 0) {
+    return;
+  }
+
+  serialData[SERIAL_DATA_INDEX] = static_cast<char>(
+      (static_cast<uint8_t>(serialData[SERIAL_DATA_INDEX]) << 1) | 1);
+  if (--serialBitsLeft == 0) {
+    serialData[SERIAL_CONTROL_INDEX] = static_cast<char>(
+        static_cast<uint8_t>(serialData[SERIAL_CONTROL_INDEX]) & ~BIT7_MASK);
+    interrupts_.request(InterruptType::SERIAL);
+  }
+}
+
+void IO::save(std::ostream& out) const { serial::saveFields(out, *this); }
+
+void IO::load(std::istream& in) { serial::loadFields(in, *this); }
 
 uint8_t IO::read(uint16_t address) const {
   if (address == JOYPAD_REGISTER) {
@@ -74,10 +104,15 @@ void IO::write(uint16_t address, uint8_t value) {
 
   if (address == SERIAL_CONTROL_REGISTER) {
     serialData[SERIAL_CONTROL_INDEX] = static_cast<char>(value);
+    serialBitsLeft = 0;
 
-    if ((value & BIT7_MASK) && serialSink) {
-      serialSink(static_cast<uint8_t>(serialData[SERIAL_DATA_INDEX]));
-      serialData[SERIAL_CONTROL_INDEX] = static_cast<char>(value & ~BIT7_MASK);
+    if (value & BIT7_MASK) {
+      if (serialSink) {
+        serialSink(static_cast<uint8_t>(serialData[SERIAL_DATA_INDEX]));
+      }
+      if (value & SERIAL_INTERNAL_CLOCK) {
+        serialBitsLeft = SERIAL_BITS;
+      }
     }
     return;
   }

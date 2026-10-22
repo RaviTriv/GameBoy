@@ -73,6 +73,7 @@ void Machine::cycle(int cycles) {
       ppu_.tick();
       apu_.tick();
     }
+    io_.tick();
     dma_.tick(bus_, ppu_);
   }
 }

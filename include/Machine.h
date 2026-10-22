@@ -67,7 +67,7 @@ class Machine {
   LCD lcd_;
   PPU ppu_;
   Timer timer_;
-  [[= serial::skip]] IO io_;
+  IO io_;
   [[= serial::skip]] Bus bus_;
   CPU cpu_;
   [[= serial::skip]] StateSerializer serializer_;
