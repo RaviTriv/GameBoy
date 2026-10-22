@@ -96,8 +96,6 @@ class CPU {
   inline void executeCB();
 
   void handleInterrupts();
-  bool checkInterrupt(uint16_t address, InterruptType type);
-  void interruptHandle(uint16_t address);
 
   void dispatchCB();
 };

@@ -28,7 +28,7 @@ void Timer::advanceReload() {
   if (state.reload == Reload::PENDING) {
     state.reload = Reload::DONE;
     state.tima = state.tma;
-    interrupts_.request(InterruptType::TIMER);
+    interrupts_.requestLate(InterruptType::TIMER);
   } else if (state.reload == Reload::DONE) {
     state.reload = Reload::NONE;
   }

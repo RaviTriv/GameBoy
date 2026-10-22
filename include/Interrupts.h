@@ -1,3 +1,4 @@
+// clang-format Language: Cpp
 #pragma once
 
 #include <cstdint>
@@ -27,6 +28,11 @@ class Interrupts {
   void setIntf(uint8_t value) { state.intf = value; }
 
   void request(InterruptType type) { state.intf |= static_cast<uint8_t>(type); }
+  void requestLate(InterruptType type) {
+    lateIntf_ |= static_cast<uint8_t>(static_cast<uint8_t>(type) & ~state.intf);
+    request(type);
+  }
+  void clearLate() { lateIntf_ = 0; }
   void clear(InterruptType type) {
     state.intf &= static_cast<uint8_t>(~static_cast<uint8_t>(type));
   }
@@ -36,10 +42,14 @@ class Interrupts {
   [[nodiscard]] bool anyPending() const {
     return (state.intf & state.ie & 0x1F) != 0;
   }
+  [[nodiscard]] bool anyPendingEarly() const {
+    return (state.intf & ~lateIntf_ & state.ie & 0x1F) != 0;
+  }
 
   void save(std::ostream& out) const { serial::saveFields(out, *this); }
   void load(std::istream& in) { serial::loadFields(in, *this); }
 
  private:
   State state;
+  [[= serial::skip]] uint8_t lateIntf_ = 0;
 };

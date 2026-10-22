@@ -1,6 +1,7 @@
 #include "Cpu.h"
 
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <istream>
 #include <ostream>
@@ -96,37 +97,39 @@ inline void CPU::ret() {
 }
 
 inline void CPU::halt() {
-  if (!state.ime && interrupts_.anyPending()) {
+  if (interrupts_.anyPending()) {
     state.haltBug = true;
   } else {
     state.halted = true;
   }
 }
 
-void CPU::interruptHandle(uint16_t address) {
-  cycle(2);
-  call(address);
-}
-
-bool CPU::checkInterrupt(uint16_t address, InterruptType type) {
-  if (interrupts_.isPending(type)) {
-    interruptHandle(address);
-    interrupts_.clear(type);
-    state.halted = false;
-    state.ime = false;
-    return true;
-  }
-  return false;
-}
-
 void CPU::handleInterrupts() {
-  if (checkInterrupt(0x40,
-                     InterruptType::VBLANK)) {  // NOLINT(bugprone-branch-clone)
-  } else if (checkInterrupt(0x48, InterruptType::LCD_STAT)) {
-  } else if (checkInterrupt(0x50, InterruptType::TIMER)) {
-  } else if (checkInterrupt(0x58, InterruptType::SERIAL)) {
-  } else if (checkInterrupt(0x60, InterruptType::JOYPAD)) {
+  if (!interrupts_.anyPending()) {
+    return;
   }
+  state.halted = false;
+  state.ime = false;
+  if (state.haltBug) {
+    state.registers.pc--;
+    state.haltBug = false;
+  }
+  cycle(3);
+  uint16_t pc = state.registers.pc;
+  stackPush8(highByte(pc));
+  uint8_t pending = interrupts_.ie();
+  cycle(1);
+  pending = static_cast<uint8_t>(pending & interrupts_.intf() & 0x1F);
+  stackPush8(lowByte(pc));
+  if (pending != 0) {
+    auto bit = std::countr_zero(pending);
+    interrupts_.setIntf(
+        static_cast<uint8_t>(interrupts_.intf() & ~(1U << bit)));
+    state.registers.pc = static_cast<uint16_t>(0x40 + (bit * 8));
+  } else {
+    state.registers.pc = 0;
+  }
+  cycle(1);
 }
 
 void CPU::save(std::ostream& out) const { serial::saveFields(out, *this); }
@@ -759,8 +762,9 @@ void CPU::dispatchCB() {
 
 void CPU::step() {
   if (state.halted) [[unlikely]] {
+    interrupts_.clearLate();
     cycle(1);
-    if (interrupts_.anyPending()) {
+    if (interrupts_.anyPendingEarly()) {
       state.halted = false;
     }
   } else {
@@ -1035,7 +1039,7 @@ void CPU::step() {
     // clang-format on
   }
 
-  if (state.ime) [[unlikely]] {
+  if (state.ime && !state.halted) [[unlikely]] {
     handleInterrupts();
     state.imeScheduled = false;
   }
