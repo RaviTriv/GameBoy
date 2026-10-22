@@ -22,7 +22,7 @@ PPU::PPU(Interrupts& interrupts, LCD& lcd)
     : interrupts_(interrupts), lcd_(lcd), pipeline(state.vram) {
   state.lineTicks = BOOT_LINE_TICKS;
   setMode(LCD::MODE::VBLANK);
-  lcd_.setLycFlag(lcd_.getLy() == lcd_.getLyCompare());
+  updateStatLine(false);
 }
 
 const PPU::Frame& PPU::acquireFrontFrame() {
@@ -53,6 +53,14 @@ void PPU::publishFrame() {
 }
 
 void PPU::tick() {
+  uint8_t statWrites = lcd_.consumeStatWrites();
+  if (statWrites != LCD::NO_WRITE && lcd_.isLcdEnabled()) {
+    if ((statWrites & LCD::STAT_WRITTEN) != 0) {
+      updateStatLine(false, STAT_ALL_SOURCES);
+    }
+    updateStatLine(false);
+  }
+
   switch (lcd_.consumeEnableTransition()) {
     case LCD::TURNED_OFF:
       lcd_.setLy(0);
@@ -66,6 +74,8 @@ void PPU::tick() {
     case LCD::TURNED_ON:
       lcd_.setLy(0);
       startLine();
+      state.statSource = 0;
+      compareLyc(0);
       state.skipOamScan = true;
       state.lineTicks = LCD_ON_LINE_TICKS;
       state.windowLine = 0;
@@ -262,19 +272,36 @@ void PPU::incrementLY() {
   }
 
   lcd_.incrementLy();
-  lcd_.setLycFlag(false);
+  compareLyc(NO_LY);
 }
 
-void PPU::compareLyc(uint8_t ly) {
-  if (ly == lcd_.getLyCompare()) {
-    lcd_.setLycFlag(true);
+void PPU::compareLyc(int16_t ly) {
+  state.lyForComparison = ly;
+  updateStatLine(false);
+}
 
-    if (lcd_.isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_LYC))) {
-      interrupts_.request(InterruptType::LCD_STAT);
-    }
+void PPU::updateStatLine(bool phased) {
+  updateStatLine(phased, lcd_.read(0xFF41) & STAT_ALL_SOURCES);
+}
+
+void PPU::updateStatLine(bool phased, uint8_t enabled) {
+  if (state.lyForComparison != NO_LY) {
+    state.lycLine = state.lyForComparison == lcd_.getLyCompare();
+    lcd_.setLycFlag(state.lycLine);
   } else {
     lcd_.setLycFlag(false);
   }
+  bool line = (state.statSource & enabled) != 0 ||
+              (state.lycLine && (enabled & LCD::LCDS_SRC::S_LYC) != 0);
+  if (line && !state.statLine) {
+    requestStat(phased);
+  }
+  state.statLine = line;
+}
+
+void PPU::setStatSource(uint8_t source, bool phased) {
+  state.statSource = source;
+  updateStatLine(phased);
 }
 
 void PPU::loadLineSprites() {
@@ -359,12 +386,11 @@ void PPU::oamMode() {
 
   if (state.lineTicks == STAT_MODE_DELAY) {
     if (lcd_.getLy() == 0) {
-      requestStatInterrupt(LCD::LCDS_SRC::S_OAM);
+      setStatSource(LCD::LCDS_SRC::S_OAM, true);
     }
     lcd_.setLcdMode(LCD::MODE::OAM);
-    if (lcd_.getLy() != 0) {
-      compareLyc(lcd_.getLy());
-    }
+    state.statSource = 0;
+    compareLyc(lcd_.getLy());
   }
 
   if (state.lineTicks >= 80 + (state.skipOamScan ? LCD_ON_MODE3_DELAY : 0)) {
@@ -400,7 +426,7 @@ void PPU::drawingMode() {
 
     pipeline.reset();
     setMode(LCD::MODE::HBLANK);
-    requestStatInterrupt(LCD::LCDS_SRC::S_HBLANK);
+    setStatSource(LCD::LCDS_SRC::S_HBLANK, true);
   }
 }
 
@@ -411,9 +437,12 @@ void PPU::hBlankMode() {
     if (lcd_.getLy() >= YRES) {
       state.mode = LCD::MODE::VBLANK;
       lcd_.setLcdMode(LCD::MODE::HBLANK);
+      if (!state.statLine && lcd_.isLcdStatIntEnabled(LCD::LCDS_SRC::S_OAM)) {
+        requestStat(true);
+      }
       finishFrame();
     } else {
-      requestStatInterrupt(LCD::LCDS_SRC::S_OAM);
+      setStatSource(LCD::LCDS_SRC::S_OAM, true);
       startLine();
     }
 
@@ -421,11 +450,8 @@ void PPU::hBlankMode() {
   }
 }
 
-void PPU::requestStatInterrupt(LCD::LCDS_SRC source) {
-  if (!lcd_.isLcdStatIntEnabled(static_cast<uint8_t>(source))) {
-    return;
-  }
-  if ((state.lineTicks + 3) % CLOCK_CYCLES >= 2) {
+void PPU::requestStat(bool phased) {
+  if (phased && (state.lineTicks + 3) % CLOCK_CYCLES >= 2) {
     interrupts_.requestLate(InterruptType::LCD_STAT);
   } else {
     interrupts_.request(InterruptType::LCD_STAT);
@@ -435,25 +461,25 @@ void PPU::requestStatInterrupt(LCD::LCDS_SRC source) {
 void PPU::enterVBlank() {
   lcd_.setLcdMode(LCD::MODE::VBLANK);
   interrupts_.request(InterruptType::VBLANK);
-
-  if (lcd_.isLcdStatIntEnabled(static_cast<uint8_t>(LCD::LCDS_SRC::S_VBLANK))) {
-    interrupts_.request(InterruptType::LCD_STAT);
+  if (!state.statLine && lcd_.isLcdStatIntEnabled(LCD::LCDS_SRC::S_OAM)) {
+    requestStat(false);
   }
+  setStatSource(LCD::LCDS_SRC::S_VBLANK, false);
 }
 
 void PPU::vBlankMode() {
   if (state.lineTicks == STAT_MODE_DELAY) {
-    if (lcd_.getLy() == YRES) {
-      enterVBlank();
-    }
     uint8_t ly = lcd_.getLy();
     if (ly == LINES_PER_FRAME - 1) {
       lcd_.setLy(0);
     }
     compareLyc(ly);
+    if (ly == YRES) {
+      enterVBlank();
+    }
   } else if (lcd_.getLy() == 0) {
     if (state.lineTicks == LINE_153_LYC_CLEAR_TICKS) {
-      lcd_.setLycFlag(false);
+      compareLyc(NO_LY);
     } else if (state.lineTicks == LINE_153_LYC_COMPARE_TICKS) {
       compareLyc(0);
     }

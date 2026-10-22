@@ -22,6 +22,8 @@ class LCD {
 
   enum EnableTransition { NO_TRANSITION, TURNED_ON, TURNED_OFF };
 
+  enum StatWrite : uint8_t { NO_WRITE = 0, STAT_WRITTEN = 1, LYC_WRITTEN = 2 };
+
   struct PaletteBits {
     uint8_t colorId0 : 2;
     uint8_t colorId1 : 2;
@@ -68,6 +70,7 @@ class LCD {
   void setLycFlag(bool value);
   [[nodiscard]] bool isLcdEnabled() const;
   EnableTransition consumeEnableTransition();
+  uint8_t consumeStatWrites();
   void save(std::ostream& out) const;
   void load(std::istream& in);
 
@@ -86,6 +89,7 @@ class LCD {
  private:
   State state;
   bool lcdWasEnabled = true;
+  [[= serial::skip]] uint8_t statWrites = NO_WRITE;
   [[= serial::skip]] DMA& dma_;
   static constexpr std::array<uint32_t, 4> defaultColors = {
       0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000};

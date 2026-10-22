@@ -33,6 +33,10 @@ class PPU {
     uint32_t lineTicks = 0;
     uint8_t windowLine = 0;
     uint32_t mode3Penalty{0};
+    int16_t lyForComparison = 0;
+    uint8_t statSource = LCD::LCDS_SRC::S_VBLANK;
+    bool lycLine = true;
+    bool statLine = false;
     std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> lineSprites;
     ScanlineContext scanlineCtx{};
   };
@@ -81,6 +85,8 @@ class PPU {
   static constexpr std::size_t OAM_ROWS = OAM_BYTES / OAM_ROW_BYTES;
   static constexpr int LINES_PER_FRAME = 154;
   static constexpr int TICKS_PER_LINE = 456;
+  static constexpr int16_t NO_LY = -1;
+  static constexpr uint8_t STAT_ALL_SOURCES = 0x78;
   static constexpr uint32_t LINE_153_LYC_CLEAR_TICKS = 8;
   static constexpr uint32_t LINE_153_LYC_COMPARE_TICKS = 12;
   static constexpr uint32_t BOOT_LINE_TICKS = 400;
@@ -99,13 +105,16 @@ class PPU {
   void setMode(LCD::MODE mode);
   void startLine();
   void incrementLY();
-  void compareLyc(uint8_t ly);
+  void compareLyc(int16_t ly);
+  void updateStatLine(bool phased, uint8_t enabled);
+  void updateStatLine(bool phased);
+  void requestStat(bool phased);
   [[nodiscard]] std::optional<std::size_t> oamScanRow() const;
   [[nodiscard]] std::span<uint8_t, OAM_BYTES> oamBytes();
   void loadLineSprites();
   [[nodiscard]] uint32_t calculateSpritePenalty() const;
   [[nodiscard]] uint32_t calculateWindowPenalty() const;
-  void requestStatInterrupt(LCD::LCDS_SRC source);
+  void setStatSource(uint8_t source, bool phased);
   void enterVBlank();
   void buildScanlineContext();
 

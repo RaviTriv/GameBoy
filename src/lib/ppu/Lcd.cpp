@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <istream>
 #include <ostream>
+#include <utility>
 
 #include "Dma.h"
 #include "Logger.h"
@@ -69,6 +70,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       break;
     case 0xFF41:
       state.lcds = (state.lcds & 0x07) | (value & 0x78);
+      statWrites |= STAT_WRITTEN;
       break;
     case 0xFF42:
       state.scrollY = value;
@@ -80,6 +82,7 @@ void LCD::write(uint16_t address, uint8_t value) {
       break;
     case 0xFF45:
       state.lyCompare = value;
+      statWrites |= LYC_WRITTEN;
       break;
     case 0xFF46:
       state.dma = value;
@@ -193,6 +196,8 @@ LCD::EnableTransition LCD::consumeEnableTransition() {
   lcdWasEnabled = enabled;
   return transition;
 }
+
+uint8_t LCD::consumeStatWrites() { return std::exchange(statWrites, NO_WRITE); }
 
 void LCD::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
