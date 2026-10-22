@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <istream>
 #include <ostream>
+#include <span>
 
 #include "Channel.h"
 #include "Serializable.h"
@@ -387,8 +388,8 @@ void APU::tick() {
   }
 }
 
-std::size_t APU::popSamples(StereoSample* out, std::size_t count) {
-  return sampleQueue.pop_n(out, count);
+std::size_t APU::popSamples(std::span<StereoSample> out) {
+  return sampleQueue.pop(out);
 }
 void APU::save(std::ostream& out) const { serial::saveFields(out, *this); }
 

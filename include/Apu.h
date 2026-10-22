@@ -2,10 +2,11 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 
 #include "./Channel.h"
 #include "Serializable.h"
-#include "spsc_queue.hpp"
+#include "SpscQueue.h"
 
 struct StereoSample {
   uint8_t left;
@@ -37,7 +38,7 @@ class APU {
 
   void tick();
 
-  std::size_t popSamples(StereoSample* out, std::size_t count);
+  std::size_t popSamples(std::span<StereoSample> out);
   void save(std::ostream& out) const;
   void load(std::istream& in);
 
@@ -45,7 +46,7 @@ class APU {
 
  private:
   State state;
-  [[= serial::skip]] spsc::Queue<StereoSample, 8192> sampleQueue;
+  [[= serial::skip]] SPSCQueue<StereoSample, 8192> sampleQueue;
   static constexpr int SAMPLE_RATE = 95;
   uint16_t frameTimer = 0;
   uint8_t frameSequence = 0;

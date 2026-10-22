@@ -278,8 +278,7 @@ class TestRunner {
   void drainAudio() {
     std::size_t popped = 0;
     do {
-      popped =
-          machine->apu().popSamples(audioScratch.data(), audioScratch.size());
+      popped = machine->apu().popSamples(audioScratch);
     } while (popped == audioScratch.size());
   }
 

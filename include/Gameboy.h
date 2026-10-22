@@ -8,7 +8,7 @@
 #include <thread>
 #include <variant>
 
-#include "spsc_queue.hpp"
+#include "SpscQueue.h"
 
 class FramePacer;
 class Machine;
@@ -33,7 +33,7 @@ class GameBoy {
   using Command = std::variant<SaveStateCommand, ToggleFastForwardCommand>;
 
   State state;
-  spsc::Queue<Command, 64> commands;
+  SPSCQueue<Command, 64> commands;
   std::unique_ptr<Machine> machine;
   std::unique_ptr<UI> ui;
   std::unique_ptr<FramePacer> framePacer;

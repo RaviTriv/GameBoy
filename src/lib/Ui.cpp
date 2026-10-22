@@ -16,6 +16,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "Apu.h"
@@ -79,7 +80,8 @@ void audioCallback(void* sound, SDL_AudioStream* stream, int additionalAmount,
         static_cast<std::size_t>(remaining / BYTES_PER_FRAME),
         MAX_CHUNK_FRAMES);
 
-    const std::size_t popped = ui->apu.popSamples(chunk.data(), frames);
+    const std::size_t popped =
+        ui->apu.popSamples(std::span{chunk}.first(frames));
     for (std::size_t i = popped; i < frames; i++) {
       chunk[i] = {};
     }
