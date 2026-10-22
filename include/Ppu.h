@@ -79,8 +79,8 @@ class PPU {
   static constexpr uint32_t BOOT_LINE_TICKS = 400;
   static constexpr uint32_t STAT_MODE_DELAY = 4;
   static constexpr uint32_t LCD_ON_LINE_TICKS = 4;
+  static constexpr uint32_t LCD_ON_MODE3_DELAY = 2;
   static constexpr uint32_t SPRITE_FETCH_PENALTY = 6;
-  static constexpr uint32_t OFFSCREEN_SPRITE_PENALTY = 11;
   static constexpr uint32_t WINDOW_PENALTY = 6;
   static constexpr uint8_t MAX_WINDOW_X = 166;
   static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
@@ -96,6 +96,7 @@ class PPU {
   void loadLineSprites();
   [[nodiscard]] uint32_t calculateSpritePenalty() const;
   [[nodiscard]] uint32_t calculateWindowPenalty() const;
+  void requestStatInterrupt(LCD::LCDS_SRC source);
   void enterVBlank();
   void buildScanlineContext();
 

@@ -24,7 +24,7 @@ uint8_t Pipeline::readVram(uint16_t address) const {
 }
 
 void Pipeline::process() {
-  if ((*ctx->lineTicks & 1) != 0) {
+  if ((*ctx->lineTicks & 1) == 0) {
     fetch();
   }
 
