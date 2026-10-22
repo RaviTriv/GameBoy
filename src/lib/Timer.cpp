@@ -12,57 +12,59 @@ Timer::Timer(Interrupts& interrupts) : interrupts_(interrupts) {
   state.div = INITIAL_DIV_VALUE;
 }
 
-void Timer::tick() {
-  if (state.reloadPending) {
-    state.reloadPending = false;
+bool Timer::timerSignal() const {
+  return (state.tac & TIMER_ENABLE_BIT) &&
+         (state.div & FREQUENCY_BITS[state.tac & FREQUENCY_BITS_MASK]);
+}
+
+void Timer::incrementTima() {
+  state.tima++;
+  if (state.tima == 0) {
+    state.reload = Reload::PENDING;
+  }
+}
+
+void Timer::advanceReload() {
+  if (state.reload == Reload::PENDING) {
+    state.reload = Reload::DONE;
     state.tima = state.tma;
     interrupts_.request(InterruptType::TIMER);
+  } else if (state.reload == Reload::DONE) {
+    state.reload = Reload::NONE;
+  }
+}
+
+void Timer::tick() {
+  if ((state.div & M_CYCLE_MASK) == 0) {
+    advanceReload();
   }
 
-  uint16_t prevDivider = state.div;
-
+  bool before = timerSignal();
   state.div++;
-
-  bool updateTimer = false;
-
-  switch (state.tac & FREQUENCY_BITS_MASK) {
-    case 0b00:
-      updateTimer = (prevDivider & (1 << 9)) && (!(state.div & (1 << 9)));
-      break;
-    case 0b01:
-      updateTimer = (prevDivider & (1 << 3)) && (!(state.div & (1 << 3)));
-      break;
-    case 0b10:
-      updateTimer = (prevDivider & (1 << 5)) && (!(state.div & (1 << 5)));
-      break;
-    case 0b11:
-      updateTimer = (prevDivider & (1 << 7)) && (!(state.div & (1 << 7)));
-      break;
-    default:
-      break;
-  }
-
-  if (updateTimer && state.tac & (1 << 2)) {
-    state.tima++;
-
-    if (state.tima == 0) {
-      state.reloadPending = true;
-    }
+  if (before && !timerSignal()) {
+    incrementTima();
   }
 }
 
 void Timer::write(uint16_t address, uint8_t value) {
+  bool before = timerSignal();
   switch (address) {
     case DIV_REGISTER:
       state.div = 0;
       break;
 
     case TIMA_REGISTER:
-      state.tima = value;
+      if (state.reload != Reload::DONE) {
+        state.tima = value;
+        state.reload = Reload::NONE;
+      }
       break;
 
     case TMA_REGISTER:
       state.tma = value;
+      if (state.reload == Reload::DONE) {
+        state.tima = value;
+      }
       break;
 
     case TAC_REGISTER:
@@ -70,6 +72,9 @@ void Timer::write(uint16_t address, uint8_t value) {
       break;
     default:
       break;
+  }
+  if (before && !timerSignal()) {
+    incrementTima();
   }
 }
 

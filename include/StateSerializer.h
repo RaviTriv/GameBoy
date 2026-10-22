@@ -38,6 +38,6 @@ class StateSerializer {
                                         const std::string& extension);
 
   static constexpr std::array<char, 4> MAGIC = {'G', 'B', 'S', 'T'};
-  static constexpr uint32_t VERSION = 6;
+  static constexpr uint32_t VERSION = 7;
   static constexpr uint32_t MAX_HEADER_LENGTH = 256;
 };
