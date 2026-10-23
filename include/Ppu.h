@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "./Common.h"
+#include "./Dma.h"
 #include "./Interrupts.h"
 #include "./Lcd.h"
 #include "./OamTypes.h"
@@ -36,10 +37,12 @@ class PPU {
     uint8_t statSource = LCD::LCDS_SRC::S_VBLANK;
     bool lycLine = true;
     bool statLine = false;
-    std::inplace_vector<OAM_ENTRY, MAX_LINE_SPRITES> lineSprites;
+    uint8_t scanLatchY = 0;
+    uint8_t scanLatchX = 0;
+    std::inplace_vector<LineSprite, MAX_LINE_SPRITES> lineSprites;
     ScanlineContext scanlineCtx{};
   };
-  PPU(Interrupts& interrupts, LCD& lcd,
+  PPU(Interrupts& interrupts, LCD& lcd, const DMA& dma,
       std::span<const uint8_t, HEADER_LOGO_SIZE> bootLogo);
   void tick();
   [[nodiscard]] uint32_t getCurrentFrame() const;
@@ -71,6 +74,7 @@ class PPU {
   State state;
   [[= serial::skip]] Interrupts& interrupts_;
   [[= serial::skip]] LCD& lcd_;
+  [[= serial::skip]] const DMA& dma_;
   [[= serial::skip]] std::function<void()> onFrameComplete;
   Pipeline pipeline;
   std::atomic<uint32_t> currentFrame{0};
@@ -95,6 +99,7 @@ class PPU {
   static constexpr uint32_t BOOT_LINE_TICKS = 400;
   static constexpr uint32_t STAT_MODE_DELAY = 4;
   static constexpr uint32_t LCD_ON_LINE_TICKS = 4;
+  static constexpr uint32_t OAM_SCAN_DOTS = 2;
   static constexpr uint32_t LCD_ON_MODE3_DELAY = 2;
   static constexpr int PIPELINE_LAG = 2;
   static constexpr uint8_t FRAME_INDEX_MASK = 0x3;
@@ -116,6 +121,7 @@ class PPU {
   [[nodiscard]] bool isDrawing() const;
   [[nodiscard]] std::span<uint8_t, OAM_BYTES> oamBytes();
   void loadLineSprites();
+  void scanOamEntry(std::size_t index);
   void setStatSource(uint8_t source, bool phased);
   void enterVBlank();
   void buildScanlineContext();

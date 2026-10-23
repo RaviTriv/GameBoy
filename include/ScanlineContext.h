@@ -8,6 +8,8 @@
 #include "OamTypes.h"
 #include "Serializable.h"
 
+class DMA;
+
 struct ScanlineContext {
   uint8_t scrollX = 0;
   uint8_t scrollY = 0;
@@ -30,7 +32,9 @@ struct ScanlineContext {
   uint8_t obj0Palette = 0;
   uint8_t obj1Palette = 0;
 
-  [[= serial::skip]] std::span<const OAM_ENTRY> sprites;
+  [[= serial::skip]] std::span<const LineSprite> sprites;
+  [[= serial::skip]] std::span<const uint8_t> oam;
+  [[= serial::skip]] const DMA* dma = nullptr;
 
   [[= serial::skip]] const uint32_t* lineTicks = nullptr;
 };

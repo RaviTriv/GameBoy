@@ -22,6 +22,8 @@ class DMA {
   void start(uint8_t start);
   void tick(IMemRead& memory, PPU& ppu);
   [[nodiscard]] bool isTransferring() const;
+  [[nodiscard]] bool blocksOamScan() const;
+  [[nodiscard]] uint8_t ppuOamAddress(uint8_t address) const;
   void save(std::ostream& out) const;
   void load(std::istream& in);
 

@@ -17,7 +17,7 @@
 Machine::Machine(std::string_view romPath)
     : cartridge_(romPath),
       lcd_(dma_),
-      ppu_(interrupts_, lcd_, cartridge_.getLogo()),
+      ppu_(interrupts_, lcd_, dma_, cartridge_.getLogo()),
       timer_(interrupts_),
       io_(interrupts_, timer_, lcd_, gamepad_, apu_),
       bus_(cartridge_, interrupts_, dma_, io_, ppu_, ram_),
@@ -68,12 +68,12 @@ void Machine::cycle(int cycles) {
   cycles_ += static_cast<uint64_t>(cycles);
   cartridge_.tick(cycles);
   for (int i = 0; i < cycles; i++) {
+    dma_.tick(bus_, ppu_);
     for (int j = 0; j < CLOCK_CYCLES; j++) {
       timer_.tick();
       ppu_.tick();
       apu_.tick();
     }
     io_.tick();
-    dma_.tick(bus_, ppu_);
   }
 }

@@ -14,6 +14,12 @@ struct OamFlagsBits {
   uint8_t bgp : 1;
 };
 
+struct LineSprite {
+  uint8_t y = 0;
+  uint8_t x = 0;
+  uint8_t index = 0;
+};
+
 struct OAM_ENTRY {
   uint8_t y = 0;
   uint8_t x = 0;

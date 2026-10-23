@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <optional>
 #include <ostream>
 #include <span>
 
@@ -54,6 +55,9 @@ class Pipeline {
     uint8_t tileLow = 0;
     uint8_t tileHigh = 0;
     uint8_t nextSprite = 0;
+    uint8_t spriteTile = 0;
+    uint8_t spriteFlags = 0;
+    bool spriteTileRead = false;
     uint8_t spriteLow = 0;
     uint8_t spriteHigh = 0;
     uint8_t bgLow = 0;
@@ -99,6 +103,7 @@ class Pipeline {
   void load(std::istream& in);
   [[nodiscard]] bool isLineDone() const { return state.lineDone; }
   [[nodiscard]] bool isWindowYTriggered() const { return state.wyTriggered; }
+  [[nodiscard]] std::optional<uint8_t> takeSpriteTileRead();
   [[nodiscard]] bool finishesWithin(int dots) const {
     return state.lineDone ||
            (state.lineX + dots >= XRES && previewFinishes(dots));
@@ -116,6 +121,7 @@ class Pipeline {
   bool latchRegisters();
   bool checkWindowTrigger(bool windowXChanged);
   bool matchSprite();
+  [[nodiscard]] uint8_t readSpriteOam(uint8_t offset) const;
   void stepSpriteFetch();
   void advanceFetcher();
   void renderPixel();

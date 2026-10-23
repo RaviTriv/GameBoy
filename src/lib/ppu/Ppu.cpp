@@ -17,9 +17,9 @@
 #include "OamTypes.h"
 #include "Serializable.h"
 
-PPU::PPU(Interrupts& interrupts, LCD& lcd,
+PPU::PPU(Interrupts& interrupts, LCD& lcd, const DMA& dma,
          std::span<const uint8_t, HEADER_LOGO_SIZE> bootLogo)
-    : interrupts_(interrupts), lcd_(lcd), pipeline(state.vram) {
+    : interrupts_(interrupts), lcd_(lcd), dma_(dma), pipeline(state.vram) {
   state.lineTicks = BOOT_LINE_TICKS;
   setMode(LCD::MODE::VBLANK);
   updateStatLine(false);
@@ -382,25 +382,33 @@ void PPU::setStatSource(uint8_t source, bool phased) {
 }
 
 void PPU::loadLineSprites() {
-  int curY = lcd_.getLy();
+  for (std::size_t i = 0; i < state.oamRam.size(); i++) {
+    scanOamEntry(i);
+  }
+}
 
-  uint8_t spriteHeight = lcd_.getObjHeight();
+void PPU::scanOamEntry(std::size_t index) {
+  if (!dma_.blocksOamScan()) {
+    state.scanLatchY = state.oamRam[index].y;
+    state.scanLatchX = state.oamRam[index].x;
+  }
 
-  for (std::size_t i = 0; i < 40; i++) {
-    OAM_ENTRY entry = state.oamRam[i];
+  auto& sprites = state.lineSprites;
+  if (sprites.size() == sprites.capacity()) {
+    return;
+  }
 
-    if (state.lineSprites.size() == state.lineSprites.capacity()) {
-      break;
-    }
-
-    if (entry.y <= curY + 16 && entry.y + spriteHeight > curY + 16) {
-      auto& sprites = state.lineSprites;
-      sprites.unchecked_push_back(entry);
-      for (auto pos = sprites.size() - 1;
-           pos > 0 && sprites[pos - 1].x > entry.x; pos--) {
-        std::swap(sprites[pos], sprites[pos - 1]);
-      }
-    }
+  const int lineY = lcd_.getLy() + 16;
+  if (state.scanLatchY > lineY ||
+      state.scanLatchY + lcd_.getObjHeight() <= lineY) {
+    return;
+  }
+  sprites.unchecked_push_back({.y = state.scanLatchY,
+                               .x = state.scanLatchX,
+                               .index = static_cast<uint8_t>(index)});
+  for (auto pos = sprites.size() - 1;
+       pos > 0 && sprites[pos - 1].x > sprites[pos].x; pos--) {
+    std::swap(sprites[pos], sprites[pos - 1]);
   }
 }
 
@@ -421,13 +429,21 @@ void PPU::buildScanlineContext() {
   state.scanlineCtx.obj0Palette = lcd_.getPalette(LCD::OBP0);
   state.scanlineCtx.obj1Palette = lcd_.getPalette(LCD::OBP1);
   state.scanlineCtx.sprites = state.lineSprites;
+  state.scanlineCtx.oam = oamBytes();
+  state.scanlineCtx.dma = &dma_;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 }
 
 void PPU::oamMode() {
   if (state.lineTicks == 1) {
     state.lineSprites.clear();
-    loadLineSprites();
+    if (const auto tile = pipeline.takeSpriteTileRead()) {
+      state.scanLatchY = *tile;
+    }
+  }
+  if (!state.skipOamScan && (state.lineTicks % OAM_SCAN_DOTS) == 0 &&
+      state.lineTicks <= OAM_SCAN_DOTS * state.oamRam.size()) {
+    scanOamEntry((state.lineTicks / OAM_SCAN_DOTS) - 1);
   }
 
   if (state.lineTicks == STAT_MODE_DELAY) {
@@ -564,6 +580,8 @@ void PPU::load(std::istream& in) {
     throw std::runtime_error("Invalid PPU scanline in save file");
   }
   state.scanlineCtx.sprites = state.lineSprites;
+  state.scanlineCtx.oam = oamBytes();
+  state.scanlineCtx.dma = &dma_;
   state.scanlineCtx.lineTicks = &state.lineTicks;
 
   serial::read(in, frames[backIndex]);

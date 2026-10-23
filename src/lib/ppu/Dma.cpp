@@ -35,6 +35,17 @@ void DMA::tick(IMemRead& memory, PPU& ppu) {
 }
 
 bool DMA::isTransferring() const { return state.isActive; }
+
+bool DMA::blocksOamScan() const {
+  return state.isActive || state.startDelay != 0;
+}
+
+uint8_t DMA::ppuOamAddress(uint8_t address) const {
+  if (!state.isActive || state.byte == 0) {
+    return address;
+  }
+  return static_cast<uint8_t>((state.byte & ~1) | (address & 1));
+}
 void DMA::save(std::ostream& out) const { serial::saveFields(out, *this); }
 
 void DMA::load(std::istream& in) {

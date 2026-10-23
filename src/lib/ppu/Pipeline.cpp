@@ -4,10 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <optional>
 #include <ostream>
 #include <stdexcept>
 
 #include "Common.h"
+#include "Dma.h"
 #include "ScanlineContext.h"
 #include "Serializable.h"
 
@@ -16,6 +18,13 @@ constexpr uint8_t MODE3_START_DELAY = 8;
 constexpr uint8_t OBJ_COLOR_MASK = 0x3;
 constexpr uint8_t OBJ_PALETTE = 0x4;
 constexpr uint8_t OBJ_PRIORITY = 0x8;
+constexpr uint8_t OAM_ENTRY_BYTES = 4;
+constexpr uint8_t OAM_TILE_OFFSET = 2;
+constexpr uint8_t OAM_FLAGS_OFFSET = 3;
+constexpr uint8_t FLAG_DMG_PALETTE = 0x10;
+constexpr uint8_t FLAG_X_FLIP = 0x20;
+constexpr uint8_t FLAG_Y_FLIP = 0x40;
+constexpr uint8_t FLAG_BG_PRIORITY = 0x80;
 constexpr uint8_t MAP_MASK = 0x1F;
 constexpr std::array<uint32_t, 4> DMG_COLORS = {0xFFFFFFFF, 0xFFAAAAAA,
                                                 0xFF555555, 0xFF000000};
@@ -185,6 +194,9 @@ void Pipeline::stepSpriteFetch() {
       break;
     }
     case OBJ_STATE::ATTR0:
+      state.spriteTile = readSpriteOam(OAM_TILE_OFFSET);
+      state.spriteTileRead = true;
+      state.spriteFlags = readSpriteOam(OAM_FLAGS_OFFSET);
       advanceFetcher();
       state.objState = OBJ_STATE::ATTR1;
       break;
@@ -211,10 +223,23 @@ void Pipeline::stepSpriteFetch() {
   }
 }
 
+std::optional<uint8_t> Pipeline::takeSpriteTileRead() {
+  if (!state.spriteTileRead) {
+    return std::nullopt;
+  }
+  state.spriteTileRead = false;
+  return state.spriteTile;
+}
+
+uint8_t Pipeline::readSpriteOam(uint8_t offset) const {
+  const auto address = static_cast<uint8_t>(
+      (ctx->sprites[state.nextSprite].index * OAM_ENTRY_BYTES) + offset);
+  return ctx->oam[ctx->dma->ppuOamAddress(address)];
+}
+
 void Pipeline::overlaySpriteRow() {
-  const auto& sprite = ctx->sprites[state.nextSprite];
-  uint8_t flags = sprite.bits.pn ? OBJ_PALETTE : 0;
-  if (sprite.bits.bgp) {
+  uint8_t flags = (state.spriteFlags & FLAG_DMG_PALETTE) != 0 ? OBJ_PALETTE : 0;
+  if ((state.spriteFlags & FLAG_BG_PRIORITY) != 0) {
     flags |= OBJ_PRIORITY;
   }
 
@@ -226,7 +251,7 @@ void Pipeline::overlaySpriteRow() {
     if ((state.objFifo[slot] & OBJ_COLOR_MASK) != 0) {
       continue;
     }
-    int bit = sprite.bits.xFlip ? i : 7 - i;
+    int bit = (state.spriteFlags & FLAG_X_FLIP) != 0 ? i : 7 - i;
     auto color = static_cast<uint8_t>(((state.spriteLow >> bit) & 1) |
                                       (((state.spriteHigh >> bit) & 1) << 1));
     if (color != 0) {
@@ -414,10 +439,10 @@ uint16_t Pipeline::spriteDataAddress() const {
   bool tall = ctx->objHeight == 16;
   int mask = tall ? 0xF : 0x7;
   int row = (ctx->ly + 16 - sprite.y) & mask;
-  if (sprite.bits.yFlip) {
+  if ((state.spriteFlags & FLAG_Y_FLIP) != 0) {
     row ^= mask;
   }
-  int tile = tall ? (sprite.tile & 0xFE) : sprite.tile;
+  int tile = tall ? (state.spriteTile & 0xFE) : state.spriteTile;
   return static_cast<uint16_t>(0x8000 + (tile * 16) + (row * 2));
 }
 
