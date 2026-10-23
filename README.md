@@ -1,15 +1,12 @@
 # GameBoy
-
-[![CI](https://github.com/RaviTriv/GameBoy/actions/workflows/ci.yml/badge.svg)](https://github.com/RaviTriv/GameBoy/actions/workflows/ci.yml)
-
-
-<p align="center">
-  <img src="images/tetris.png" alt="Tetris" width="30%">
-  <img src="images/zelda.png" alt="The Legend of Zelda: Link's Awakening" width="30%">
-  <img src="images/pokemonRed.png" alt="Pokemon Red" width="30%">
-</p>
-
 DMG-01 Game Boy Emulator
+
+![Tetris](images/tetris.png)
+
+![Zelda Link's Awakening](images/zelda.png)
+
+![Pokemon Red](images/pokemonRed.png)
+
 
 ## Building and Running
 
