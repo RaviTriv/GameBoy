@@ -79,14 +79,14 @@ def render(cases, commit):
     for c in cases:
         suites.setdefault(suite_of(c["name"]), []).append(c)
 
-    lines.append("| Suite | Pass | Fail | Time |")
-    lines.append("|---|---|---|---|")
+    lines.append("| Suite | Tests | Pass | Fail | Time |")
+    lines.append("|---|---:|---:|---:|---:|")
     order = [suite for _, suite in SUITES] + ["Other"]
     for suite, group in sorted(suites.items(), key=lambda kv: order.index(kv[0])):
         ok = sum(c["outcome"] == "pass" for c in group)
         bad = len(group) - ok
         time = fmt_time(sum(c["time"] for c in group))
-        lines.append(f"| {suite} | {ok} / {len(group)} | {bad} | {time} |")
+        lines.append(f"| {suite} | {len(group)} | {ok} | {bad} | {time} |")
     lines.append("")
 
     lines.append(f"<details><summary>All tests ({total})</summary>")
